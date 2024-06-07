@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>12</LangVersion>
+        <UserSecretsId>946ad5cd-8167-47c7-9917-57804054534d</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Hl7.Fhir.R4" Version="5.4.0" />
+        <PackageReference Include="MediatR" Version="12.2.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+        <PackageReference Include="Serilog.Enrichers.Environment" Version="2.3.0" />
+        <PackageReference Include="Serilog.Sinks.Splunk" Version="3.7.0" />
+        <PackageReference Include="Steeltoe.Extensions.Configuration.ConfigServerCore" Version="3.2.5" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Abm.Pyro.Application\Abm.Pyro.Application.csproj" />
+      <ProjectReference Include="..\Abm.Pyro.Domain\Abm.Pyro.Domain.csproj" />
+      <ProjectReference Include="..\Abm.Pyro.Repository\Abm.Pyro.Repository.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="DependencyInjectionFactory\" />
+    </ItemGroup>
+
+</Project>

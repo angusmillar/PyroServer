@@ -1,0 +1,48 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Collections" #>
+<#@ assembly name="$(SolutionDir)Abm.Pyro.CodeGeneration\bin\Debug\Abm.Pyro.CodeGeneration.dll" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.SearchParameters" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.Support" #>
+<#@ import namespace="System.IO" #>
+//File code generated using T4 Template found in the project: Abm.Pyro.CodeGeneration
+// Last Generated : <#= DateTime.Now.ToString(CultureInfo.CurrentCulture) #>
+<#
+    string sourceFileName = "SearchParameterStoreSearchModifierCodeSeed";
+#>
+using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.Model;
+namespace Abm.Pyro.Repository.Seed;
+
+public static class <#=sourceFileName#>
+{
+  public static IEnumerable<SearchParameterStoreSearchModifierCode> Get()
+  {
+    return new List<SearchParameterStoreSearchModifierCode>() 
+           {
+  <# 
+  var searchParameterGeneration = new SearchParameterGeneration();
+  searchParameterGeneration.Load();
+  foreach (var line in searchParameterGeneration.SearchParameterStoreModifierLineList)
+  {#>
+                <#=line#>
+<#}#>                 
+           };
+  }
+}
+<#
+void SaveFile(string folder, string fileName, string content)
+{
+    using FileStream fs = new FileStream(Path.Combine(folder, fileName), FileMode.Create);
+    using StreamWriter str = new StreamWriter(fs);
+    str.WriteLine(content);
+    str.Flush();
+}
+#>
+<#
+DirectoryInfo solutionDirectoryInfo = DirectorySupport.TryGetSolutionDirectoryInfo();
+SaveFile(@$"{solutionDirectoryInfo.FullName}\Abm.Pyro.Repository\Seed", sourceFileName + ".cs", this.GenerationEnvironment.ToString());
+this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+#>

@@ -1,0 +1,44 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Collections" #>
+<#@ assembly name="$(SolutionDir)Abm.Pyro.CodeGeneration\bin\Debug\Abm.Pyro.CodeGeneration.dll" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.ResourceType" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.Support" #>
+<#@ import namespace="System.IO" #>
+//File code generated using T4 Template found in the project: Abm.Pyro.CodeGeneration
+// Last Generated : <#= DateTime.Now.ToString(CultureInfo.CurrentCulture) #>
+using Abm.Pyro.Domain.Attributes;
+namespace Abm.Pyro.Domain.Enums;
+
+<#
+    string sourceFileName = "FhirResourceTypeId";
+#>
+public enum <#=sourceFileName#>
+{
+  <# 
+  var nameGen = new FhirResourceTypeGeneration();       
+  foreach (var item in nameGen.Dic)
+  {
+  #>
+  [EnumInfo("<#=item.Key#>", "<#=item.Key#>" )]
+    <#= item.Key #> = <#= item.Value #>,         
+  <#        
+  }
+  #>                 
+}
+<#
+void SaveFile(string folder, string fileName, string content)
+{
+    using FileStream fs = new FileStream(Path.Combine(folder, fileName), FileMode.Create);
+    using StreamWriter str = new StreamWriter(fs);
+    str.WriteLine(content);
+    str.Flush();
+}
+#>
+<#
+DirectoryInfo solutionDirectoryInfo = DirectorySupport.TryGetSolutionDirectoryInfo();
+SaveFile(@$"{solutionDirectoryInfo.FullName}\Abm.Pyro.Domain\Enums", sourceFileName + ".cs", this.GenerationEnvironment.ToString());
+this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+#>

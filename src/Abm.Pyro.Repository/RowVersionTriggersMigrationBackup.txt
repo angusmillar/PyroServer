@@ -1,0 +1,32 @@
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace Abm.Pyro.Repository.Migrations
+{
+    public partial class RowVersionTriggers : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql("CREATE TRIGGER UpdateResourceStoreVersion " +
+                                 "AFTER UPDATE ON ResourceStore " +
+                                 "BEGIN " +
+                                 "UPDATE ResourceStore " +
+                                 "SET RowVersion = RowVersion + 1 WHERE rowid = NEW.rowid; " +
+                                 "END;");
+            
+            migrationBuilder.Sql("CREATE TRIGGER UpdateSearchParameterStoreVersion " +
+                                 "AFTER UPDATE ON SearchParameterStore " +
+                                 "BEGIN " +
+                                 "UPDATE SearchParameterStore " +
+                                 "SET RowVersion = RowVersion + 1 WHERE rowid = NEW.rowid; " +
+                                 "END;");
+        }
+
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+          migrationBuilder.Sql("DROP TRIGGER UpdateResourceStoreVersion");
+          migrationBuilder.Sql("DROP TRIGGER UpdateSearchParameterStoreVersion");
+        }
+    }
+}

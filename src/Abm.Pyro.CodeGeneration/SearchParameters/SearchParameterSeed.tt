@@ -1,0 +1,75 @@
+<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Collections" #>
+<#@ assembly name="$(SolutionDir)Abm.Pyro.CodeGeneration\bin\Debug\Abm.Pyro.CodeGeneration.dll" #>
+<#@ import namespace="System.Globalization" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.SearchParameters" #>
+<#@ import namespace="Abm.Pyro.CodeGeneration.Support" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Linq" #>
+//File code generated using T4 Template found in the project: Abm.Pyro.CodeGeneration
+// Last Generated : <#= DateTime.Now.ToString(CultureInfo.CurrentCulture) #>
+<#
+    string sourceFileName = "SearchParameterSeed";
+#>
+using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.Model;
+
+namespace Abm.Pyro.Repository.Seed;
+
+public static class <#=sourceFileName#>
+{
+  public static List<SearchParameterStore> Get()
+  {
+    var nowUtc = DateTime.UtcNow;
+    return new List<SearchParameterStore>() {
+  <# 
+  var searchParameterGeneration = new SearchParameterGeneration();
+  searchParameterGeneration.Load();
+  foreach (var param in searchParameterGeneration.SearchParameterDtoList)
+  {
+  #>
+    new SearchParameterStore(
+          searchParameterStoreId: <#=param.SearchParameterStoreId#>,
+          resourceId: <#=param.ResourceId#>,
+          versionId: 1,
+          isCurrent: true,
+          isDeleted: false,
+          isIndexed: true,
+          name: <#=param.Name#>,
+          status: PublicationStatusId.<#=param.Status#>,
+          url: new Uri("<#=param.Url#>"),
+          code: <#=param.Code#>,
+          type: SearchParamType.<#=param.Type#>,
+          baseList: new List<SearchParameterStoreResourceTypeBase>() ,
+          targetList: new List<SearchParameterStoreResourceTypeTarget>(),
+          expression: <#=param.Expression ?? "null"#>,
+          multipleOr: <#=param.MultipleOr#>,
+          multipleAnd: <#=param.MultipleAnd#>,         
+          comparatorList: new List<SearchParameterStoreComparator>(),
+          modifierList: new List<SearchParameterStoreSearchModifierCode>(),
+          chain: null,          
+          componentList: new List<SearchParameterStoreComponent>(),
+          json: <#=param.Json#>,
+          lastUpdated: nowUtc,          
+          rowVersion: 0
+        ),        
+<#}#>                 
+    };
+  }
+}
+<#
+void SaveFile(string folder, string fileName, string content)
+{
+    using FileStream fs = new FileStream(Path.Combine(folder, fileName), FileMode.Create);
+    using StreamWriter str = new StreamWriter(fs);
+    str.WriteLine(content);
+    str.Flush();
+}
+#>
+<#
+DirectoryInfo solutionDirectoryInfo = DirectorySupport.TryGetSolutionDirectoryInfo();
+SaveFile(@$"{solutionDirectoryInfo.FullName}\Abm.Pyro.Repository\Seed", sourceFileName + ".cs", this.GenerationEnvironment.ToString());
+this.GenerationEnvironment.Remove(0, this.GenerationEnvironment.Length);
+#>
