@@ -244,10 +244,10 @@ try
   builder.Services.AddSingleton<IIndexCompositePredicateFactory, IndexCompositePredicateFactory>();
   
   // Database Setup ----------------------
-  DatabaseSettings? databaseSettings =  builder.Configuration.GetSection(DatabaseSettings.SectionName)?.Get<DatabaseSettings>();
-  string connectionString = String.IsNullOrWhiteSpace(databaseSettings?.ConnectionString) ? "Database ConnectionString not found in appsettings.json" : databaseSettings.ConnectionString;
+  // DatabaseSettings? databaseSettings =  builder.Configuration.GetSection(DatabaseSettings.SectionName)?.Get<DatabaseSettings>();
+  // string connectionString = String.IsNullOrWhiteSpace(databaseSettings?.ConnectionString) ? "Database ConnectionString not found in appsettings.json" : databaseSettings.ConnectionString;
   builder.Services.AddDbContext<PyroDbContext>(
-    options => options.UseSqlServer(connectionString)
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("PyroDb"))
   );
   
   // CORS

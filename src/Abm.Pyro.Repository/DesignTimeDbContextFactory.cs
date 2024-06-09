@@ -11,7 +11,6 @@ namespace Abm.Pyro.Repository;
 /// Use .AddJsonFile($"appsettings.{_hostingEnvironment.EnvironmentName}.json") instead.
 /// </summary>
 public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<PyroDbContext>
-
 {
   // public DesignTimeDbContextFactory()
   // {
@@ -29,16 +28,10 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<PyroDbCont
                         .SetBasePath(Path.Combine(Directory.GetCurrentDirectory()))
                         .AddJsonFile("appsettings.json", optional: false)
                         .Build();
-    var databaseSettingsSection = configuration.GetSection(DatabaseSettings.SectionName); 
-    DatabaseSettings? databaseSettings =  databaseSettingsSection.Get<DatabaseSettings>();
-    if (databaseSettings is null)
-    {
-      throw new NoNullAllowedException(nameof(databaseSettings));
-    }
     
     // Create DB context with connection from your AppSettings 
     var optionsBuilder = new DbContextOptionsBuilder<PyroDbContext>()
-      .UseSqlServer(databaseSettings.ConnectionString);
+      .UseSqlServer(configuration.GetConnectionString("PyroDb"));
 
     return new PyroDbContext(optionsBuilder.Options);
   }
