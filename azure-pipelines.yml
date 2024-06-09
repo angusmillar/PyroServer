@@ -22,7 +22,6 @@ steps:
   inputs:
     version: 8.x
 
-steps:
 - task: DotNetCoreCLI@2
   displayName: 'dotnet restore'
   inputs:
