@@ -23,22 +23,18 @@ steps:
     version: 8.x
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet restore'
-  inputs:
-    command: restore
-    projects: '$(projects)'
-
-- task: DotNetCoreCLI@2
   displayName: 'Build'
   inputs:
     command: 'build'
-    projects: '$(solution)'
+    projects: |    
+     **/*.csproj
+     !**/*CodeGeneration.csproj
     arguments: '--configuration $(BuildConfiguration)'
 
 - task: DotNetCoreCLI@2
   inputs:
     command: test
-    projects: '$(tests)'
+    projects: $(tests)
     arguments: '--configuration $(buildConfiguration)'
 
 - task: DotNetCoreCLI@2
