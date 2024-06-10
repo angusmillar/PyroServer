@@ -16,8 +16,10 @@ variables:
 
 steps:
 - script: echo $(tests)
+  displayname: 'Display Variable: tests'
+
 - script: echo $(Build.SourcesDirectory)
-  displayname: 'Display Variables'
+  displayname: 'Display Variable: Build.SourcesDirectory'
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
