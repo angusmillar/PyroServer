@@ -15,11 +15,8 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo $(tests)
-  displayname: 'Display Variable: tests'
-
-- script: echo $(Build.SourcesDirectory)
-  displayname: 'Display Variable: Build.SourcesDirectory'
+- script: echo "tests is $(Build.BuildNumber)"
+- script: echo "Build.SourcesDirectory is $(BBuild.SourcesDirectory)"
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
