@@ -15,8 +15,9 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo "tests is $(Build.BuildNumber)"
-- script: echo "Build.SourcesDirectory is $(BBuild.SourcesDirectory)"
+- script: echo "tests:: $(tests)"
+- script: echo "Build.SourcesDirectory:: $(Build.SourcesDirectory)"
+- script: echo "Agent.TempDirectory:: $(Agent.TempDirectory)"
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
@@ -60,16 +61,16 @@ steps:
     summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
 
 - task: DotNetCoreCLI@2
-  displayName: Create SQL Scripts
+  displayName: 'Create EF Core Bundle'
   inputs:
     command: custom
     custom: 'ef'
-    arguments: migrations bundle --self-contained -r linux-x64 --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
+    arguments: migrations bundle -r linux-x64 --output $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/efbundle.exe  --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
 
 - task: DotNetCoreCLI@2
   displayName: Publish
   inputs:
     command: publish
     publishWebProjects: True
-    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(build.artifactstagingdirectory)'
+    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)'
     zipAfterPublish: true
