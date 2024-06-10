@@ -80,12 +80,14 @@ steps:
     zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
+  displayName: 'Publish Application Artifacts'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(ApplicationFolder)'
     ArtifactName: Application
     publishLocation: Container
 
 - task: PublishBuildArtifacts@1
+  displayName: 'Publish EF Migration Artifacts'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(EFMigrationFolder)'
     ArtifactName: EFMigrations
