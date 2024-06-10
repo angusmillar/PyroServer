@@ -15,9 +15,9 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo "tests:: $(tests)"
-- script: echo "Build.SourcesDirectory:: $(Build.SourcesDirectory)"
-- script: echo "Agent.TempDirectory:: $(Agent.TempDirectory)"
+- script: echo "tests = $(tests)"
+- script: echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
+- script: echo "Agent.TempDirectory = $(Agent.TempDirectory)"
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
