@@ -69,7 +69,7 @@ steps:
   inputs:
     command: custom
     custom: 'ef'
-    arguments: migrations bundle --self-contained -r linux-x64 --output $(Build.ArtifactStagingDirectory)/$(EFMigrationFolder)/efbundle.exe --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
+    arguments: migrations bundle --self-contained -r win-x64 --output $(Build.ArtifactStagingDirectory)/$(EFMigrationFolder)/efbundle.exe --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
 
 - task: DotNetCoreCLI@2
   displayName: Publish
