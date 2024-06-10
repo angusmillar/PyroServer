@@ -15,9 +15,10 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo "tests = $(tests)
-          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)
-          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)
+- script: |
+          echo "tests = $(tests)" 
+          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
+          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
           echo "Agent.TempDirectory = $(Agent.TempDirectory)"
 
 - task: UseDotNet@2
