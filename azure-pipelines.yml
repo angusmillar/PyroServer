@@ -15,9 +15,10 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- script: echo "tests = $(tests)"
-- script: echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
-- script: echo "Agent.TempDirectory = $(Agent.TempDirectory)"
+- script: echo "tests = $(tests)
+          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)
+          echo "Build.SourcesDirectory = $(Build.SourcesDirectory)
+          echo "Agent.TempDirectory = $(Agent.TempDirectory)"
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
@@ -65,12 +66,18 @@ steps:
   inputs:
     command: custom
     custom: 'ef'
-    arguments: migrations bundle -r linux-x64 --output $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/efbundle.exe  --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
+    arguments: migrations bundle -r linux-x64 --output $(Build.ArtifactStagingDirectory)/EFMigrations/efbundle.exe --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
 
 - task: DotNetCoreCLI@2
   displayName: Publish
   inputs:
     command: publish
     publishWebProjects: True
-    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)'
+    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)/Application'
     zipAfterPublish: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/Application'
+    ArtifactName: 'Application'
+    publishLocation: 'Container
