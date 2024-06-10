@@ -13,6 +13,8 @@ variables:
   tests: '**/*Test/*.csproj'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  ApplicationFolder: 'Application'
+  EFMigrationFolder: 'EFMigrations'
 
 steps:
 - script: |
@@ -67,18 +69,24 @@ steps:
   inputs:
     command: custom
     custom: 'ef'
-    arguments: migrations bundle -r linux-x64 --output $(Build.ArtifactStagingDirectory)/EFMigrations/efbundle.exe --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
+    arguments: migrations bundle -r linux-x64 --output $(Build.ArtifactStagingDirectory)/$(EFMigrationFolder)/efbundle.exe --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
 
 - task: DotNetCoreCLI@2
   displayName: Publish
   inputs:
     command: publish
     publishWebProjects: True
-    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)/Application'
+    arguments: '--configuration $(BuildConfiguration) --runtime linux-x64 --self-contained true --output $(Build.ArtifactStagingDirectory)/$(ApplicationFolder)'
     zipAfterPublish: true
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)/Application'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(ApplicationFolder)'
     ArtifactName: Application
+    publishLocation: Container
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(EFMigrationFolder)'
+    ArtifactName: EFMigrations
     publishLocation: Container
