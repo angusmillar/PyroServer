@@ -79,5 +79,5 @@ steps:
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/Application'
-    ArtifactName: 'Application'
-    publishLocation: 'Container
+    ArtifactName: Application
+    publishLocation: Container
