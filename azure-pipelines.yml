@@ -15,10 +15,28 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- script: echo $(tests)
+- script: echo $(Build.SourcesDirectory)
+  displayname: 'Display Variables'
+
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK'
   inputs:
     version: 8.x
+
+- task: DotNetCoreCLI@2
+  displayName: New Manifest for tool
+  inputs:
+    command: custom
+    custom: new 
+    arguments: tool-manifest
+
+- task: DotNetCoreCLI@2
+  displayName: Install EF Tool
+  inputs:
+    command: custom
+    custom: tool 
+    arguments: install dotnet-ef
 
 - task: DotNetCoreCLI@2
   displayName: 'Build'
@@ -38,9 +56,16 @@ steps:
     projects: $(tests)    
 
 - task: PublishCodeCoverageResults@2
-  displayName: 'Publish code coverage report'
+  displayName: 'Test Coverage report'
   inputs:
     summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+
+- task: DotNetCoreCLI@2
+  displayName: Create SQL Scripts
+  inputs:
+    command: custom
+    custom: 'ef'
+    arguments: migrations bundle --self-contained -r linux-x64 --project $(Build.SourcesDirectory)/src/Abm.Pyro.Repository/Abm.Pyro.Repository.csproj --context PyroDbContext
 
 - task: DotNetCoreCLI@2
   displayName: Publish
