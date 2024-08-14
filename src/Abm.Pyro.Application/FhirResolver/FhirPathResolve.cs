@@ -14,7 +14,8 @@ public class FhirPathResolve(IFhirUriFactory fhirUriFactory) : IFhirPathResolve
         Type? type = ModelInfo.GetTypeForFhirType(fhirUri.ResourceName);
         if (type is null)
         {
-          throw new ApplicationException($"ResourceName of '{fhirUri.ResourceName}' can not be converted to a FHIR Type.");
+          return null;
+          //throw new ApplicationException($"ResourceName of '{fhirUri.ResourceName}' can not be converted to a FHIR Type.");
         }
         if (defaultModelFactory.Create(type) is DomainResource domainResource)
         {
