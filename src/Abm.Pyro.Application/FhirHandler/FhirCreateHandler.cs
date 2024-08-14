@@ -7,6 +7,7 @@ using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Application.Validation;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
@@ -23,7 +24,8 @@ public class FhirCreateHandler(
     IFhirResourceTypeSupport fhirResourceTypeSupport,
     IFhirResponseHttpHeaderSupport fhirResponseHttpHeaderSupport,
     IIndexer indexer,
-    IPreferredReturnTypeService preferredReturnTypeService)
+    IPreferredReturnTypeService preferredReturnTypeService,
+    IServiceBaseUrlCache serviceBaseUrlCache)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
     public Task<FhirOptionalResourceResponse> Handle(string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
@@ -80,13 +82,16 @@ public class FhirCreateHandler(
         );
 
         resourceStore = await resourceStoreAdd.Add(resourceStore);
-
+        ServiceBaseUrl serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
+        
         var responseHeaders = fhirResponseHttpHeaderSupport.ForCreate(
             resourceType: resourceStore.ResourceType,
             lastUpdatedUtc: resourceStore.LastUpdatedUtc,
             resourceId: resourceStore.ResourceId,
             versionId: resourceStore.VersionId,
-            requestTimeStamp: request.TimeStamp);
+            requestTimeStamp: request.TimeStamp,
+            requestSchema: request.RequestSchema,
+            serviceBaseUrl: serviceBaseUrl.Url);
 
         return preferredReturnTypeService.GetResponse(HttpStatusCode.Created, request.Resource, resourceStore.VersionId, request.Headers, responseHeaders);
     }

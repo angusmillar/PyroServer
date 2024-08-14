@@ -16,13 +16,20 @@ public class FhirResponseHttpHeaderSupport : IFhirResponseHttpHeaderSupport
     responseHeaders[HttpHeaderName.XCorrelationId] = xCorrelationId;
   }
   
-  public Dictionary<string, StringValues> ForCreate(FhirResourceTypeId resourceType, DateTime lastUpdatedUtc, string resourceId, int versionId, DateTimeOffset requestTimeStamp)
+  public Dictionary<string, StringValues> ForCreate(
+    FhirResourceTypeId resourceType, 
+    DateTime lastUpdatedUtc, 
+    string resourceId, 
+    int versionId, 
+    DateTimeOffset requestTimeStamp, 
+    string requestSchema, 
+    string serviceBaseUrl)
   {
     var headers = new Dictionary<string, StringValues>();
     AddDate(headers, requestTimeStamp);
     AddLastModified(headers, lastUpdatedUtc);
     AddETag(headers, versionId);
-    AddLocation(headers, resourceType, resourceId, versionId);
+    AddLocation(headers, requestSchema, serviceBaseUrl, resourceType, resourceId, versionId);
     return headers;
   }
 
@@ -32,11 +39,6 @@ public class FhirResponseHttpHeaderSupport : IFhirResponseHttpHeaderSupport
     AddDate(headers, requestTimeStamp);
     AddLastModified(headers, lastUpdatedUtc);
     AddETag(headers, versionId);
-    //Only add the Location header if the update performed a create, which would mean the version would be equal to 1 
-    if (versionId == 1)
-    {
-      AddLocation(headers, resourceType, resourceId, versionId);
-    }
     return headers;
   }
 
@@ -77,9 +79,9 @@ public class FhirResponseHttpHeaderSupport : IFhirResponseHttpHeaderSupport
     headers.Add(HttpHeaderName.ETag, new StringValues(StringSupport.GetEtag(versionId)));
   }
 
-  private void AddLocation(Dictionary<string, StringValues> headers, FhirResourceTypeId resourceType, string resourceId, int versionId)
+  private void AddLocation(Dictionary<string, StringValues> headers, string requestSchema, string serviceBaseUrl, FhirResourceTypeId resourceType, string resourceId, int versionId)
   {
-    headers.Add(HttpHeaderName.Location, $"{resourceType.ToString()}/{resourceId}/_history/{versionId.ToString()}");
+    headers.Add(HttpHeaderName.Location, $"{requestSchema}://{serviceBaseUrl}/{resourceType.ToString()}/{resourceId}/_history/{versionId.ToString()}");
   }
   
   private void AddDate(Dictionary<string, StringValues> headers, DateTimeOffset requestTimeStamp)
