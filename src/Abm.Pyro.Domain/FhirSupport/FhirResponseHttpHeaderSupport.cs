@@ -33,7 +33,7 @@ public class FhirResponseHttpHeaderSupport : IFhirResponseHttpHeaderSupport
     return headers;
   }
 
-  public Dictionary<string, StringValues> ForUpdate(FhirResourceTypeId resourceType, DateTime lastUpdatedUtc, string resourceId, int versionId, DateTimeOffset requestTimeStamp)
+  public Dictionary<string, StringValues> ForUpdate(DateTime lastUpdatedUtc, int versionId, DateTimeOffset requestTimeStamp)
   {
     var headers = new Dictionary<string, StringValues>();
     AddDate(headers, requestTimeStamp);

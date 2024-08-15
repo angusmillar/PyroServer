@@ -80,7 +80,7 @@ public class FhirCreateHandler(
             indexUriList: indexerOutcome.UriIndexList,
             rowVersion: 0
         );
-
+  
         resourceStore = await resourceStoreAdd.Add(resourceStore);
         ServiceBaseUrl serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
         

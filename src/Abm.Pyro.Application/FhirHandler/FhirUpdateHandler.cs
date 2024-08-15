@@ -119,9 +119,7 @@ public class FhirUpdateHandler(
     updatedResourceStore = await resourceStoreAdd.Add(updatedResourceStore);
     
     var responseHeaders = fhirResponseHttpHeaderSupport.ForUpdate(
-      resourceType: updatedResourceStore.ResourceType,
       lastUpdatedUtc: updatedResourceStore.LastUpdatedUtc,
-      resourceId: updatedResourceStore.ResourceId,
       versionId: updatedResourceStore.VersionId,
       requestTimeStamp: request.TimeStamp);
 

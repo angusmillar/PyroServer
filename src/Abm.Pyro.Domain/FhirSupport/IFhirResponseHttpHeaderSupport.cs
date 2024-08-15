@@ -20,9 +20,7 @@ public interface IFhirResponseHttpHeaderSupport
         string requestSchema, 
         string serviceBaseUrl);
     Dictionary<string, StringValues> ForUpdate(
-        FhirResourceTypeId resourceType, 
         DateTime lastUpdatedUtc, 
-        string resourceId, 
         int versionId, 
         DateTimeOffset requestTimeStamp);
     Dictionary<string, StringValues> ForDelete(

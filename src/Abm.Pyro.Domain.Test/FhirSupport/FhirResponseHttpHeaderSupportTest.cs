@@ -68,6 +68,8 @@ public class FhirResponseHttpHeaderSupportTest
             string resourceId = "resource-id";
             int versionId = 5;
             DateTimeOffset requestTimeStamp = DateTimeOffset.Now;
+            string requestSchema = "https";
+            string serviceBaseUrl = "thisFhirServer.com.au/fhir";
 
             //Act
             Dictionary<string, StringValues> headers = target.ForCreate(
@@ -75,13 +77,15 @@ public class FhirResponseHttpHeaderSupportTest
                 lastUpdatedUtc: resourceLastUpdatedDateTimeUtc,
                 resourceId: resourceId,
                 versionId: versionId,
-                requestTimeStamp: requestTimeStamp);
+                requestTimeStamp: requestTimeStamp,
+                requestSchema: requestSchema,
+                serviceBaseUrl: serviceBaseUrl);
 
             //Assert
             Assert.Equal(requestTimeStamp.ToString("r"), headers[HttpHeaderName.Date]);
             Assert.Equal(resourceLastUpdatedDateTimeUtc.ToString("r"), headers[HttpHeaderName.LastModified]);
             Assert.Equal(StringSupport.GetEtag(versionId), headers[HttpHeaderName.ETag]);
-            Assert.Equal($"{resourceType.ToString()}/{resourceId}/_history/{versionId.ToString()}", headers[HttpHeaderName.Location]);
+            Assert.Equal($"{requestSchema}://{serviceBaseUrl}/{resourceType.ToString()}/{resourceId}/_history/{versionId.ToString()}", headers[HttpHeaderName.Location]);
             Assert.Equal(4, headers.Count);
         }
     }
@@ -93,18 +97,14 @@ public class FhirResponseHttpHeaderSupportTest
         {
             //Arrange
             var target = new FhirResponseHttpHeaderSupport();
-
-            FhirResourceTypeId resourceType = FhirResourceTypeId.Account;
+            
             DateTime resourceLastUpdatedDateTimeUtc = DateTime.Now;
-            string resourceId = "resource-id";
             int versionId = 5;
             DateTimeOffset requestTimeStamp = DateTimeOffset.Now;
 
             //Act
             Dictionary<string, StringValues> headers = target.ForUpdate(
-                resourceType: resourceType,
                 lastUpdatedUtc: resourceLastUpdatedDateTimeUtc,
-                resourceId: resourceId,
                 versionId: versionId,
                 requestTimeStamp: requestTimeStamp);
 
@@ -121,18 +121,14 @@ public class FhirResponseHttpHeaderSupportTest
         {
             //Arrange
             var target = new FhirResponseHttpHeaderSupport();
-
-            FhirResourceTypeId resourceType = FhirResourceTypeId.Account;
+            
             DateTime resourceLastUpdatedDateTimeUtc = DateTime.Now;
-            string resourceId = "resource-id";
             int versionId = 1;
             DateTimeOffset requestTimeStamp = DateTimeOffset.Now;
 
             //Act
             Dictionary<string, StringValues> headers = target.ForUpdate(
-                resourceType: resourceType,
                 lastUpdatedUtc: resourceLastUpdatedDateTimeUtc,
-                resourceId: resourceId,
                 versionId: versionId,
                 requestTimeStamp: requestTimeStamp);
 
@@ -140,8 +136,7 @@ public class FhirResponseHttpHeaderSupportTest
             Assert.Equal(requestTimeStamp.ToString("r"), headers[HttpHeaderName.Date]);
             Assert.Equal(resourceLastUpdatedDateTimeUtc.ToString("r"), headers[HttpHeaderName.LastModified]);
             Assert.Equal(StringSupport.GetEtag(versionId), headers[HttpHeaderName.ETag]);
-            Assert.Equal($"{resourceType.ToString()}/{resourceId}/_history/{versionId.ToString()}", headers[HttpHeaderName.Location]);
-            Assert.Equal(4, headers.Count);
+            Assert.Equal(3, headers.Count);
         }
     }
 

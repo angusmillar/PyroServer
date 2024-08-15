@@ -4,8 +4,6 @@ using System.Net;
 using System.Threading;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
-using Hl7.Fhir.Utility;
-using MediatR;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Abm.Pyro.Application.DependencyFactory;
@@ -13,18 +11,13 @@ using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.Indexing;
-using Abm.Pyro.Application.SearchQuery;
-using Abm.Pyro.Application.Validation;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.FhirQuery;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
-using Abm.Pyro.Domain.SearchQuery;
-using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 using Xunit;
-using ResourceType = Hl7.Fhir.Model.ResourceType;
 using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.Test.FhirHandler;
@@ -38,7 +31,7 @@ public class FhirCreateHandlerTest
     private readonly IFhirResponseHttpHeaderSupport FhirResponseHttpHeaderSupport;
     private readonly Mock<IIndexer> IndexerMock;
     private readonly Mock<IPreferredReturnTypeService> PreferredReturnTypeServiceMock;
-
+    private readonly Mock<IServiceBaseUrlCache> ServiceBaseUrlCacheMock;
 
     private readonly DateTime Now;
 
@@ -123,6 +116,12 @@ public class FhirCreateHandlerTest
                     It.IsAny<Dictionary<string, StringValues>>(),
                     It.IsAny<Dictionary<string, StringValues>>()))
             .Returns(fhirOptionalResourceResponse);
+        
+        ServiceBaseUrlCacheMock = new Mock<IServiceBaseUrlCache>();
+        ServiceBaseUrlCacheMock
+            .Setup(x =>
+                x.GetRequiredPrimaryAsync())
+            .ReturnsAsync(new ServiceBaseUrl(serviceBaseUrlId: 1, url: "https://thisFhirServer.com.au/fhir", isPrimary: true));
     }
 
 
@@ -156,7 +155,8 @@ public class FhirCreateHandlerTest
                 FhirResourceTypeSupport,
                 FhirResponseHttpHeaderSupport,
                 IndexerMock.Object,
-                PreferredReturnTypeServiceMock.Object
+                PreferredReturnTypeServiceMock.Object,
+                ServiceBaseUrlCacheMock.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
