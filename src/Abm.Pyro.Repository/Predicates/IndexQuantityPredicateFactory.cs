@@ -113,16 +113,26 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
 
   private Expression<Func<IndexQuantity, bool>> EqualTo(SearchQueryQuantityValue quantityValue)
   {
-    var predicate = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
     if (quantityValue.Value.HasValue && quantityValue.Scale.HasValue)
     {
-      if (quantityValue.Code is null)
+      var predicateSystemCodeOrCodeUnitEqualTo = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
+      if (quantityValue.Code is not null)
       {
-        predicate = predicate.And(QuantityEqualTo(quantityValue.Value.Value, quantityValue.Scale.Value));
-        return predicate;
+        predicateSystemCodeOrCodeUnitEqualTo = predicateSystemCodeOrCodeUnitEqualTo.And(SystemCodeOrCodeUnitEqualTo(quantityValue.System, quantityValue.Code));  
       }
-      predicate = predicate.And(SystemCodeOrCodeUnitEqualTo(quantityValue.System, quantityValue.Code));
-      predicate = predicate.And(QuantityEqualTo(quantityValue.Value.Value, quantityValue.Scale.Value));
+      
+      var quantityRangeEqualToPredicate = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
+      quantityRangeEqualToPredicate = quantityRangeEqualToPredicate.And(predicateSystemCodeOrCodeUnitEqualTo);
+      quantityRangeEqualToPredicate = quantityRangeEqualToPredicate.And(QuantityRangeEqualTo(quantityValue.Value.Value));
+      
+      var quantityEqualTo = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
+      quantityEqualTo = quantityEqualTo.And(predicateSystemCodeOrCodeUnitEqualTo);
+      quantityEqualTo = quantityEqualTo.And(QuantityEqualTo(quantityValue.Value.Value, quantityValue.Scale.Value));
+
+      var predicate = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
+      predicate = predicate.Or(quantityRangeEqualToPredicate);
+      predicate = predicate.Or(quantityEqualTo);
+      
       return predicate;
     }
     throw new ArgumentNullException($"Internal Server Error: The {nameof(quantityValue)} property of {nameof(quantityValue.Value)} was found to be null.");
@@ -236,6 +246,22 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
     return x => x.SearchParameterStoreId != searchParameterId;
   }
 
+  private Expression<Func<IndexQuantity, bool>> QuantityRangeEqualTo(decimal midValue)
+  {
+    //PredicateOne: x => x.Quantity != null & x.QuantityHigh != null && x.QuantityHigh >= midValue && x.Quantity <= midValue && x.ComparatorHigh == null && x.Comparator == null 
+    var predicateMain = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
+    
+    predicateMain = predicateMain.And( IndexDecimalIsARange());
+    
+    predicateMain = predicateMain.And(IndexDecimalHigh_IsHigherThanOrEqualTo(midValue));
+    predicateMain = predicateMain.And(IndexDecimal_IsLowerThanOrEqualTo(midValue));
+    
+    predicateMain = predicateMain.And(ComparatorHighIsNull());
+    predicateMain = predicateMain.And(ComparatorIsNull());
+    
+    return predicateMain;
+  }
+  
   private Expression<Func<IndexQuantity, bool>> QuantityEqualTo(decimal midValue, int scale)
   {
     var predicateMain = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
@@ -276,6 +302,7 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
 
     return predicateMain;
   }
+  
   private Expression<Func<IndexQuantity, bool>> QuantityNotEqualTo(decimal midValue, int scale)
   {
     var predicateMain = LinqKit.PredicateBuilder.New<IndexQuantity>(true);
@@ -465,12 +492,38 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
   {
     return x => x.Comparator == null;
   }
-
+  
+  private Expression<Func<IndexQuantity, bool>> ComparatorHighIsNull()
+  {
+    return x => x.ComparatorHigh == null;
+  }
+  
   private Expression<Func<IndexQuantity, bool>> ComparatorIsEqualTo(QuantityComparator? quantityComparator)
   {
     return x => x.Comparator == quantityComparator;
   }
 
+  
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalHighIsNull()
+  {
+    return x => x.QuantityHigh == null;
+  }
+  
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsARange()
+  {
+    return x => x.Quantity != null & x.QuantityHigh != null;
+  }
+  
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNotARange()
+  {
+    return x => x.Quantity != null & x.QuantityHigh != null;
+  }
+  
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNull()
+  {
+    return x => x.Quantity == null;
+  }
+  
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsHigherThanOrEqualTo(decimal value)
   {
     return x => x.Quantity >= value;
@@ -489,5 +542,25 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsLowerThan(decimal value)
   {
     return x => x.Quantity < value;
+  }
+  
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalHigh_IsHigherThanOrEqualTo(decimal value)
+  {
+    return x => x.QuantityHigh >= value;
+  }
+
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalHigh_IsHigherThan(decimal value)
+  {
+    return x => x.QuantityHigh > value;
+  }
+
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalHigh_IsLowerThanOrEqualTo(decimal value)
+  {
+    return x => x.QuantityHigh <= value;
+  }
+
+  private Expression<Func<IndexQuantity, bool>> IndexDecimalHigh_IsLowerThan(decimal value)
+  {
+    return x => x.QuantityHigh < value;
   }
 }
