@@ -473,12 +473,12 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
 
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsHigherThanOrEqualTo(decimal value)
   {
-    return x => x.QuantityHigh >= value;
+    return x => x.Quantity >= value;
   }
 
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsHigherThan(decimal value)
   {
-    return x => x.QuantityHigh > value;
+    return x => x.Quantity > value;
   }
 
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsLowerThanOrEqualTo(decimal value)
