@@ -8,7 +8,7 @@ using Abm.Pyro.Domain.Support;
 
 namespace Abm.Pyro.Api.Controllers;
 
-[Route("fhir")]
+[Route("")]
 [ApiController]
 public class FhirController(
   IMediator mediator,
