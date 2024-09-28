@@ -1,0 +1,15 @@
+
+https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
+Useful to observe the EF Core DbContext as in use
+It can also observe many other thinks about your application like (CPU, Memory, API Requests and more)
+
+Install DotNet Counters from the command line:
+> dotnet tool install -g dotnet-counters
+
+Run the Counters against a ruing application by connection to its Process ID.
+You can get the running application's Process ID (PID) from Windows Mask Manger e.g (Abm.Pyro.Api)
+
+> dotnet counters monitor Microsoft.EntityFrameworkCore -p [Process ID]
+
+
+

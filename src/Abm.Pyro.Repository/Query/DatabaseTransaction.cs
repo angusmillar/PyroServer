@@ -1,45 +1,44 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 using Abm.Pyro.Domain.Query;
 
 namespace Abm.Pyro.Repository.Query;
 
-public class DatabaseTransaction(PyroDbContext context) : IDatabaseTransaction, IDisposable, IAsyncDisposable
+public class DatabaseTransaction(PyroDbContext context) : IDatabaseTransaction, IDisposable
 {
-    private IDbContextTransaction? DbContextTransaction;
+    private IDbContextTransaction? _dbContextTransaction;
 
     public async Task BeginTransaction()
     {
-        DbContextTransaction = await context.Database.BeginTransactionAsync();
+        _dbContextTransaction = await context.Database.BeginTransactionAsync();
     }
 
     public async Task Commit()
     {
-        if (DbContextTransaction is null)
+        if (_dbContextTransaction is null)
         {
-            throw new NullReferenceException(nameof(DbContextTransaction));
+            throw new NullReferenceException(nameof(_dbContextTransaction));
         }
-        await DbContextTransaction.CommitAsync();
+        await _dbContextTransaction.CommitAsync();
     }
 
     public async Task RollBack()
     {
-        if (DbContextTransaction is null)
+        if (_dbContextTransaction is null)
         {
-            throw new NullReferenceException(nameof(DbContextTransaction));
+            throw new NullReferenceException(nameof(_dbContextTransaction));
         }
-        await DbContextTransaction.RollbackAsync();
+        await _dbContextTransaction.RollbackAsync();
     }
 
     public void Dispose()
     {
         context.Dispose();
-        DbContextTransaction?.Dispose();
+        _dbContextTransaction?.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
         await context.DisposeAsync();
-        if (DbContextTransaction != null) await DbContextTransaction.DisposeAsync();
+        if (_dbContextTransaction != null) await _dbContextTransaction.DisposeAsync();
     }
 }
