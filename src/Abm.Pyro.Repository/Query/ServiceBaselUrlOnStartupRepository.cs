@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Abm.Pyro.Repository.Query;
 
 public class ServiceBaselUrlOnStartupRepository(
-    IPyroDbContextFactory pyroDbContextFactory) : IServiceBaseUrlOnStartupRepository
+    IPyroDbContextFactory pyroDbContextFactory) : IServiceBaseUrlOnStartupRepository, IDisposable, IAsyncDisposable
 {
     private PyroDbContext? _context;
 
@@ -86,5 +86,18 @@ public class ServiceBaselUrlOnStartupRepository(
         _context.Add(serviceBaseUrl);
         
         return serviceBaseUrl;
+    }
+
+    public void Dispose()
+    {
+        _context?.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_context != null)
+        {
+            await _context.DisposeAsync();
+        }
     }
 }
