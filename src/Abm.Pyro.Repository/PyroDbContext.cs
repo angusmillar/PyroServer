@@ -36,8 +36,11 @@ namespace Abm.Pyro.Repository;
       modelBuilder.Entity<ResourceStore>().HasKey(x => x.ResourceStoreId);
       modelBuilder.Entity<ResourceStore>().HasIndex(x => new { x.ResourceId, x.ResourceType, x.VersionId }).IsUnique();
 
-      modelBuilder.Entity<ResourceStore>().Property(x => x.ResourceId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.VersionId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
+      modelBuilder.Entity<ResourceStore>().Property(x => x.ResourceId)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength)
+          .UseCollation(RepositoryModelConstraints.CaseSensitive);
+      modelBuilder.Entity<ResourceStore>().Property(x => x.VersionId)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
       modelBuilder.Entity<ResourceStore>().Property(x => x.ResourceType);
       modelBuilder.Entity<ResourceStore>().Property(x => x.IsCurrent);
       modelBuilder.Entity<ResourceStore>().Property(x => x.IsDeleted);
