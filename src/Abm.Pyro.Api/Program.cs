@@ -243,12 +243,6 @@ try
     builder.Services.AddScoped<IServiceBaseUrlGetByUri, ServiceBaseUrlGetByUri>();
     builder.Services.AddScoped<IServiceBaseUrlGetPrimary, ServiceBaseUrlGetPrimary>();
     
-    builder.Services.AddScoped<IServiceBaseUrlGetPrimaryOnStartup, ServiceBaseUrlGetPrimaryOnStartup>();
-    builder.Services.AddScoped<IServiceBaseUrlAddByUriOnStartup, ServiceBaseUrlAddByUriOnStartup>();
-    builder.Services.AddScoped<IServiceBaseUrlUpdateOnStartup, ServiceBaseUrlUpdateOnStartup>();
-    builder.Services.AddScoped<IServiceBaseUrlGetByUriOnStartup, ServiceBaseUrlGetByUriOnStartup>();
-    
-
     // Predicate Factories -------------------------------------
     builder.Services.AddScoped<ISearchPredicateFactory, SearchSearchPredicateFactory>();
     builder.Services.AddScoped<IChainedPredicateFactory, ChainedPredicateFactory>();
@@ -265,7 +259,11 @@ try
 
     builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();    
     builder.Services.AddScoped<ITenantService, TenantService>();
-    builder.Services.AddScoped<IPyroDbContextFactory, PyroDbContextFactory>();
+    
+    
+    builder.Services.AddTransient<IPyroDbContextFactory, PyroDbContextFactory>();
+    builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
+    
     
 
     // Database Setup ----------------------

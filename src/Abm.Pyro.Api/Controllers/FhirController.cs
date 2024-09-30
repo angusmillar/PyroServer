@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
-using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Support;
 
 namespace Abm.Pyro.Api.Controllers;

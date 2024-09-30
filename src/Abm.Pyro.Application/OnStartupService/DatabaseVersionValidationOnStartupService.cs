@@ -21,7 +21,7 @@ public class DatabaseVersionValidationOnStartupService(
 
     private async Task ValidateDataBaseVersionForTenant(Domain.Configuration.Tenant tenant)
     {
-        string[] pendingDbMigrationsList = await databasePendingMigrations.Get();
+        string[] pendingDbMigrationsList = await databasePendingMigrations.Get(tenant);
         if (pendingDbMigrationsList.Length == 0)
         {
             logger.LogInformation("Tenant {Tenant} database version valid", 

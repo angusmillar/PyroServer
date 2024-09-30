@@ -14,11 +14,13 @@ public class FhirServiceBaseUrlManagementOnStartupService(
     ILogger<FhirServiceBaseUrlManagementOnStartupService> logger,
     IOptions<ServiceBaseUrlSettings> serviceBaseUrlSettings,
     //IServiceBaseUrlCache serviceBaseUrlCache,
-    IServiceBaseUrlGetPrimaryOnStartup serviceBaseUrlGetPrimaryOnStartup,
     
-    IServiceBaseUrlAddByUriOnStartup serviceBaseUrlAddByUriOnStartup,
-    IServiceBaseUrlUpdateOnStartup serviceBaseUrlUpdateOnStartup,
-    IServiceBaseUrlGetByUriOnStartup serviceBaseUrlGetByUriOnStartup,
+    // IServiceBaseUrlGetPrimaryOnStartup serviceBaseUrlGetPrimaryOnStartup,
+    // IServiceBaseUrlAddByUriOnStartup serviceBaseUrlAddByUriOnStartup,
+    // IServiceBaseUrlUpdateOnStartup serviceBaseUrlUpdateOnStartup,
+    // IServiceBaseUrlGetByUriOnStartup serviceBaseUrlGetByUriOnStartup,
+    
+    IServiceBaseUrlOnStartupRepository serviceBaseUrlOnStartupRepository,
     
     //IDatabaseTransactionFactory databaseTransactionFactory,
     ITenantService tenantService)
@@ -29,14 +31,19 @@ public class FhirServiceBaseUrlManagementOnStartupService(
         
         foreach (var tenant in tenantService.GetTenantList())
         {
-            tenantService.SetScopedTenant(tenant);
+            serviceBaseUrlOnStartupRepository.StartUnitOfWork(tenant);
+            
+            //tenantService.SetScopedTenant(tenant);
             await ProcessTenantFhirServiceBaseUrl(tenant);
+            
+            await serviceBaseUrlOnStartupRepository.DisposeDbContextAsync();
+
         }
     }
 
     private async Task ProcessTenantFhirServiceBaseUrl(Domain.Configuration.Tenant tenant)
     {
-        ServiceBaseUrl? cachedDatabaseServiceBaseUrl = await serviceBaseUrlGetPrimaryOnStartup.Get();
+        ServiceBaseUrl? cachedDatabaseServiceBaseUrl = await serviceBaseUrlOnStartupRepository.Get();
         Uri appSettingsServiceBaseUrl = new Uri(serviceBaseUrlSettings.Value.Url, tenant.GetUrlCode());
 
         if (cachedDatabaseServiceBaseUrl is not null && SystemsFhirServiceBaseUrlUnchanged())
@@ -53,8 +60,9 @@ public class FhirServiceBaseUrlManagementOnStartupService(
             if (cachedDatabaseServiceBaseUrl is null)
             {
                 //First time start-up on empty database
-                await InitialisePrimaryServiceBaseUrl(appSettingsServiceBaseUrl);
+                InitialisePrimaryServiceBaseUrl(appSettingsServiceBaseUrl);
                 //await databaseTransaction.Commit();
+                await serviceBaseUrlOnStartupRepository.SaveChangesAsync();
                 //await RePrimePrimaryServiceBaseUrlCache();
                 logger.LogInformation("Tenant {Tenant} initialised FHIR Service Base URL for : {ServiceBaseUrl}",
                     tenant.DisplayName,
@@ -65,6 +73,7 @@ public class FhirServiceBaseUrlManagementOnStartupService(
             //The Service Base URL has been changed in appsettings.json so we must update the database's primary ServiceBaseURL to align.
             await UpdatePrimaryServiceBaseUrl(cachedDatabaseServiceBaseUrl, appSettingsServiceBaseUrl, tenant);
             //await databaseTransaction.Commit();
+            await serviceBaseUrlOnStartupRepository.SaveChangesAsync();
         }
         catch (Exception e)
         {
@@ -81,9 +90,9 @@ public class FhirServiceBaseUrlManagementOnStartupService(
         
     }
 
-    private async Task InitialisePrimaryServiceBaseUrl(Uri appSettingsServiceBaseUrl)
+    private void InitialisePrimaryServiceBaseUrl(Uri appSettingsServiceBaseUrl)
     {
-        await AddServiceBaseUrl(new ServiceBaseUrl(
+        AddServiceBaseUrl(new ServiceBaseUrl(
             serviceBaseUrlId: null,
             url: appSettingsServiceBaseUrl.FhirServiceBaseUrlFormattedString(),
             isPrimary: true));
@@ -96,15 +105,15 @@ public class FhirServiceBaseUrlManagementOnStartupService(
         try
         {
             //Update old database primary ServiceBaseUrl record to Primary = false and remove from cache
-            await UpdateOldPrimaryAsNotPrimary(cachedDatabaseServiceBaseUrl);
+            UpdateOldPrimaryAsNotPrimary(cachedDatabaseServiceBaseUrl);
             //await RemovePrimaryServiceBaseUrlFromCache();
 
             //Lookup the new primary URL as it may already be in the database as Primary = false
             string appSettingsServiceBaseUrlFormattedString = appSettingsServiceBaseUrl.FhirServiceBaseUrlFormattedString();
-            ServiceBaseUrl? existingDatabaseServiceBaseUrl = await serviceBaseUrlGetByUriOnStartup.Get(appSettingsServiceBaseUrlFormattedString);
+            ServiceBaseUrl? existingDatabaseServiceBaseUrl = await serviceBaseUrlOnStartupRepository.Get(appSettingsServiceBaseUrlFormattedString);
             if (existingDatabaseServiceBaseUrl is null)
             {
-                await AddServiceBaseUrl(new ServiceBaseUrl(
+                AddServiceBaseUrl(new ServiceBaseUrl(
                     serviceBaseUrlId: null,
                     url: appSettingsServiceBaseUrlFormattedString,
                     isPrimary: true));
@@ -119,7 +128,7 @@ public class FhirServiceBaseUrlManagementOnStartupService(
                 return;
             }
 
-            await UpdateExistingAsNewPrimaryServiceBaseUrl(existingDatabaseServiceBaseUrl);
+            UpdateExistingAsNewPrimaryServiceBaseUrl(existingDatabaseServiceBaseUrl);
             //await RePrimePrimaryServiceBaseUrlCache();
 
             logger.LogInformation("Tenant {Tenant} FHIR Service Base URL changed from {OldServiceBaseUrl} to {NewServiceBaseUrl}",
@@ -144,11 +153,11 @@ public class FhirServiceBaseUrlManagementOnStartupService(
     //     await serviceBaseUrlCache.GetPrimaryAsync();
     // }
 
-    private async Task AddServiceBaseUrl(ServiceBaseUrl serviceBaseUrl)
+    private void AddServiceBaseUrl(ServiceBaseUrl serviceBaseUrl)
     {
         try
         {
-            await serviceBaseUrlAddByUriOnStartup.Add(serviceBaseUrl);
+            serviceBaseUrlOnStartupRepository.Add(serviceBaseUrl);
         }
         catch (Exception e)
         {
@@ -159,12 +168,12 @@ public class FhirServiceBaseUrlManagementOnStartupService(
         }
     }
 
-    private async Task UpdateExistingAsNewPrimaryServiceBaseUrl(ServiceBaseUrl existingDatabaseServiceBaseUrl)
+    private void UpdateExistingAsNewPrimaryServiceBaseUrl(ServiceBaseUrl existingDatabaseServiceBaseUrl)
     {
         try
         {
-            existingDatabaseServiceBaseUrl.IsPrimary = true;
-            await serviceBaseUrlUpdateOnStartup.Update(existingDatabaseServiceBaseUrl);
+            existingDatabaseServiceBaseUrl.IsPrimary = true; 
+            serviceBaseUrlOnStartupRepository.Update(existingDatabaseServiceBaseUrl);
         }
         catch (Exception e)
         {
@@ -175,12 +184,12 @@ public class FhirServiceBaseUrlManagementOnStartupService(
         }
     }
 
-    private async Task UpdateOldPrimaryAsNotPrimary(ServiceBaseUrl cachedDatabaseServiceBaseUrl)
+    private void UpdateOldPrimaryAsNotPrimary(ServiceBaseUrl cachedDatabaseServiceBaseUrl)
     {
         try
         {
             cachedDatabaseServiceBaseUrl.IsPrimary = false;
-            await serviceBaseUrlUpdateOnStartup.Update(cachedDatabaseServiceBaseUrl);
+            serviceBaseUrlOnStartupRepository.Update(cachedDatabaseServiceBaseUrl);
         }
         catch (Exception e)
         {

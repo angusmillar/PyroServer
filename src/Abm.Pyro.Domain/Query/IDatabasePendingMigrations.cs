@@ -1,6 +1,8 @@
-﻿namespace Abm.Pyro.Domain.Query;
+﻿using Abm.Pyro.Domain.Configuration;
+
+namespace Abm.Pyro.Domain.Query;
 
 public interface IDatabasePendingMigrations
 {
-    Task<string[]> Get();
+    Task<string[]> Get(Tenant tenant);
 }
