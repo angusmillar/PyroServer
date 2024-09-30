@@ -11,7 +11,7 @@
 //File code generated using T4 Template found in the project: Abm.Pyro.CodeGeneration
 // Last Generated : <#= DateTime.Now.ToString(CultureInfo.CurrentCulture) #>
 <#
-    string sourceFileName = "SearchParameterSeed";
+    string sourceFileName =  "SearchParameterSeed";
 #>
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
@@ -52,7 +52,7 @@ public static class <#=sourceFileName#>
           chain: null,          
           componentList: new List<SearchParameterStoreComponent>(),
           json: <#=param.Json#>,
-          lastUpdated: nowUtc,          
+          lastUpdated: <#=param.LastUpdated#>,          
           rowVersion: 0
         ),        
 <#}#>                 

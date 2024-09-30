@@ -20,7 +20,8 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
       string multipleOr,
       string multipleAnd,
       string chain,
-      string json
+      string json,
+      string lastUpdated
     )
     {
       SearchParameterStoreId = searchParameterStoreId;
@@ -38,6 +39,7 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
       MultipleAnd = multipleAnd;
       Chain = chain;
       Json = json;
+      LastUpdated = lastUpdated;
     }
     public int SearchParameterStoreId { get; set; }
 
@@ -68,7 +70,9 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
     public string Chain { get; set; }
 
     public string Json { get; set; }
- 
+    
+    public string LastUpdated { get; set; }
+    
   }
 
 }

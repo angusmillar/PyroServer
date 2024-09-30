@@ -113,7 +113,9 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
             expression = $"\"{searchParameter.Expression}\"";
           }
 
-          string json = $"{ToJson(searchParameter).Replace(@"\", @"\\").Replace("\"", "\\\"")}"; 
+          string json = $"{ToJson(searchParameter).Replace(@"\", @"\\").Replace("\"", "\\\"")}";
+
+          string lastUpdated = "new DateTime(2024, 02, 18, 02, 30, 00, 000)";
           
           var param = new SearchParameterDto(
             searchParameterStoreId: searchParameterCounter,
@@ -130,7 +132,8 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
             multipleOr: multipleOr,
             multipleAnd: multipleAnd,
             chain: "null",
-            json: $"\"{json}\""
+            json: $"\"{json}\"",
+            lastUpdated: lastUpdated
           );
           
           SearchParameterDtoList.Add(param);

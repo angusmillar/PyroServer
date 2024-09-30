@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Repository.Conversion;
+using Abm.Pyro.Repository.EntityMapping;
 
 namespace Abm.Pyro.Repository;
 
@@ -29,29 +30,12 @@ namespace Abm.Pyro.Repository;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
       // EntityTypeConfiguration -----------------------------------------------------------
-      modelBuilder.UseCollation(RepositoryModelConstraints.CaseInsensitive);
+      //modelBuilder.UseCollation(RepositoryModelConstraints.CaseInsensitive);
       modelBuilder.ApplyConfiguration(new ResourceStoreJsonCompressionConversion());
       
-      // ResourceStore ---------------------------------------------------------------      
-      modelBuilder.Entity<ResourceStore>().HasKey(x => x.ResourceStoreId);
-      modelBuilder.Entity<ResourceStore>().HasIndex(x => new { x.ResourceId, x.ResourceType, x.VersionId }).IsUnique();
-
-      modelBuilder.Entity<ResourceStore>().Property(x => x.ResourceId)
-          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength)
-          .UseCollation(RepositoryModelConstraints.CaseSensitive);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.VersionId)
-          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.ResourceType);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.IsCurrent);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.IsDeleted);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.HttpVerb);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.Json);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.LastUpdatedUtc).HasPrecision(RepositoryModelConstraints.TimestampPrecision);
-      modelBuilder.Entity<ResourceStore>().Property(x => x.RowVersion).IsConcurrencyToken();
-
-      modelBuilder.Entity<ResourceStore>().HasMany(c => c.IndexStringList);
-      modelBuilder.Entity<ResourceStore>().HasMany(c => c.IndexReferenceList);
-      modelBuilder.Entity<ResourceStore>().HasMany(c => c.IndexDateTimeList);
+      //Entity Configurations
+      modelBuilder.ApplyConfiguration(new ResourceStoreMapping());
+      
       
       // IndexString ---------------------------------------------------------------      
       modelBuilder.Entity<IndexString>().HasKey(x => x.IndexStringId);
@@ -77,9 +61,13 @@ namespace Abm.Pyro.Repository;
       modelBuilder.Entity<IndexReference>().HasIndex(x => x.VersionId);
       modelBuilder.Entity<IndexReference>().HasIndex(x => x.CanonicalVersionId);
 
-      modelBuilder.Entity<IndexReference>().Property(x => x.ResourceId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
-      modelBuilder.Entity<IndexReference>().Property(x => x.VersionId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
-      modelBuilder.Entity<IndexReference>().Property(x => x.CanonicalVersionId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
+      modelBuilder.Entity<IndexReference>().Property(x => x.ResourceId)
+          .UseCollation(RepositoryModelConstraints.CaseSensitive)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
+      modelBuilder.Entity<IndexReference>().Property(x => x.VersionId)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
+      modelBuilder.Entity<IndexReference>().Property(x => x.CanonicalVersionId)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
       
       modelBuilder.Entity<IndexReference>()
                   .HasOne<ResourceStore>(x => x.ResourceStore)
@@ -263,7 +251,9 @@ namespace Abm.Pyro.Repository;
       modelBuilder.Entity<SearchParameterStore>().HasIndex(x => x.VersionId);
       modelBuilder.Entity<SearchParameterStore>().HasIndex(x => x.Code);
       
-      modelBuilder.Entity<SearchParameterStore>().Property(x => x.ResourceId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
+      modelBuilder.Entity<SearchParameterStore>().Property(x => x.ResourceId)
+          .UseCollation(RepositoryModelConstraints.CaseSensitive)
+          .HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
       modelBuilder.Entity<SearchParameterStore>().Property(x => x.VersionId).HasMaxLength(RepositoryModelConstraints.FhirIdMaxLength);
       modelBuilder.Entity<SearchParameterStore>().Property(x => x.IsCurrent);
       modelBuilder.Entity<SearchParameterStore>().Property(x => x.IsDeleted);
