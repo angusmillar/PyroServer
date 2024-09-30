@@ -12,6 +12,7 @@ public interface IFhirTransactionPutService
         CancellationToken cancellationToken);
 
     Task ProcessPuts(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,

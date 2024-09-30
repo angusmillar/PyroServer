@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Abm.Pyro.Api.ContentFormatters;
+using Abm.Pyro.Api.DependencyInjectionFactory;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Api.Middleware;
 using Abm.Pyro.Application.AssemblyMarker;
@@ -36,12 +37,14 @@ using Steeltoe.Extensions.Configuration.ConfigServer;
 using Abm.Pyro.Application.HostedServiceSupport;
 using Abm.Pyro.Application.MetaDataService;
 using Abm.Pyro.Application.OnStartupService;
+using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Validation;
+using Abm.Pyro.Repository.DependencyFactory;
 using Serilog.Core;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File(path: @$"./application-start-.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(path: "./application-start-.log", rollingInterval: RollingInterval.Day)
     .CreateBootstrapLogger();
 
 try
@@ -95,7 +98,12 @@ try
         .Bind(builder.Configuration.GetSection(ResourceEndpointPolicySettings.SectionName))
         .ValidateDataAnnotations()
         .ValidateOnStart();
-
+    
+    builder.Services.AddOptions<TenantSettings>()
+        .Bind(builder.Configuration.GetSection(TenantSettings.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+    
     // On Application Startup Services ----------------------------------------------------------------
     builder.Services.AddAppStartUpService<DatabaseVersionValidationOnStartupService>();
     builder.Services.AddAppStartUpService<FhirServiceBaseUrlManagementOnStartupService>();
@@ -234,6 +242,12 @@ try
     builder.Services.AddScoped<IServiceBaseUrlUpdateSimultaneous, ServiceBaseUrlUpdateSimultaneous>();
     builder.Services.AddScoped<IServiceBaseUrlGetByUri, ServiceBaseUrlGetByUri>();
     builder.Services.AddScoped<IServiceBaseUrlGetPrimary, ServiceBaseUrlGetPrimary>();
+    
+    builder.Services.AddScoped<IServiceBaseUrlGetPrimaryOnStartup, ServiceBaseUrlGetPrimaryOnStartup>();
+    builder.Services.AddScoped<IServiceBaseUrlAddByUriOnStartup, ServiceBaseUrlAddByUriOnStartup>();
+    builder.Services.AddScoped<IServiceBaseUrlUpdateOnStartup, ServiceBaseUrlUpdateOnStartup>();
+    builder.Services.AddScoped<IServiceBaseUrlGetByUriOnStartup, ServiceBaseUrlGetByUriOnStartup>();
+    
 
     // Predicate Factories -------------------------------------
     builder.Services.AddScoped<ISearchPredicateFactory, SearchSearchPredicateFactory>();
@@ -249,18 +263,24 @@ try
     builder.Services.AddSingleton<IIndexUriPredicateFactory, IndexUriPredicateFactory>();
     builder.Services.AddSingleton<IIndexCompositePredicateFactory, IndexCompositePredicateFactory>();
 
+    builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();    
+    builder.Services.AddScoped<ITenantService, TenantService>();
+    builder.Services.AddScoped<IPyroDbContextFactory, PyroDbContextFactory>();
+    
+
     // Database Setup ----------------------
-    builder.Services.AddDbContext<PyroDbContext>(optionsBuilder =>
+    builder.Services.AddDbContext<PyroDbContext>((services, optionsBuilder) =>
         {
+            var tenantService = services.GetRequiredService<ITenantService>();
+            
             optionsBuilder
-                .UseSqlServer(builder.Configuration.GetConnectionString("PyroDb"))
+                .UseSqlServer(builder.Configuration.GetConnectionString(tenantService.GetScopedTenant().SqlConnectionStringCode))
                 .EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
         },
         contextLifetime: ServiceLifetime.Scoped, //Scope for the PyroDbContext.
-        optionsLifetime: ServiceLifetime.Singleton //Scope for the DbContextOptions configuration.   
+        optionsLifetime: ServiceLifetime.Scoped //Scope for the DbContextOptions configuration.   
     );
-
-
+    
     // CORS
     builder.Services.AddCors(options =>
     {
@@ -313,7 +333,7 @@ try
 
     var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+    // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();

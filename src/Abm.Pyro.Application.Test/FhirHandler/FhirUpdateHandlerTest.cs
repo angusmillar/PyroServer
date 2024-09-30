@@ -271,6 +271,7 @@ public class FhirUpdateHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -346,6 +347,7 @@ public class FhirUpdateHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -409,6 +411,7 @@ public class FhirUpdateHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()

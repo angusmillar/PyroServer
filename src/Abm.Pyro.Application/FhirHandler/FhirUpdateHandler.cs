@@ -37,6 +37,7 @@ public class FhirUpdateHandler(
 {
   private ResourceStoreUpdateProjection? PreviousResourceStore;
   public async Task<FhirOptionalResourceResponse> Handle(
+    string tenant,
     string resourceId, 
     Resource resource, 
     Dictionary<string, StringValues> headers, 
@@ -47,6 +48,7 @@ public class FhirUpdateHandler(
     
     return await Handle(new FhirUpdateRequest(
       RequestSchema: "http",
+      tenant: tenant,
       RequestPath: string.Empty,
       QueryString: null,
       Headers: headers,
@@ -75,6 +77,7 @@ public class FhirUpdateHandler(
     {
       return await fhirCreateHandler.Handle(new FhirCreateRequest(
         RequestSchema: request.RequestSchema,
+        tenant: request.tenant,
         RequestPath: request.RequestPath,
         QueryString: request.QueryString,
         Headers: request.Headers,

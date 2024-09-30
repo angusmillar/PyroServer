@@ -23,7 +23,7 @@ public class FhirReadHandler(
   IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport)
   : IRequestHandler<FhirReadRequest, FhirOptionalResourceResponse>, IFhirReadHandler
 {
-  public async Task<FhirOptionalResourceResponse> Handle(string resourceName, string resourceId, CancellationToken cancellationToken, Dictionary<string, StringValues>? headers = null)
+  public async Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken, Dictionary<string, StringValues>? headers = null)
   {
     if (headers is null)
     {
@@ -32,6 +32,7 @@ public class FhirReadHandler(
     
     return await Handle(new FhirReadRequest(
       RequestSchema: "http",
+      tenant: tenant,
       RequestPath: string.Empty,
       QueryString: null,
       Headers: headers,

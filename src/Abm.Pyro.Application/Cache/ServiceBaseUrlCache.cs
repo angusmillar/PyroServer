@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using Abm.Pyro.Application.Tenant;
 using Microsoft.Extensions.Caching.Distributed;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Exceptions;
@@ -10,40 +11,43 @@ namespace Abm.Pyro.Application.Cache;
 public class ServiceBaseUrlCache(
   IDistributedCache distributedCache,
   IServiceBaseUrlGetByUri serviceBaseUrlGetByUri,
-  IServiceBaseUrlGetPrimary serviceBaseUrlGetPrimary)
-  : BaseDistributedCache<ServiceBaseUrl>(distributedCache), IServiceBaseUrlCache
+  IServiceBaseUrlGetPrimary serviceBaseUrlGetPrimary,
+  ITenantService tenantService)
+  : BaseDistributedCache<ServiceBaseUrl>(distributedCache, tenantService), IServiceBaseUrlCache
 {
-  private ServiceBaseUrl? PrimaryServiceBaseUrl;
+  private readonly Dictionary<string, ServiceBaseUrl> _primaryServiceBaseUrlDictionary = new ();
 
   public async Task<ServiceBaseUrl?> GetPrimaryAsync()
   {
-    if (PrimaryServiceBaseUrl is not null)
+    if (_primaryServiceBaseUrlDictionary.TryGetValue(TenantService.GetScopedTenant().Code, out ServiceBaseUrl? primaryServiceBaseUrl ))
     {
-      return PrimaryServiceBaseUrl;
+      return primaryServiceBaseUrl;
     }
+    
     string primaryKey = GetPrimaryKey();
-    PrimaryServiceBaseUrl = await TryGetValueAsync(primaryKey);
-    if (PrimaryServiceBaseUrl is null)
+    primaryServiceBaseUrl = await TryGetValueAsync(primaryKey);
+    if (primaryServiceBaseUrl is null)
     {
-      PrimaryServiceBaseUrl = await serviceBaseUrlGetPrimary.Get();
-      if (PrimaryServiceBaseUrl is not null)
+      primaryServiceBaseUrl = await serviceBaseUrlGetPrimary.Get();
+      if (primaryServiceBaseUrl is not null)
       {
-        await SetAsync(primaryKey, PrimaryServiceBaseUrl);
+        await SetAsync(primaryKey, primaryServiceBaseUrl);
+        _primaryServiceBaseUrlDictionary.Add(TenantService.GetScopedTenant().Code, primaryServiceBaseUrl);
       }
     }
-    return PrimaryServiceBaseUrl;
+    return primaryServiceBaseUrl;
   }
   public async Task<ServiceBaseUrl> GetRequiredPrimaryAsync()
   {
-    if (PrimaryServiceBaseUrl is not null)
+    if (_primaryServiceBaseUrlDictionary.TryGetValue(TenantService.GetScopedTenant().Code, out ServiceBaseUrl? primaryServiceBaseUrl ))
     {
-      return PrimaryServiceBaseUrl;
+      return primaryServiceBaseUrl;
     }
     
-    PrimaryServiceBaseUrl = await GetPrimaryAsync();
-    if (PrimaryServiceBaseUrl is not null)
+    primaryServiceBaseUrl = await GetPrimaryAsync();
+    if (primaryServiceBaseUrl is not null)
     {
-      return PrimaryServiceBaseUrl;
+      return primaryServiceBaseUrl;
     }
     throw new FhirFatalException(
       HttpStatusCode.InternalServerError, "There was no primary service base URL found for the server. " +
@@ -77,7 +81,7 @@ public class ServiceBaseUrlCache(
 
   public async Task RemovePrimary()
   {
-    PrimaryServiceBaseUrl = null;
+    _primaryServiceBaseUrlDictionary.Remove(TenantService.GetScopedTenant().Code);
     await RemoveAsync(GetPrimaryKey());
   }
 

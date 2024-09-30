@@ -9,6 +9,7 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirConditionalCreateRequest(
         string RequestSchema,
+        string tenant,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers,
@@ -17,6 +18,7 @@ public record FhirConditionalCreateRequest(
         DateTimeOffset TimeStamp)
     : FhirResourceNameResourceRequestBase(
             RequestSchema, 
+            tenant,
             RequestPath,
             QueryString,
             Headers, 

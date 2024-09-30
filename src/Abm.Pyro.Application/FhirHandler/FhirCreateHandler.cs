@@ -28,10 +28,11 @@ public class FhirCreateHandler(
     IServiceBaseUrlCache serviceBaseUrlCache)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
-    public Task<FhirOptionalResourceResponse> Handle(string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return Handle(new FhirCreateRequest(
             RequestSchema: "http",
+            tenant: tenant,
             RequestPath: string.Empty,
             QueryString: null,
             Headers: headers,

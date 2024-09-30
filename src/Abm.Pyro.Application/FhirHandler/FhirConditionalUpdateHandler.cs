@@ -25,10 +25,11 @@ public class FhirConditionalUpdateHandler(
     IOperationOutcomeSupport operationOutcomeSupport)
     : IRequestHandler<FhirConditionalUpdateRequest, FhirOptionalResourceResponse>, IFhirConditionalUpdateHandler
 {
-    public async Task<FhirOptionalResourceResponse> Handle(string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return await Handle(new FhirConditionalUpdateRequest(
                 RequestSchema: "https",
+                tenant: tenant,
                 RequestPath: string.Empty,
                 QueryString: query,
                 Headers: headers,
@@ -90,6 +91,7 @@ public class FhirConditionalUpdateHandler(
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
                     RequestPath: request.RequestPath,
+                    tenant: request.tenant,
                     QueryString: request.QueryString,
                     Headers: request.Headers,
                     ResourceName: request.ResourceName,
@@ -104,6 +106,7 @@ public class FhirConditionalUpdateHandler(
             //No matches, no id provided: The server creates the resource.
             return await fhirCreateHandler.Handle(new FhirCreateRequest(
                 RequestSchema: request.RequestSchema,
+                tenant: request.tenant,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: request.Headers,
@@ -120,6 +123,7 @@ public class FhirConditionalUpdateHandler(
             
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
+                    tenant: request.tenant,
                     RequestPath: request.RequestPath,
                     QueryString: request.QueryString,
                     Headers: request.Headers,

@@ -8,12 +8,14 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirHistorySystemLevelRequest(
         string RequestSchema,
+        string tenant,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers,
         DateTimeOffset TimeStamp)
     :FhirRequestBase(
             RequestSchema, 
+            tenant,
             RequestPath,
             QueryString,
             Headers,

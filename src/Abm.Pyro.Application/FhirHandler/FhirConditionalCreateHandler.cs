@@ -100,6 +100,7 @@ public class FhirConditionalCreateHandler(
     {
         return await fhirCreateHandler.Handle(new FhirCreateRequest(
                 RequestSchema: request.RequestSchema,
+                tenant: request.tenant,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: new Dictionary<string, StringValues>(),

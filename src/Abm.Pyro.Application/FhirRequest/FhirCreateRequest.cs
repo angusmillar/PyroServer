@@ -9,6 +9,7 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirCreateRequest(
         string RequestSchema,
+        string tenant,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers, 
@@ -18,6 +19,7 @@ public record FhirCreateRequest(
         DateTimeOffset TimeStamp)
     : FhirResourceNameResourceNullableResourceIdRequestBase(
             RequestSchema, 
+            tenant,
             RequestPath,
             QueryString,
             Headers, 

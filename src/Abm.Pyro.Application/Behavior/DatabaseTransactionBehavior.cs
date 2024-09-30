@@ -20,7 +20,9 @@ public class DatabaseTransactionBehavior<TRequest, TResponse>(
     await databaseTransaction.BeginTransaction();
     try
     {
+      
       var response = await next();
+      
       if (CanCommitTransaction(response))
       {
         await databaseTransaction.Commit();

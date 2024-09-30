@@ -8,6 +8,7 @@ namespace Abm.Pyro.Application.FhirHandler;
 public interface IFhirUpdateHandler
 {
     Task<FhirOptionalResourceResponse> Handle(
+        string tenant,
         string resourceId, 
         Resource resource, 
         Dictionary<string, StringValues> headers, 

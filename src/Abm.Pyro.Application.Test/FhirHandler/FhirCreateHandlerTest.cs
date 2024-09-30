@@ -166,6 +166,7 @@ public class FhirCreateHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirCreateRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),

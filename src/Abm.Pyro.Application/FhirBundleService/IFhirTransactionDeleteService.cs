@@ -13,6 +13,7 @@ public interface IFhirTransactionDeleteService
         CancellationToken cancellationToken);
 
     Task ProcessDelete(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> bundleEntryTransactionMetaDataDictionary,

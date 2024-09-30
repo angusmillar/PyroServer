@@ -26,10 +26,11 @@ public class FhirSearchHandler(
   IFhirResponseHttpHeaderSupport fhirResponseHttpHeaderSupport)
   : IRequestHandler<FhirSearchRequest, FhirResourceResponse>, IFhirSearchHandler
 {
-  public async Task<FhirResourceResponse> Handle(string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+  public async Task<FhirResourceResponse> Handle(string tenant, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
   {
     return await Handle(new FhirSearchRequest(
       RequestSchema: "http",
+      tenant: tenant,
       RequestPath: string.Empty,
       QueryString: query,
       Headers: headers,

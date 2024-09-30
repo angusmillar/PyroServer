@@ -27,12 +27,13 @@ public class FhirDeleteHandler(
 
   private ResourceStoreUpdateProjection? PreviousResourceStore;
   
-  public async Task<FhirOptionalResourceResponse> Handle(string resourceName, string resourceId, CancellationToken cancellationToken, ResourceStoreUpdateProjection? previousResourceStore = null)
+  public async Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken, ResourceStoreUpdateProjection? previousResourceStore = null)
   {
     PreviousResourceStore = previousResourceStore;
     
     return await Handle(new FhirDeleteRequest(
       RequestSchema: "http",
+      tenant: tenant,
       RequestPath: string.Empty,
       QueryString: null,
       Headers: new Dictionary<string, StringValues>(),

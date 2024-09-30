@@ -42,6 +42,7 @@ public class FhirBatchOrTransactionHandler(
         
         return await fhirBundleService.Process(new FhirBundleRequest(
             RequestSchema: request.RequestSchema,
+            Tenant: request.tenant,
             RequestPath: request.RequestPath,
             QueryString: request.QueryString,
             Headers: request.Headers,

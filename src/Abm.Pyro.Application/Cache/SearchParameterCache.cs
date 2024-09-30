@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using Abm.Pyro.Application.Tenant;
+using Microsoft.Extensions.Caching.Distributed;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Projection;
@@ -6,8 +7,11 @@ using Abm.Pyro.Domain.Query;
 
 namespace Abm.Pyro.Application.Cache;
 
-public class SearchParameterCache(IDistributedCache distributedCache, ISearchParameterGetByBaseResourceType searchParameterGetByBaseResourceType)
-  : BaseDistributedCache<IEnumerable<SearchParameterProjection>>(distributedCache), ISearchParameterCache
+public class SearchParameterCache(
+  IDistributedCache distributedCache, 
+  ISearchParameterGetByBaseResourceType searchParameterGetByBaseResourceType,
+  ITenantService tenantService)
+  : BaseDistributedCache<IEnumerable<SearchParameterProjection>>(distributedCache, tenantService), ISearchParameterCache
 {
   public async Task<IEnumerable<SearchParameterProjection>> GetListByResourceType(FhirResourceTypeId resourceType)
   {

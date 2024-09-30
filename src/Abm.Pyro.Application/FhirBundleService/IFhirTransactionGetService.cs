@@ -6,6 +6,7 @@ namespace Abm.Pyro.Application.FhirBundleService;
 public interface IFhirTransactionGetService
 {
     Task<OperationOutcome?> ProcessGets(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         CancellationToken cancellationToken);

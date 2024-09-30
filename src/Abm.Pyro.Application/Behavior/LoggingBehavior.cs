@@ -51,6 +51,7 @@ public class LoggingBehavior<TRequest, TResponse>(
         logger.LogDebug("---------- Request ------------------------------------------------------------");
         DebugLogBaseRequestUrl(fhirRequestBase);
         DebugLogRequestId(requestId);
+        DebugLogTenant(fhirRequestBase.tenant);
         DebugLogHeaders(fhirRequestBase.Headers);
       }
     }
@@ -87,6 +88,11 @@ public class LoggingBehavior<TRequest, TResponse>(
   private void DebugLogBaseRequestUrl(FhirRequestBase fhirRequestBase)
   {
     logger.LogDebug("  {Verb} [Base]{RequestUri}", fhirRequestBase.HttpVerbId.GetCode(), $"{fhirRequestBase.RequestPath}{fhirRequestBase.QueryString.ToQueryHumanReadableQueryString()}");
+  }
+
+  private void DebugLogTenant(string tenantDisplay)
+  {
+    logger.LogDebug("  Tenant: {TenantDisplay}", tenantDisplay);
   }
 
   private void DebugLogRequestId(string requestId)

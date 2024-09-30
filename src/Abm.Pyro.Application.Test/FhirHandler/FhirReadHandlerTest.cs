@@ -114,6 +114,7 @@ public class FhirReadHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -160,6 +161,7 @@ public class FhirReadHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -218,6 +220,7 @@ public class FhirReadHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -256,6 +259,7 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -292,6 +296,7 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -326,6 +331,7 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -360,6 +366,7 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -396,6 +403,7 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()

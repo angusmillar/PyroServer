@@ -1,4 +1,5 @@
 ﻿using Abm.Pyro.Application.MetaDataService;
+using Abm.Pyro.Application.Tenant;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Microsoft.Extensions.Caching.Distributed;
@@ -11,8 +12,9 @@ public class MetaDataCache(
   IDistributedCache distributedCache,
   IMetaDataService metaDataService,
   IFhirSerializationSupport fhirSerializationSupport,
-  IFhirDeSerializationSupport fhirDeSerializationSupport)
-  : BaseDistributedCache<string>(distributedCache), IMetaDataCache
+  IFhirDeSerializationSupport fhirDeSerializationSupport,
+  ITenantService tenantService)
+  : BaseDistributedCache<string>(distributedCache, tenantService), IMetaDataCache
 {
   
   public async Task<CapabilityStatement> GetCapabilityStatement()

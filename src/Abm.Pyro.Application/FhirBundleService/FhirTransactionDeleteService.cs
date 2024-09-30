@@ -137,6 +137,7 @@ public class FhirTransactionDeleteService(
     }
 
     public async Task ProcessDelete(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> bundleEntryTransactionMetaDataDictionary,
@@ -161,6 +162,7 @@ public class FhirTransactionDeleteService(
             if (transactionResourceActionOutcome.ResourceUpdateInfo is not null)
             {
                 deleteResponse = await fhirDeleteHandler.Handle(
+                    tenant: tenant,
                     resourceName: transactionResourceActionOutcome.RequestUrl.ResourceName,
                     resourceId: transactionResourceActionOutcome.ResourceUpdateInfo
                         .NewResourceId, //Note that in this 'Conditional Delete' use case we set the found resource id in to the NewResourceId  
@@ -170,6 +172,7 @@ public class FhirTransactionDeleteService(
             else
             {
                 deleteResponse = await fhirDeleteHandler.Handle(
+                    tenant: tenant,
                     resourceName: transactionResourceActionOutcome.RequestUrl.ResourceName,
                     resourceId: transactionResourceActionOutcome.RequestUrl.ResourceId,
                     cancellationToken: cancellationToken,

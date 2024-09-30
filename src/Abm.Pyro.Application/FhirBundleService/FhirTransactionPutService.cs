@@ -141,6 +141,7 @@ public class FhirTransactionPutService(
     }
 
     public async Task ProcessPuts(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,
@@ -166,6 +167,7 @@ public class FhirTransactionPutService(
             putEntry.Resource.Id = transactionResourceActionOutcome.ResourceUpdateInfo.NewResourceId;
             
             FhirOptionalResourceResponse updateResponse = await fhirUpdateHandler.Handle(
+                tenant: tenant,
                 resourceId: putEntry.Resource.Id,
                 resource: putEntry.Resource,
                 headers: GetPutRequestHeaders(putEntry, requestHeaders),

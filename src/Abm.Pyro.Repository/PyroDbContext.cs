@@ -6,7 +6,7 @@ using Abm.Pyro.Repository.Conversion;
 
 namespace Abm.Pyro.Repository;
 
-  public class PyroDbContext(DbContextOptions<PyroDbContext> options) : DbContext(options)
+  public class PyroDbContext : DbContext
   {
       public DbSet<ResourceStore> ResourceStore => Set<ResourceStore>();
     public DbSet<IndexString> IndexString => Set<IndexString>();
@@ -14,6 +14,18 @@ namespace Abm.Pyro.Repository;
     public DbSet<SearchParameterStore> SearchParameterStore => Set<SearchParameterStore>();
     public DbSet<ServiceBaseUrl> ServiceBaseUrl => Set<ServiceBaseUrl>();
 
+
+    // public PyroDbContext(DbContextOptions contextOptions)
+    //     : base(contextOptions)
+    // {
+    // }
+
+    public PyroDbContext(DbContextOptions<PyroDbContext> options) 
+        : base(options)
+    {
+        
+    }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
       // EntityTypeConfiguration -----------------------------------------------------------

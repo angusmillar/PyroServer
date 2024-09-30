@@ -4,21 +4,23 @@ using Microsoft.AspNetCore.Mvc;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Support;
 
 namespace Abm.Pyro.Api.Controllers;
 
-[Route("")]
+[Route("{tenant}")]
 [ApiController]
 public class FhirController(
   IMediator mediator,
   IDateTimeProvider dateTimeProvider) : ControllerBase
 {
   [HttpPost]
-  public async Task<ActionResult<Resource>> Base([FromBody]Resource resource, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Base(string tenant, [FromBody]Resource resource, CancellationToken cancellationToken)
   {
     var fhirResourceConditionalCreateRequest = new FhirBatchOrTransactionRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -36,10 +38,11 @@ public class FhirController(
   }
   
   [HttpPost("{resourceName}")]
-  public async Task<ActionResult<Resource>> Post(string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Post(string tenant, string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
   {
     var fhirResourceConditionalCreateRequest = new FhirConditionalCreateRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -57,10 +60,11 @@ public class FhirController(
   }
   
   [HttpPut("{resourceName}/{resourceId}")]
-  public async Task<ActionResult<Resource>> Put(string resourceName, string resourceId, [FromBody]Resource resource, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Put(string tenant, string resourceName, string resourceId, [FromBody]Resource resource, CancellationToken cancellationToken)
   {
     FhirUpdateRequest fhirResourceNameUpdateRequest = new FhirUpdateRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -80,10 +84,11 @@ public class FhirController(
   }
   
   [HttpPut("{resourceName}")]
-  public async Task<ActionResult<Resource>> ConditionalPut(string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> ConditionalPut(string tenant, string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
   {
     FhirConditionalUpdateRequest fhirResourceNameUpdateRequest = new FhirConditionalUpdateRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -102,10 +107,11 @@ public class FhirController(
   }
   
   [HttpDelete("{resourceName}/{resourceId}")]
-  public async Task<ActionResult<Resource>> Delete(string resourceName, string resourceId, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Delete(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken)
   {
     FhirDeleteRequest request = new FhirDeleteRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -121,10 +127,11 @@ public class FhirController(
   }
   
   [HttpDelete("{resourceName}")]
-  public async Task<ActionResult<Resource>> ConditionalDelete(string resourceName, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> ConditionalDelete(string tenant, string resourceName, CancellationToken cancellationToken)
   {
     FhirConditionalDeleteRequest request = new FhirConditionalDeleteRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -140,10 +147,11 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}/{resourceId}")]
-  public async Task<ActionResult<Resource>> Get(string resourceName, string resourceId, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Get(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken)
   {
     var fhirReadQuery = new FhirReadRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -160,10 +168,11 @@ public class FhirController(
   }
   
   [HttpGet("_history")]
-  public async Task<ActionResult<Resource>> GetHistorySystemLevel(CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetHistorySystemLevel(string tenant, CancellationToken cancellationToken)
   {
     var fhirHistorySystemLevelQuery = new FhirHistorySystemLevelRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(), 
@@ -178,10 +187,11 @@ public class FhirController(
   }
   
   [HttpGet("metadata")]
-  public async Task<ActionResult<Resource>> GetMetadata(CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetMetadata(string tenant, CancellationToken cancellationToken)
   {
     var fhirMetaDataRequest = new FhirMetaDataRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(), 
@@ -196,10 +206,11 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}/_history")]
-  public async Task<ActionResult<Resource>> GetHistoryTypeLevel(string resourceName, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetHistoryTypeLevel(string tenant, string resourceName, CancellationToken cancellationToken)
   {
     var fhirHistoryResourceQuery = new FhirHistoryTypeLevelRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -215,10 +226,11 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}/{resourceId}/_history")]
-  public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string resourceName, string resourceId, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken)
   {
     var fhirHistoryResourceIdQuery = new FhirHistoryInstanceLevelRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -235,10 +247,11 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}/{resourceId}/_history/{historyId}")]
-  public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string resourceName, string resourceId, string historyId, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string tenant, string resourceName, string resourceId, string historyId, CancellationToken cancellationToken)
   {
     var fhirVersionReadRequest = new FhirVersionReadRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -256,10 +269,11 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}")] 
-  public async Task<ActionResult<Resource>> Search(string resourceName, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> Search(string tenant, string resourceName, CancellationToken cancellationToken)
   {
     FhirSearchRequest fhirResourceNameSearchRequest = new FhirSearchRequest(
       RequestSchema: Request.Scheme,
+      tenant: tenant,
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),

@@ -135,6 +135,7 @@ public class FhirTransactionService(
 
         // 2. Process any POST interactions
         await fhirTransactionPostService.ProcessPosts(
+            tenant: request.Tenant,
             entryList: request.Bundle.Entry,
             requestHeaders: RequestHeaders,
             transactionResourceActionOutcomeDictionary: BundleEntryTransactionMetaDataDictionary,
@@ -147,6 +148,7 @@ public class FhirTransactionService(
 
         // 3. Process any PUT or PATCH interactions
         await fhirTransactionPutService.ProcessPuts(
+            tenant: request.Tenant,
             entryList: request.Bundle.Entry,
             requestHeaders: RequestHeaders,
             transactionResourceActionOutcomeDictionary: BundleEntryTransactionMetaDataDictionary,
@@ -158,7 +160,9 @@ public class FhirTransactionService(
         }
 
         // 4. Process any GET or HEAD interactions
-        OperationOutcome? getFailedOperationOutcome = await fhirTransactionGetService.ProcessGets(entryList: request.Bundle.Entry,
+        OperationOutcome? getFailedOperationOutcome = await fhirTransactionGetService.ProcessGets(
+            tenant: request.Tenant,
+            entryList: request.Bundle.Entry,
             requestHeaders: RequestHeaders,
             cancellationToken: CancellationTokenSource.Token);
 

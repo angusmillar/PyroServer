@@ -6,6 +6,7 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public abstract record FhirResourceNameResourceRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -14,7 +15,8 @@ public abstract record FhirResourceNameResourceRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirResourceRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers, 
@@ -24,6 +26,7 @@ public abstract record FhirResourceNameResourceRequestBase(
 
 public abstract record FhirResourceRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -31,7 +34,8 @@ public abstract record FhirResourceRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers,
@@ -41,6 +45,7 @@ public abstract record FhirResourceRequestBase(
 
 public abstract record FhirResourceNameResourceNullableResourceIdRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -50,7 +55,8 @@ public abstract record FhirResourceNameResourceNullableResourceIdRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirResourceNameNullableResourceIdRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers, 
@@ -61,6 +67,7 @@ public abstract record FhirResourceNameResourceNullableResourceIdRequestBase(
 
 public abstract record FhirResourceNameNullableResourceIdRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -69,7 +76,8 @@ public abstract record FhirResourceNameNullableResourceIdRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirResourceNameRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers, 
@@ -79,6 +87,7 @@ public abstract record FhirResourceNameNullableResourceIdRequestBase(
 
 public abstract record FhirResourceNameResourceIdRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -87,7 +96,8 @@ public abstract record FhirResourceNameResourceIdRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirResourceNameRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers, 
@@ -97,6 +107,7 @@ public abstract record FhirResourceNameResourceIdRequestBase(
 
 public abstract record FhirResourceNameRequestBase(
     string RequestSchema, 
+    string tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers, 
@@ -104,7 +115,8 @@ public abstract record FhirResourceNameRequestBase(
     HttpVerbId HttpVerbId,
     DateTimeOffset TimeStamp) :
     FhirRequestBase(
-        RequestSchema, 
+        RequestSchema,
+        tenant,
         RequestPath,
         QueryString,
         Headers,
@@ -114,6 +126,7 @@ public abstract record FhirResourceNameRequestBase(
 
 public abstract record FhirRequestBase(
     string RequestSchema,
+    string tenant,
     string RequestPath,
     string? QueryString, 
     Dictionary<string, StringValues> Headers,

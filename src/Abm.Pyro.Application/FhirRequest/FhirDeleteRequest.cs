@@ -8,6 +8,7 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirDeleteRequest(
         string RequestSchema,
+        string tenant,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers, 
@@ -15,7 +16,8 @@ public record FhirDeleteRequest(
         string ResourceId,
         DateTimeOffset TimeStamp)
     : FhirResourceNameResourceIdRequestBase(
-            RequestSchema, 
+            RequestSchema,
+            tenant,
             RequestPath,
             QueryString,
             Headers, 

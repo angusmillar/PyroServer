@@ -210,6 +210,7 @@ public class FhirSearchHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirSearchRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -262,6 +263,7 @@ public class FhirSearchHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirSearchRequest(
                 RequestSchema: "http",
+                tenant: "test-tenant",
                 RequestPath: "fhir",
                 QueryString: "NotASearchParameter=rubbish", //The invalid search parameter
                 Headers: new Dictionary<string, StringValues>()

@@ -23,10 +23,11 @@ public class FhirConditionalDeleteHandler(
     IOperationOutcomeSupport operationOutcomeSupport)
     : IRequestHandler<FhirConditionalDeleteRequest, FhirOptionalResourceResponse>, IFhirConditionalDeleteHandler
 {
-    public async Task<FhirOptionalResourceResponse> Handle(string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return await Handle(new FhirConditionalDeleteRequest(
             RequestSchema: "https",
+            tenant: tenant,
             RequestPath: string.Empty,
             QueryString: query,
             Headers: headers,
@@ -132,6 +133,7 @@ public class FhirConditionalDeleteHandler(
         FhirResponse.FhirResponse fhirResponse = await fhirDeleteHandler.Handle(
             new FhirDeleteRequest(
                 RequestSchema: request.RequestSchema,
+                tenant: request.tenant,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: request.Headers, 

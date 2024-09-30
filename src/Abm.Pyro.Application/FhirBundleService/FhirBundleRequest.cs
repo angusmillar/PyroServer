@@ -5,6 +5,7 @@ namespace Abm.Pyro.Application.FhirBundleService;
 
 public record FhirBundleRequest(
     string RequestSchema,
+    string Tenant,
     string RequestPath,
     string? QueryString,
     Dictionary<string, StringValues> Headers,

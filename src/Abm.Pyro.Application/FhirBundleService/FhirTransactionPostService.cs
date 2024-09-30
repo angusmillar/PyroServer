@@ -140,6 +140,7 @@ public class FhirTransactionPostService(
     }
 
     public async Task ProcessPosts(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,
@@ -180,6 +181,7 @@ public class FhirTransactionPostService(
             }
             
             FhirOptionalResourceResponse postResponse = await fhirCreateHandler.Handle(
+                tenant: tenant,
                 resourceId: postEntry.Resource.Id,
                 resource: postEntry.Resource,
                 headers: GetPostRequestHeaders(postEntry, requestHeaders),

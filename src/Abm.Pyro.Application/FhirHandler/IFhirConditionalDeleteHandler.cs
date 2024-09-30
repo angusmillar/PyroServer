@@ -5,5 +5,5 @@ namespace Abm.Pyro.Application.FhirHandler;
 
 public interface IFhirConditionalDeleteHandler
 {
-    Task<FhirOptionalResourceResponse> Handle(string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
+    Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
 }

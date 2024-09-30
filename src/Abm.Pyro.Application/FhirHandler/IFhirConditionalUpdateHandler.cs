@@ -6,5 +6,5 @@ namespace Abm.Pyro.Application.FhirHandler;
 
 public interface IFhirConditionalUpdateHandler
 {
-    Task<FhirOptionalResourceResponse> Handle(string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
+    Task<FhirOptionalResourceResponse> Handle(string tenant, string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
 }

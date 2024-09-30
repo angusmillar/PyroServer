@@ -12,6 +12,7 @@ public interface IFhirTransactionPostService
         Dictionary<string, BundleEntryTransactionMetaData> bundleEntryTransactionMetaDataDictionary,
         CancellationToken cancellationToken);
     Task ProcessPosts(
+        string tenant,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,

@@ -9,6 +9,7 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirBatchOrTransactionRequest(
         string RequestSchema,
+        string tenant,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers, 
@@ -16,6 +17,7 @@ public record FhirBatchOrTransactionRequest(
         DateTimeOffset TimeStamp)
     : FhirResourceRequestBase(
             RequestSchema, 
+            tenant,
             RequestPath,
             QueryString,
             Headers, 
