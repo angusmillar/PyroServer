@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
@@ -32,6 +34,7 @@ public class FhirReadHandlerTest
     private readonly IFhirRequestHttpHeaderSupport FhirRequestHttpHeaderSupport;
     private readonly IFhirResourceTypeSupport FhirResourceTypeSupport;
     private readonly IFhirDeSerializationSupport FhirDeSerializationSupport;
+    private readonly Mock<IRepositoryEventCollector> RepositoryEventCollectorMock;
 
     //Setup
     protected FhirReadHandlerTest()
@@ -91,6 +94,11 @@ public class FhirReadHandlerTest
         FhirDeSerializationSupport = fhirDeSerializationSupportMock.Object;
         
         FhirRequestHttpHeaderSupport = new FhirRequestHttpHeaderSupport();
+
+        RepositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
+        RepositoryEventCollectorMock
+            .Setup(x => 
+                x.Add(It.IsAny<RepositoryEvent>()));
         
     }
     
@@ -107,14 +115,16 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -154,14 +164,16 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -213,14 +225,16 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -251,7 +265,8 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -259,7 +274,8 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -288,7 +304,8 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -296,7 +313,8 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -325,13 +343,15 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -360,13 +380,15 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()
@@ -395,7 +417,8 @@ public class FhirReadHandlerTest
                 FhirResponseHttpHeaderSupport,
                 FhirResourceTypeSupport,
                 FhirDeSerializationSupport,
-                FhirRequestHttpHeaderSupport);
+                FhirRequestHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
             
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -403,7 +426,8 @@ public class FhirReadHandlerTest
             
             var fhirReadRequest = new FhirReadRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()

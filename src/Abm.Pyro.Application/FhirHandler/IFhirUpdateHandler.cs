@@ -9,6 +9,7 @@ public interface IFhirUpdateHandler
 {
     Task<FhirOptionalResourceResponse> Handle(
         string tenant,
+        string requestId,
         string resourceId, 
         Resource resource, 
         Dictionary<string, StringValues> headers, 

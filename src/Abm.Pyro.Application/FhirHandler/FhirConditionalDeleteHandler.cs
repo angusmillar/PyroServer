@@ -2,6 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using MediatR;
@@ -20,14 +21,16 @@ public class FhirConditionalDeleteHandler(
     ISearchQueryService searchQueryService,
     IResourceStoreSearch resourceStoreSearch,
     IRequestHandler<FhirDeleteRequest, FhirOptionalResourceResponse> fhirDeleteHandler,
-    IOperationOutcomeSupport operationOutcomeSupport)
+    IOperationOutcomeSupport operationOutcomeSupport,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirConditionalDeleteRequest, FhirOptionalResourceResponse>, IFhirConditionalDeleteHandler
 {
-    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return await Handle(new FhirConditionalDeleteRequest(
             RequestSchema: "https",
-            tenant: tenant,
+            Tenant: tenant,
+            RequestId: requestId,
             RequestPath: string.Empty,
             QueryString: query,
             Headers: headers,
@@ -85,27 +88,34 @@ public class FhirConditionalDeleteHandler(
 
     }
 
-    private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
     
-    private static FhirOptionalResourceResponse InValidSearchQueryResponse(FhirResourceResponse? searchQueryValidationResponse)
+    private FhirOptionalResourceResponse InValidSearchQueryResponse(FhirResourceResponse? searchQueryValidationResponse)
     {
         if (searchQueryValidationResponse is null)
         {
             throw new NullReferenceException(nameof(searchQueryValidationResponse));
         }
 
-        return new FhirOptionalResourceResponse(Resource: searchQueryValidationResponse.Resource, HttpStatusCode: searchQueryValidationResponse.HttpStatusCode,
-            Headers: searchQueryValidationResponse.Headers);
+        repositoryEventCollector.Clear();
+        return new FhirOptionalResourceResponse(
+            Resource: searchQueryValidationResponse.Resource, 
+            HttpStatusCode: searchQueryValidationResponse.HttpStatusCode,
+            Headers: searchQueryValidationResponse.Headers,
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private FhirOptionalResourceResponse PreconditionFailed()
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: operationOutcomeSupport.GetError(
                 new[]
@@ -113,11 +123,13 @@ public class FhirConditionalDeleteHandler(
                     $"Conditional delete criteria was not selective enough, more than a single resource was found to match. This server only supports the conditional delete of type: Single."
                 }),
             HttpStatusCode: HttpStatusCode.PreconditionFailed,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private FhirOptionalResourceResponse NoContentResourceNotFound()
     { 
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: operationOutcomeSupport.GetError(
                 new[]
@@ -125,7 +137,8 @@ public class FhirConditionalDeleteHandler(
                     $"Conditional update criteria returned a single matched resource, however its resource id did not match the request's resource's id."
                 }),
             HttpStatusCode: HttpStatusCode.NoContent,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private async Task<FhirOptionalResourceResponse> PerformNormalDelete(FhirConditionalDeleteRequest request, string resourceId, CancellationToken cancellationToken)
@@ -133,7 +146,8 @@ public class FhirConditionalDeleteHandler(
         FhirResponse.FhirResponse fhirResponse = await fhirDeleteHandler.Handle(
             new FhirDeleteRequest(
                 RequestSchema: request.RequestSchema,
-                tenant: request.tenant,
+                Tenant: request.Tenant,
+                RequestId: request.RequestId,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: request.Headers, 
@@ -142,7 +156,11 @@ public class FhirConditionalDeleteHandler(
                 TimeStamp: request.TimeStamp), 
             cancellationToken);
 
-        return new FhirOptionalResourceResponse(Resource: null, fhirResponse.HttpStatusCode, Headers: fhirResponse.Headers);
+        return new FhirOptionalResourceResponse(
+            Resource: null, 
+            HttpStatusCode: fhirResponse.HttpStatusCode, 
+            Headers: fhirResponse.Headers, 
+            RepositoryEventCollector: fhirResponse.RepositoryEventCollector);
     }
 
     public static bool NoResourceMatch(int searchTotal)

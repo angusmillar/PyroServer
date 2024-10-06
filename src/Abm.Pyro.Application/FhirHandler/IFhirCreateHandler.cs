@@ -6,5 +6,5 @@ namespace Abm.Pyro.Application.FhirHandler;
 
 public interface IFhirCreateHandler
 {
-    Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
+    Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken);
 }

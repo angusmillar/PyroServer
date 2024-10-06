@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Support;
 
 namespace Abm.Pyro.Api.Controllers;
@@ -19,7 +20,8 @@ public class FhirController(
   {
     var fhirResourceConditionalCreateRequest = new FhirBatchOrTransactionRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -41,7 +43,8 @@ public class FhirController(
   {
     var fhirResourceConditionalCreateRequest = new FhirConditionalCreateRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -63,7 +66,8 @@ public class FhirController(
   {
     FhirUpdateRequest fhirResourceNameUpdateRequest = new FhirUpdateRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -87,7 +91,8 @@ public class FhirController(
   {
     FhirConditionalUpdateRequest fhirResourceNameUpdateRequest = new FhirConditionalUpdateRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -110,7 +115,8 @@ public class FhirController(
   {
     FhirDeleteRequest request = new FhirDeleteRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -130,7 +136,8 @@ public class FhirController(
   {
     FhirConditionalDeleteRequest request = new FhirConditionalDeleteRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -150,7 +157,8 @@ public class FhirController(
   {
     var fhirReadQuery = new FhirReadRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -171,7 +179,8 @@ public class FhirController(
   {
     var fhirHistorySystemLevelQuery = new FhirHistorySystemLevelRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(), 
@@ -190,7 +199,8 @@ public class FhirController(
   {
     var fhirMetaDataRequest = new FhirMetaDataRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(), 
@@ -209,7 +219,8 @@ public class FhirController(
   {
     var fhirHistoryResourceQuery = new FhirHistoryTypeLevelRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -229,7 +240,8 @@ public class FhirController(
   {
     var fhirHistoryResourceIdQuery = new FhirHistoryInstanceLevelRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -250,7 +262,8 @@ public class FhirController(
   {
     var fhirVersionReadRequest = new FhirVersionReadRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),
@@ -272,7 +285,8 @@ public class FhirController(
   {
     FhirSearchRequest fhirResourceNameSearchRequest = new FhirSearchRequest(
       RequestSchema: Request.Scheme,
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
       Headers: Request.Headers.GetDictionary(),

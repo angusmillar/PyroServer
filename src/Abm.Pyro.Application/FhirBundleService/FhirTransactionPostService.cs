@@ -141,6 +141,7 @@ public class FhirTransactionPostService(
 
     public async Task ProcessPosts(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,
@@ -182,6 +183,7 @@ public class FhirTransactionPostService(
             
             FhirOptionalResourceResponse postResponse = await fhirCreateHandler.Handle(
                 tenant: tenant,
+                requestId: requestId, 
                 resourceId: postEntry.Resource.Id,
                 resource: postEntry.Resource,
                 headers: GetPostRequestHeaders(postEntry, requestHeaders),
@@ -226,8 +228,7 @@ public class FhirTransactionPostService(
         ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreSearch.GetSearch(searchQueryServiceOutcome);
         if (FhirConditionalCreateHandler.NoMatches(resourceStoreSearchOutcome))
         {
-            //No matches: The server processes the create as a normal Create
-            var resourceStore = resourceStoreSearchOutcome.ResourceStoreList.First();
+            //No matches: The server processes the POST as a normal Create
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
                 NewResourceId: GuidSupport.NewFhirGuid(),
                 ResourceName: postEntry.Resource.TypeName,

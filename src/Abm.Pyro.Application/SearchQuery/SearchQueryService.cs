@@ -183,7 +183,11 @@ public class SearchQueryService(
     
     foreach (var include in includeList)
     {
-      string rawParameter = $"{IncludeType.Include.GetCode()}";
+      string rawParameter = IncludeType.Include.GetCode();
+      if (include.Type.Equals(IncludeType.Revinclude))
+      {
+        rawParameter = IncludeType.Revinclude.GetCode();
+      }
       if (include.Iterate)
       {
         rawParameter += $":{FhirQuery.TermIncludeIterate}";
@@ -269,23 +273,9 @@ public class SearchQueryService(
                   Outcome!.InvalidSearchQueryList.Add(new InvalidQueryParameter(rawParameter, message));
                   break;
                 }
-
-                if (include.Type.Equals(IncludeType.Revinclude) && !ResourceContext.Equals(searchParameterInclude.SearchParameterTargetResourceType.Value))
-                {
-                  string message = $"The target Resource '{searchParameterInclude.SearchParameterTargetResourceType.Value.GetCode()}' of the _revinclude parameter is not equal to the resource type of '{ResourceContext.GetCode()}' which must be implied target for the _revinclude. Resource's search parameter {searchParameter.Code}.";
-                  Outcome!.InvalidSearchQueryList.Add(new InvalidQueryParameter(rawParameter, message));
-                  break;
-                }
-              }
-
-              if (include.Type.Equals(IncludeType.Revinclude))
-              {
-                searchParameterInclude.SearchParameterTargetResourceType = ResourceContext;  
               }
               
-              searchParameterInclude.SearchParameterList = new List<SearchParameterProjection> {
-                                                                                                 searchParameter
-                                                                                               };
+              searchParameterInclude.SearchParameterList = new List<SearchParameterProjection> { searchParameter };
             }
             else
             {

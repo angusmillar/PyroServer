@@ -3,6 +3,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.Indexing;
+using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -32,12 +33,14 @@ public class FhirUpdateHandler(
   IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport,
   IOperationOutcomeSupport operationOutcomeSupport,
   IPreferredReturnTypeService preferredReturnTypeService,
-  IOptions<IndexingSettings> indexingSettingsOptions)
+  IOptions<IndexingSettings> indexingSettingsOptions,
+  IRepositoryEventCollector repositoryEventCollector)
   : IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse>, IFhirUpdateHandler
 {
   private ResourceStoreUpdateProjection? PreviousResourceStore;
   public async Task<FhirOptionalResourceResponse> Handle(
     string tenant,
+    string requestId,
     string resourceId, 
     Resource resource, 
     Dictionary<string, StringValues> headers, 
@@ -48,7 +51,8 @@ public class FhirUpdateHandler(
     
     return await Handle(new FhirUpdateRequest(
       RequestSchema: "http",
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: requestId,
       RequestPath: string.Empty,
       QueryString: null,
       Headers: headers,
@@ -77,7 +81,8 @@ public class FhirUpdateHandler(
     {
       return await fhirCreateHandler.Handle(new FhirCreateRequest(
         RequestSchema: request.RequestSchema,
-        tenant: request.tenant,
+        Tenant: request.Tenant,
+        RequestId: request.RequestId,
         RequestPath: request.RequestPath,
         QueryString: request.QueryString,
         Headers: request.Headers,
@@ -120,22 +125,32 @@ public class FhirUpdateHandler(
     PreviousResourceStore.IsCurrent = false;
     await resourceStoreUpdate.Update(PreviousResourceStore, deleteFhirIndexes: indexingSettingsOptions.Value.RemoveHistoricResourceIndexesOnUpdateOrDelete);
     updatedResourceStore = await resourceStoreAdd.Add(updatedResourceStore);
+
+    AddRepositoryEvent(updatedResourceStore.ResourceStoreId, request.ResourceId);
     
     var responseHeaders = fhirResponseHttpHeaderSupport.ForUpdate(
       lastUpdatedUtc: updatedResourceStore.LastUpdatedUtc,
       versionId: updatedResourceStore.VersionId,
       requestTimeStamp: request.TimeStamp);
 
-    return preferredReturnTypeService.GetResponse(HttpStatusCode.OK, request.Resource, updatedResourceStore.VersionId, request.Headers, responseHeaders);
+    return preferredReturnTypeService.GetResponse(
+      httpStatusCode: HttpStatusCode.OK, 
+      resource: request.Resource, 
+      versionId: updatedResourceStore.VersionId, 
+      requestHeaders: request.Headers,
+      responseHeaders: responseHeaders,
+      repositoryEventQueue: repositoryEventCollector);
     
   }
 
-  private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+  private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
   {
+    repositoryEventCollector.Clear();
     return new FhirOptionalResourceResponse(
       Resource: validatorResult.GetOperationOutcome(), 
       HttpStatusCode: validatorResult.GetHttpStatusCode(),
-      Headers: new Dictionary<string, StringValues>());
+      Headers: new Dictionary<string, StringValues>(),
+      RepositoryEventCollector: repositoryEventCollector);
   }
   
   private static void SetResourceMeta(Resource resource, int versionId, DateTimeOffset requestTimeStamp)
@@ -147,6 +162,7 @@ public class FhirUpdateHandler(
 
   private bool IfMatchPreconditionFailure(Dictionary<string, StringValues> requestHeaders, int resourceStoreVersionId, out FhirOptionalResourceResponse? fhirResourceResponse)
   {
+    repositoryEventCollector.Clear();
     fhirResourceResponse = null;
     int? ifMatchVersion = fhirRequestHttpHeaderSupport.GetIfMatch(requestHeaders);
     if (ifMatchVersion is null || resourceStoreVersionId == ifMatchVersion.Value)
@@ -157,11 +173,22 @@ public class FhirUpdateHandler(
     fhirResourceResponse = new FhirOptionalResourceResponse(
       Resource: operationOutcomeSupport.GetError(
         new[] {
-                $"{HttpHeaderName.IfMatch} header precondition failure. Version update was for version {ifMatchVersion} however " +
-                $"the server found version {resourceStoreVersionId}. "
-              }),
+          $"{HttpHeaderName.IfMatch} header precondition failure. Version update was for version {ifMatchVersion} however " +
+          $"the server found version {resourceStoreVersionId}. "
+        }),
       HttpStatusCode: HttpStatusCode.PreconditionFailed,
-      Headers: new Dictionary<string, StringValues>());
+      Headers: new Dictionary<string, StringValues>(),
+      RepositoryEventCollector: repositoryEventCollector);
     return true;
+  }
+  
+  private void AddRepositoryEvent(int? resourceStoreId, string requestId)
+  {
+    ArgumentNullException.ThrowIfNull(resourceStoreId);
+            
+    repositoryEventCollector.Add(
+      requestId: requestId,
+      repositoryEventType: RepositoryEventType.Update, 
+      resourceStoreId: resourceStoreId.Value);
   }
 }

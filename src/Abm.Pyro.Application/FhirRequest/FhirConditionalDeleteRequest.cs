@@ -8,7 +8,8 @@ namespace Abm.Pyro.Application.FhirRequest;
 
 public record FhirConditionalDeleteRequest(
         string RequestSchema,
-        string tenant,
+        string Tenant,
+        string RequestId,
         string RequestPath,
         string? QueryString,
         Dictionary<string, StringValues> Headers,
@@ -16,7 +17,8 @@ public record FhirConditionalDeleteRequest(
         DateTimeOffset TimeStamp)
     : FhirResourceNameRequestBase(
             RequestSchema, 
-            tenant,
+            Tenant,
+            RequestId,
             RequestPath,
             QueryString,
             Headers, 

@@ -79,6 +79,23 @@ public static class TestResourceFactory
         }
     }
     
+    public static class OrganizationResource
+    {
+        public static Organization GetAcmeOrganization()
+        {
+            var acmeOrganization = new Organization()
+            {
+                Id = "org-acme",
+                Meta = new Meta()
+                {
+                    VersionId = "1"
+                },
+                Name = "Acme Healthcare"
+            };
+            return acmeOrganization;
+        }
+    }
+    
     public static class ObservationResource
     {
         public static Observation GetHemoglobinObservation(ResourceReference? patientResourceReference = null)

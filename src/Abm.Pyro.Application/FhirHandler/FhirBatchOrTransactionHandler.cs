@@ -3,6 +3,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirBundleService;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
 using MediatR;
@@ -16,7 +17,8 @@ namespace Abm.Pyro.Application.FhirHandler;
 
 public class FhirBatchOrTransactionHandler(
     IValidator validator, 
-    IFhirBundleServiceFactory fhirBundleServiceFactory) 
+    IFhirBundleServiceFactory fhirBundleServiceFactory,
+    IRepositoryEventCollector repositoryEventCollector) 
     : IRequestHandler<FhirBatchOrTransactionRequest, FhirResourceResponse>
 {
     public async Task<FhirResourceResponse> Handle(FhirBatchOrTransactionRequest request,
@@ -42,7 +44,8 @@ public class FhirBatchOrTransactionHandler(
         
         return await fhirBundleService.Process(new FhirBundleRequest(
             RequestSchema: request.RequestSchema,
-            Tenant: request.tenant,
+            Tenant: request.Tenant,
+            RequestId: request.RequestId,
             RequestPath: request.RequestPath,
             QueryString: request.QueryString,
             Headers: request.Headers,
@@ -51,12 +54,13 @@ public class FhirBatchOrTransactionHandler(
             , cancellationToken: cancellationToken);
     }
 
-    private static FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
         return new FhirResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
     
     private BundleType GetBundleTypeBatchOrTransactionOrThrow(Bundle.BundleType? type)

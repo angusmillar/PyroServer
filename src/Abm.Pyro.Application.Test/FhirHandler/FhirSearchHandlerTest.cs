@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -11,6 +12,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Enums;
@@ -36,6 +38,8 @@ public class FhirSearchHandlerTest
     private readonly IFhirBundleCreationSupport FhirBundleCreationSupport;
     private readonly IPaginationSupport PaginationSupport;
     private readonly IFhirResponseHttpHeaderSupport FhirResponseHttpHeaderSupport;
+    private readonly Mock<IRepositoryEventCollector> RepositoryEventCollectorMock;
+    
     //Setup
     protected FhirSearchHandlerTest()
     {
@@ -115,6 +119,11 @@ public class FhirSearchHandlerTest
         PaginationSupport = paginationSupportMock.Object;
         
         FhirResponseHttpHeaderSupport = new FhirResponseHttpHeaderSupport();
+
+        RepositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
+        RepositoryEventCollectorMock
+            .Setup(x => 
+                x.Add(It.IsAny<RepositoryEvent>()));
         
     }
 
@@ -203,14 +212,16 @@ public class FhirSearchHandlerTest
                 ResourceStoreSearch,
                 FhirBundleCreationSupport,
                 PaginationSupport,
-                FhirResponseHttpHeaderSupport);
+                FhirResponseHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirSearchRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -256,14 +267,16 @@ public class FhirSearchHandlerTest
                 ResourceStoreSearch,
                 FhirBundleCreationSupport,
                 PaginationSupport,
-                FhirResponseHttpHeaderSupport);
+                FhirResponseHttpHeaderSupport,
+                RepositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirReadRequest = new FhirSearchRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "requestId",
                 RequestPath: "fhir",
                 QueryString: "NotASearchParameter=rubbish", //The invalid search parameter
                 Headers: new Dictionary<string, StringValues>()

@@ -35,7 +35,9 @@ using Abm.Pyro.Repository.Query;
 using Abm.Pyro.Repository.Service;
 using Steeltoe.Extensions.Configuration.ConfigServer;
 using Abm.Pyro.Application.HostedServiceSupport;
+using Abm.Pyro.Application.Manager;
 using Abm.Pyro.Application.MetaDataService;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.OnStartupService;
 using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Validation;
@@ -108,7 +110,17 @@ try
     builder.Services.AddAppStartUpService<DatabaseVersionValidationOnStartupService>();
     builder.Services.AddAppStartUpService<FhirServiceBaseUrlManagementOnStartupService>();
     builder.Services.AddAppStartUpService<ValidateAndPrimeResourceEndpointPoliciesOnStartupService>();
-
+    
+    // -InMemoryMessageQueue -----------------------
+    builder.Services.AddScoped<IRepositoryEventCollector, RepositoryEventCollector>();
+    builder.Services.AddSingleton<IRepositoryEventChannel, RepositoryEventChannel>();
+    
+    //Runs a background services which polls for new FHIR Tasks from the external Order Repositories
+    builder.Services.AddTimedHostedService<NotificationManager>(opt =>
+    {
+        opt.TriggersEvery = TimeSpan.FromSeconds(10);
+    });
+    
     // Services  --------------------------------------------------------------------------------------
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
     builder.Services.AddSingleton<IFhirJsonSerializersOptions, FhirJsonSerializersOptions>();

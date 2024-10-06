@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -14,7 +15,10 @@ using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.Indexing;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
+using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Application.Test.Factories;
 using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
@@ -46,7 +50,8 @@ public class FhirUpdateHandlerTest
     private readonly IFhirRequestHttpHeaderSupport FhirRequestHttpHeaderSupport;
     private readonly IOperationOutcomeSupport OperationOutcomeSupport;
     private readonly Mock<IPreferredReturnTypeService> PreferredReturnTypeServiceMock;
-    private readonly Mock<IOptions<IndexingSettings>> IndexingSettingsOptionsMock; 
+    private readonly Mock<IOptions<IndexingSettings>> IndexingSettingsOptionsMock;
+    private readonly Mock<IRepositoryEventCollector> RepositoryEventCollectorMock;
     private readonly DateTime Now;
    
     //Setup
@@ -101,19 +106,37 @@ public class FhirUpdateHandlerTest
             x.Add(
                 It.IsAny<ResourceStore>()))
             .ReturnsAsync((ResourceStore)resourceStoreHistoryEntity);
+
+        var dateTimeProviderMock = new Mock<IDateTimeProvider>();
+        dateTimeProviderMock
+            .Setup(x => x.Now)
+            .Returns(new DateTime(2024, 01, 01, 10, 00, 00));
+        
+        var repositoryEventCollector = new RepositoryEventCollector(TenantServiceFactory.GetTest(), dateTimeProviderMock.Object);
+        repositoryEventCollector.Add(new RepositoryEvent(
+            RequestId: "requestId",
+            RepositoryEventType: RepositoryEventType.Create,
+            ResourceStoreId: 1,
+            Tenant: TenantServiceFactory.GetTest().GetScopedTenant(),
+            EventTimestampUtc: Now.ToUniversalTime()));
         
         var createdObservationResource = GetObservationResource();
         var fhirResponse = new FhirOptionalResourceResponse(
             Resource: observationResource,
-            HttpStatusCode.Created,
+            HttpStatusCode: HttpStatusCode.Created,
             Headers: new Dictionary<string, StringValues>()
             {
-                {HttpHeaderName.Date, new StringValues(Now.ToString("r"))},
-                {HttpHeaderName.LastModified, new StringValues(Now.ToString("r"))},
-                {HttpHeaderName.ETag, new StringValues(createdObservationResource.VersionId)},
-                {HttpHeaderName.Location, new StringValues($"{createdObservationResource.TypeName}/{createdObservationResource.Id}/_history/{createdObservationResource.VersionId}")}
-                
-            });
+                { HttpHeaderName.Date, new StringValues(Now.ToString("r")) },
+                { HttpHeaderName.LastModified, new StringValues(Now.ToString("r")) },
+                { HttpHeaderName.ETag, new StringValues(createdObservationResource.VersionId) },
+                {
+                    HttpHeaderName.Location,
+                    new StringValues(
+                        $"{createdObservationResource.TypeName}/{createdObservationResource.Id}/_history/{createdObservationResource.VersionId}")
+                }
+
+            },
+            RepositoryEventCollector: repositoryEventCollector);
         
         FhirCreateHandlerMock = new Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>>();
         FhirCreateHandlerMock.Setup(x => 
@@ -207,7 +230,8 @@ public class FhirUpdateHandlerTest
                 {HttpHeaderName.Date, new StringValues(Now.ToString("r"))},
                 {HttpHeaderName.LastModified, new StringValues(Now.ToString("r"))},
                 {HttpHeaderName.ETag, new StringValues(updatedObservationResource.VersionId)}
-            });
+            },
+            RepositoryEventCollector: repositoryEventCollector);
         
         PreferredReturnTypeServiceMock = new Mock<IPreferredReturnTypeService>();
         PreferredReturnTypeServiceMock
@@ -217,13 +241,18 @@ public class FhirUpdateHandlerTest
                     It.IsAny<Resource>(), 
                     It.IsAny<int>(),
                     It.IsAny<Dictionary<string, StringValues>>(),
-                    It.IsAny<Dictionary<string, StringValues>>()))
+                    It.IsAny<Dictionary<string, StringValues>>(),
+                    It.IsAny<IRepositoryEventCollector>()))
             .Returns(fhirOptionalResourceResponse);
         
         
         IndexingSettingsOptionsMock = new Mock<IOptions<IndexingSettings>>();
         IndexingSettingsOptionsMock.Setup(x => x.Value).Returns(new IndexingSettings() { RemoveHistoricResourceIndexesOnUpdateOrDelete = true});
-      
+
+        RepositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
+        RepositoryEventCollectorMock
+            .Setup(x => 
+                x.Add(It.IsAny<RepositoryEvent>()));
     }
 
     
@@ -264,14 +293,16 @@ public class FhirUpdateHandlerTest
                 FhirRequestHttpHeaderSupport,
                 OperationOutcomeSupport,
                 PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object);
+                IndexingSettingsOptionsMock.Object,
+                RepositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "Request Id",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -298,7 +329,8 @@ public class FhirUpdateHandlerTest
                     It.IsAny<Resource>(), 
                     It.IsAny<int>(),
                     It.IsAny<Dictionary<string, StringValues>>(),
-                    It.IsAny<Dictionary<string, StringValues>>())
+                    It.IsAny<Dictionary<string, StringValues>>(),
+                     It.IsAny<IRepositoryEventCollector>() )
                 , times: Times.Once);
             
             //Assert
@@ -340,14 +372,16 @@ public class FhirUpdateHandlerTest
                 FhirRequestHttpHeaderSupport,
                 OperationOutcomeSupport,
                 PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object);
+                IndexingSettingsOptionsMock.Object,
+                RepositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "Request Id",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -404,14 +438,16 @@ public class FhirUpdateHandlerTest
                 FhirRequestHttpHeaderSupport,
                 OperationOutcomeSupport,
                 PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object);
+                IndexingSettingsOptionsMock.Object,
+                RepositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: "Request Id",
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>()

@@ -11,6 +11,7 @@ using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.Indexing;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
@@ -24,21 +25,20 @@ namespace Abm.Pyro.Application.Test.FhirHandler;
 
 public class FhirCreateHandlerTest
 {
-    private readonly Mock<IValidator> ValidatorMock;
-    private readonly Mock<IResourceStoreAdd> ResourceStoreAddMock;
-    private readonly Mock<IFhirSerializationSupport> FhirSerializationSupportMock;
-    private readonly IFhirResourceTypeSupport FhirResourceTypeSupport;
-    private readonly IFhirResponseHttpHeaderSupport FhirResponseHttpHeaderSupport;
-    private readonly Mock<IIndexer> IndexerMock;
-    private readonly Mock<IPreferredReturnTypeService> PreferredReturnTypeServiceMock;
-    private readonly Mock<IServiceBaseUrlCache> ServiceBaseUrlCacheMock;
-
-    private readonly DateTime Now;
+    private readonly Mock<IValidator> _validatorMock;
+    private readonly Mock<IResourceStoreAdd> _resourceStoreAddMock;
+    private readonly Mock<IFhirSerializationSupport> _fhirSerializationSupportMock;
+    private readonly IFhirResourceTypeSupport _fhirResourceTypeSupport;
+    private readonly IFhirResponseHttpHeaderSupport _fhirResponseHttpHeaderSupport;
+    private readonly Mock<IIndexer> _indexerMock;
+    private readonly Mock<IPreferredReturnTypeService> _preferredReturnTypeServiceMock;
+    private readonly Mock<IServiceBaseUrlCache> _serviceBaseUrlCacheMock;
+    private readonly Mock<IRepositoryEventCollector> _repositoryEventCollectorMock;
 
     //Setup
     protected FhirCreateHandlerTest()
     {
-        Now = DateTime.Now;
+        var now = DateTime.Now;
         
         Observation observationResourceFromDbAdd = GetObservationResource();
         
@@ -60,22 +60,22 @@ public class FhirCreateHandlerTest
             indexUriList: new List<IndexUri>(),
             rowVersion: 100);
 
-        ValidatorMock = new Mock<IValidator>();
-        ValidatorMock.Setup(x => 
+        _validatorMock = new Mock<IValidator>();
+        _validatorMock.Setup(x => 
             x.Validate(
                 It.IsAny<IValidatable>()))
             .Returns(new ValidatorResult(isValid: true, httpStatusCode: null, operationOutcome: null));
         
-        ResourceStoreAddMock = new Mock<IResourceStoreAdd>();
-        ResourceStoreAddMock.Setup(x =>
+        _resourceStoreAddMock = new Mock<IResourceStoreAdd>();
+        _resourceStoreAddMock.Setup(x =>
                 x.Add(
                     It.IsAny<ResourceStore>()))
             .ReturnsAsync((ResourceStore resourceStore) => resourceStoreFromDbAdd);
         
-        FhirResourceTypeSupport = new FhirResourceTypeSupport();
+        _fhirResourceTypeSupport = new FhirResourceTypeSupport();
 
-        FhirSerializationSupportMock = new Mock<IFhirSerializationSupport>();
-        FhirSerializationSupportMock.Setup(x =>
+        _fhirSerializationSupportMock = new Mock<IFhirSerializationSupport>();
+        _fhirSerializationSupportMock.Setup(x =>
                 x.ToJson(
                     It.IsAny<Resource>(),
                     It.IsAny<Hl7.Fhir.Rest.SummaryType?>(),
@@ -83,7 +83,7 @@ public class FhirCreateHandlerTest
             .Returns("The Observation resource's JSON string would be here, but why bother for the unit test!");
 
 
-        FhirResponseHttpHeaderSupport = new FhirResponseHttpHeaderSupport();
+        _fhirResponseHttpHeaderSupport = new FhirResponseHttpHeaderSupport();
 
         var indexerOutcome = new IndexerOutcome(
             stringIndexList: new List<IndexString>(),
@@ -93,35 +93,46 @@ public class FhirCreateHandlerTest
             tokenIndexList: new List<IndexToken>(),
             uriIndexList: new List<IndexUri>());
 
-        IndexerMock = new Mock<IIndexer>();
-        IndexerMock.Setup(x =>
+        _indexerMock = new Mock<IIndexer>();
+        _indexerMock.Setup(x =>
                 x.Process(
                     It.IsAny<Resource>(),
                     It.IsAny<FhirResourceTypeId>()))
             .ReturnsAsync(indexerOutcome);
 
+        
+        _repositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
+        _repositoryEventCollectorMock
+            .Setup(x => 
+                x.Add(It.IsAny<RepositoryEvent>()));
+        
         var responseObservationResource = GetObservationResource();
         var fhirOptionalResourceResponse = new FhirOptionalResourceResponse(
             Resource: responseObservationResource,
             HttpStatusCode: HttpStatusCode.Created,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: _repositoryEventCollectorMock.Object);
 
-        PreferredReturnTypeServiceMock = new Mock<IPreferredReturnTypeService>();
-        PreferredReturnTypeServiceMock
+        _preferredReturnTypeServiceMock = new Mock<IPreferredReturnTypeService>();
+        _preferredReturnTypeServiceMock
             .Setup(x =>
                 x.GetResponse(
                     It.IsAny<HttpStatusCode>(),
                     It.IsAny<Resource>(),
                     It.IsAny<int>(),
                     It.IsAny<Dictionary<string, StringValues>>(),
-                    It.IsAny<Dictionary<string, StringValues>>()))
+                    It.IsAny<Dictionary<string, StringValues>>(),
+                    It.IsAny<IRepositoryEventCollector>()))
             .Returns(fhirOptionalResourceResponse);
         
-        ServiceBaseUrlCacheMock = new Mock<IServiceBaseUrlCache>();
-        ServiceBaseUrlCacheMock
+        _serviceBaseUrlCacheMock = new Mock<IServiceBaseUrlCache>();
+        _serviceBaseUrlCacheMock
             .Setup(x =>
                 x.GetRequiredPrimaryAsync())
             .ReturnsAsync(new ServiceBaseUrl(serviceBaseUrlId: 1, url: "https://thisFhirServer.com.au/fhir", isPrimary: true));
+
+        
+
     }
 
 
@@ -149,14 +160,15 @@ public class FhirCreateHandlerTest
         {
             //Arrange
             var target = new FhirCreateHandler(
-                ValidatorMock.Object,
-                ResourceStoreAddMock.Object,
-                FhirSerializationSupportMock.Object,
-                FhirResourceTypeSupport,
-                FhirResponseHttpHeaderSupport,
-                IndexerMock.Object,
-                PreferredReturnTypeServiceMock.Object,
-                ServiceBaseUrlCacheMock.Object
+                _validatorMock.Object,
+                _resourceStoreAddMock.Object,
+                _fhirSerializationSupportMock.Object,
+                _fhirResourceTypeSupport,
+                _fhirResponseHttpHeaderSupport,
+                _indexerMock.Object,
+                _preferredReturnTypeServiceMock.Object,
+                _serviceBaseUrlCacheMock.Object,
+                _repositoryEventCollectorMock.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -166,7 +178,8 @@ public class FhirCreateHandlerTest
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirCreateRequest(
                 RequestSchema: "http",
-                tenant: "test-tenant",
+                Tenant: "test-tenant",
+                RequestId: GuidSupport.NewFhirGuid(),
                 RequestPath: "fhir",
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
@@ -179,7 +192,7 @@ public class FhirCreateHandlerTest
             FhirOptionalResourceResponse response = await target.Handle(request: fhirUpdateRequest, cancellationToken: cancellationTokenSource.Token);
 
             //Verify
-            ResourceStoreAddMock.Verify(x => 
+            _resourceStoreAddMock.Verify(x => 
                     x.Add(It.Is<ResourceStore>(r => 
                         r.VersionId.Equals(1) & 
                         !string.IsNullOrWhiteSpace(r.ResourceId) &
@@ -191,13 +204,14 @@ public class FhirCreateHandlerTest
                         ),
                 times: Times.Once);
             
-            PreferredReturnTypeServiceMock.Verify(x =>
+            _preferredReturnTypeServiceMock.Verify(x =>
                 x.GetResponse(
                     It.Is<HttpStatusCode>(s => s.Equals(HttpStatusCode.Created)),
                     It.IsAny<Resource>(),
                     It.IsAny<int>(),
                     It.IsAny<Dictionary<string, StringValues>>(),
-                    It.IsAny<Dictionary<string, StringValues>>()),
+                    It.IsAny<Dictionary<string, StringValues>>(),
+                    It.IsAny<IRepositoryEventCollector>()),
                 times: Times.Once);
 
             //Assert

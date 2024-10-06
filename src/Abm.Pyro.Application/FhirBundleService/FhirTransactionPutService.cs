@@ -60,13 +60,13 @@ public class FhirTransactionPutService(
                     $"Unable to parse Bundle.entry[{i}].fullUrl of: {putEntry.FullUrl}. " + fullUrlFhirUriResult.Errors.First().Message
                 });
             }
-            if (!fullUrlFhirUriResult.Value.IsAbsoluteUri)
-            {
-                return operationOutcomeSupport.GetError(new[]
-                {
-                    $"The Bundle.entry[{i}].fullUrl of: {putEntry.FullUrl} must be either an absolute, UUID or OID resource reference. "
-                });
-            }
+            // if (!fullUrlFhirUriResult.Value.IsAbsoluteUri)
+            // {
+            //     return operationOutcomeSupport.GetError(new[]
+            //     {
+            //         $"The Bundle.entry[{i}].fullUrl of: {putEntry.FullUrl} must be either an absolute, UUID or OID resource reference. "
+            //     });
+            // }
             FhirUri fullUrlFhirUri = fullUrlFhirUriResult.Value;
             
             Result<FhirUri> requestFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(putEntry.Request.Url);
@@ -142,6 +142,7 @@ public class FhirTransactionPutService(
 
     public async Task ProcessPuts(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,
@@ -168,6 +169,7 @@ public class FhirTransactionPutService(
             
             FhirOptionalResourceResponse updateResponse = await fhirUpdateHandler.Handle(
                 tenant: tenant,
+                requestId: requestId,
                 resourceId: putEntry.Resource.Id,
                 resource: putEntry.Resource,
                 headers: GetPutRequestHeaders(putEntry, requestHeaders),
@@ -222,13 +224,36 @@ public class FhirTransactionPutService(
             return;
         }
 
-        ResourceStore matchedResourceStore = resourceStoreSearchOutcome.ResourceStoreList.First();
-        var resourceStoreUpdateProjection = new ResourceStoreUpdateProjection(
-            resourceStoreId: matchedResourceStore.ResourceStoreId, 
-            versionId: matchedResourceStore.VersionId, 
-            isCurrent: matchedResourceStore.IsCurrent, 
-            isDeleted: matchedResourceStore.IsDeleted);
         
+       
+        
+        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && !FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
+        {
+            //No matches, no id provided: The server creates the resource.
+            bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
+                ResourceName: putEntry.Resource.TypeName,
+                NewResourceId: GuidSupport.NewFhirGuid(),
+                NewVersionId: 1, 
+                CommittedResourceInfo: null,
+                ResourceStoreUpdateProjection: null);
+            return;
+        }
+
+        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
+        {
+            //No matches, id provided: The server treats the interaction as an 'Update as Create' interaction (or rejects it, if 'Update as Create' not supported by the server)
+            bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
+                ResourceName: putEntry.Resource.TypeName,
+                NewResourceId: putEntry.Resource.Id,
+                NewVersionId: 1, 
+                CommittedResourceInfo: null,
+                ResourceStoreUpdateProjection: null);
+            return;
+        }
+        
+        ResourceStore matchedResourceStore = resourceStoreSearchOutcome.ResourceStoreList.First();
+       
+
         if (FhirConditionalUpdateHandler.IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal) && FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id) &&
             !FhirConditionalUpdateHandler.MatchedResourceIdEqualsProvidedResourcedId(putEntry.Resource.Id, matchedResourceStore.ResourceId))
         {
@@ -251,42 +276,20 @@ public class FhirTransactionPutService(
                 putEntry.Resource.Id = matchedResourceStore.ResourceId;
             }
             
-           
-            
             //One Match, no resource id provided OR (resource id provided and it matches the found resource): The server performs the update against the matching resource
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
                 ResourceName: putEntry.Resource.TypeName,
                 NewResourceId: matchedResourceStore.ResourceId, 
                 NewVersionId: matchedResourceStore.VersionId + 1, 
                 CommittedResourceInfo: null,
-                ResourceStoreUpdateProjection: resourceStoreUpdateProjection);
+                ResourceStoreUpdateProjection: new ResourceStoreUpdateProjection(
+                    resourceStoreId: matchedResourceStore.ResourceStoreId, 
+                    versionId: matchedResourceStore.VersionId, 
+                    isCurrent: matchedResourceStore.IsCurrent, 
+                    isDeleted: matchedResourceStore.IsDeleted));
             return;
         }
 
-        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && !FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
-        {
-            //No matches, no id provided: The server creates the resource.
-            bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
-                ResourceName: putEntry.Resource.TypeName,
-                NewResourceId: GuidSupport.NewFhirGuid(),
-                NewVersionId: 1, 
-                CommittedResourceInfo: null,
-                ResourceStoreUpdateProjection: resourceStoreUpdateProjection);
-            return;
-        }
-
-        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
-        {
-            //No matches, id provided: The server treats the interaction as an 'Update as Create' interaction (or rejects it, if 'Update as Create' not supported by the server)
-            bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
-                ResourceName: putEntry.Resource.TypeName,
-                NewResourceId: putEntry.Resource.Id,
-                NewVersionId: 1, 
-                CommittedResourceInfo: null,
-                ResourceStoreUpdateProjection: resourceStoreUpdateProjection);
-            return;
-        }
-        
         throw new ApplicationException($"The Transaction Conditional Update has encountered and unknown action for the fullUrl of: {putEntry.FullUrl}.");
         
     }
@@ -327,7 +330,7 @@ public class FhirTransactionPutService(
         {
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
                 ResourceName: putEntry.Resource.TypeName,
-                NewResourceId: GuidSupport.NewFhirGuid(),
+                NewResourceId: bundleEntryTransactionMetaData.RequestUrl.ResourceId,
                 NewVersionId: 1,
                 CommittedResourceInfo: null,
                 ResourceStoreUpdateProjection: null);

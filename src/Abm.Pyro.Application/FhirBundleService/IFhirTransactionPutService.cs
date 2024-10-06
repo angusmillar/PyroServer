@@ -13,6 +13,7 @@ public interface IFhirTransactionPutService
 
     Task ProcessPuts(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> transactionResourceActionOutcomeDictionary,

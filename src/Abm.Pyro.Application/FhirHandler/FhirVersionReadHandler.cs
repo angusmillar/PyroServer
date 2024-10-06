@@ -3,6 +3,7 @@ using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
@@ -10,6 +11,7 @@ using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Query;
+using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;
@@ -19,7 +21,8 @@ public class FhirVersionReadHandler(
     IResourceStoreGetByVersionId resourceStoreGetByVersionId,
     IFhirResponseHttpHeaderSupport fhirResponseHttpHeaderSupport,
     IFhirResourceTypeSupport fhirResourceTypeSupport,
-    IFhirDeSerializationSupport fhirDeSerializationSupport)
+    IFhirDeSerializationSupport fhirDeSerializationSupport,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirVersionReadRequest, FhirOptionalResourceResponse>
 {
     public async Task<FhirOptionalResourceResponse> Handle(FhirVersionReadRequest request,
@@ -46,7 +49,7 @@ public class FhirVersionReadHandler(
 
         if (resourceStore is null)
         {
-            return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.NotFound, Headers: new Dictionary<string, StringValues>());
+            return GetFhirOptionalResourceResponse(httpStatusCode: HttpStatusCode.NotFound);
         }
         
         var headers = fhirResponseHttpHeaderSupport.ForRead(
@@ -56,19 +59,40 @@ public class FhirVersionReadHandler(
     
         if (resourceStore.IsDeleted)
         {
-            return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.Gone, Headers: headers);
+            return GetFhirOptionalResourceResponse(httpStatusCode: HttpStatusCode.Gone);
         }
 
+        AddRepositoryEvent(resourceStore.ResourceStoreId, request.RequestId);
+        
         Resource? resource = fhirDeSerializationSupport.ToResource(resourceStore.Json);
-        return new FhirOptionalResourceResponse(Resource: resource, HttpStatusCode: HttpStatusCode.OK, Headers: headers, ResourceOutcomeInfo: new ResourceOutcomeInfo(resourceId: resourceStore.ResourceId, versionId: resourceStore.VersionId));
+        return new FhirOptionalResourceResponse(
+            Resource: resource, 
+            HttpStatusCode: HttpStatusCode.OK, 
+            Headers: headers, 
+            RepositoryEventCollector: repositoryEventCollector,
+            ResourceOutcomeInfo: new ResourceOutcomeInfo(
+                resourceId: resourceStore.ResourceId, 
+                versionId: resourceStore.VersionId));
     }
-    
-    private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+
+    private FhirOptionalResourceResponse GetFhirOptionalResourceResponse(HttpStatusCode httpStatusCode)
     {
+        repositoryEventCollector.Clear();
+        return new FhirOptionalResourceResponse(
+            Resource: null, 
+            HttpStatusCode: httpStatusCode, 
+            Headers: new Dictionary<string, StringValues>(), 
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+
+    private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     
@@ -81,10 +105,24 @@ public class FhirVersionReadHandler(
         return null;
     }
     
-    private static FhirOptionalResourceResponse NonIntegerHistoryIdResponse()
+    private FhirOptionalResourceResponse NonIntegerHistoryIdResponse()
     {
         //As this server only stores version ids as integers.
         //It is always true that a non-integer historyId will find no resource and therefore can return 'Not Found' without need to call the database
-        return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.NotFound, Headers: new Dictionary<string, StringValues>());
+        return new FhirOptionalResourceResponse(
+            Resource: null, 
+            HttpStatusCode: HttpStatusCode.NotFound, 
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+    
+    private void AddRepositoryEvent(int? resourceStoreId, string requestId)
+    {
+        ArgumentNullException.ThrowIfNull(resourceStoreId);
+            
+        repositoryEventCollector.Add(
+            requestId: requestId,
+            repositoryEventType: RepositoryEventType.Read, 
+            resourceStoreId: resourceStoreId.Value);
     }
 }

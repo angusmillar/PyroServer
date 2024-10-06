@@ -4,10 +4,8 @@ using Abm.Pyro.Application.FhirResponse;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
-using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Support;
 
 namespace Abm.Pyro.Application.Behavior;
@@ -47,11 +45,11 @@ public class LoggingBehavior<TRequest, TResponse>(
     {
       if (request is FhirRequestBase fhirRequestBase)
       {
-        requestId = GuidSupport.ToFhirGuid(fhirRequestBase.RequestId);
+        requestId = fhirRequestBase.RequestId;
         logger.LogDebug("---------- Request ------------------------------------------------------------");
         DebugLogBaseRequestUrl(fhirRequestBase);
-        DebugLogRequestId(requestId);
-        DebugLogTenant(fhirRequestBase.tenant);
+        DebugLogRequestId(fhirRequestBase.RequestId);
+        DebugLogTenant(fhirRequestBase.Tenant);
         DebugLogHeaders(fhirRequestBase.Headers);
       }
     }

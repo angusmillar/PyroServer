@@ -14,6 +14,7 @@ public interface IFhirTransactionDeleteService
 
     Task ProcessDelete(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         Dictionary<string, BundleEntryTransactionMetaData> bundleEntryTransactionMetaDataDictionary,

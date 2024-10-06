@@ -9,6 +9,7 @@ using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Application.MetaDataService;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Validation;
@@ -18,7 +19,8 @@ namespace Abm.Pyro.Application.FhirHandler;
 public class FhirMetaDataHandler(
     IValidator validator,
     ISearchQueryService searchQueryService,
-    IMetaDataCache metaDataCache)
+    IMetaDataCache metaDataCache,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirMetaDataRequest, FhirResourceResponse>
 {
     public async Task<FhirResourceResponse> Handle(FhirMetaDataRequest request,
@@ -45,14 +47,16 @@ public class FhirMetaDataHandler(
             Resource: capabilityStatement,
             HttpStatusCode: HttpStatusCode.OK,
             Headers: new Dictionary<string, StringValues>(), 
-            ResourceOutcomeInfo: null);
+            ResourceOutcomeInfo: null,
+            RepositoryEventCollector: repositoryEventCollector);
     }
     
-    private static FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
         return new FhirResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 }

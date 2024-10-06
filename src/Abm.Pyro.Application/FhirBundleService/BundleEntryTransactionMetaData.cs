@@ -11,4 +11,5 @@ public class BundleEntryTransactionMetaData(FhirUri forFullUrl, FhirUri requestU
     public bool IsFailure => !IsSuccess;
     public ResourceUpdateInfo? ResourceUpdateInfo { get; set; }
     public OperationOutcome? FailureOperationOutcome { get; set; }
+    
 }

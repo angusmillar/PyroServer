@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Abm.Pyro.Domain\Abm.Pyro.Domain.csproj" />
+      <ProjectReference Include="..\Abm.Pyro.Repository\Abm.Pyro.Repository.csproj" />
     </ItemGroup>
 
     <ItemGroup>

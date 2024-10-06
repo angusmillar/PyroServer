@@ -2,6 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using Hl7.Fhir.Model;
@@ -22,14 +23,16 @@ public class FhirConditionalUpdateHandler(
     IResourceStoreSearch resourceStoreSearch,
     IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse> fhirUpdateHandler,
     IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse> fhirCreateHandler,
-    IOperationOutcomeSupport operationOutcomeSupport)
+    IOperationOutcomeSupport operationOutcomeSupport,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirConditionalUpdateRequest, FhirOptionalResourceResponse>, IFhirConditionalUpdateHandler
 {
-    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string query, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return await Handle(new FhirConditionalUpdateRequest(
                 RequestSchema: "https",
-                tenant: tenant,
+                Tenant: tenant,
+                RequestId: requestId,
                 RequestPath: string.Empty,
                 QueryString: query,
                 Headers: headers,
@@ -91,7 +94,8 @@ public class FhirConditionalUpdateHandler(
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
                     RequestPath: request.RequestPath,
-                    tenant: request.tenant,
+                    Tenant: request.Tenant,
+                    RequestId: request.RequestId,
                     QueryString: request.QueryString,
                     Headers: request.Headers,
                     ResourceName: request.ResourceName,
@@ -106,7 +110,8 @@ public class FhirConditionalUpdateHandler(
             //No matches, no id provided: The server creates the resource.
             return await fhirCreateHandler.Handle(new FhirCreateRequest(
                 RequestSchema: request.RequestSchema,
-                tenant: request.tenant,
+                Tenant: request.Tenant,
+                RequestId: request.RequestId,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: request.Headers,
@@ -123,7 +128,8 @@ public class FhirConditionalUpdateHandler(
             
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
-                    tenant: request.tenant,
+                    Tenant: request.Tenant,
+                    RequestId: request.RequestId,
                     RequestPath: request.RequestPath,
                     QueryString: request.QueryString,
                     Headers: request.Headers,
@@ -138,16 +144,19 @@ public class FhirConditionalUpdateHandler(
 
     }
 
-    private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
     
     private FhirOptionalResourceResponse BadRequestResourceIdsMismatch()
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: operationOutcomeSupport.GetError(
                 new[]
@@ -155,11 +164,13 @@ public class FhirConditionalUpdateHandler(
                     $"Conditional update criteria returned a single matched resource, however its resource id did not match the request's resource's id."
                 }),
             HttpStatusCode: HttpStatusCode.BadRequest,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private FhirOptionalResourceResponse PreconditionFailed()
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: operationOutcomeSupport.GetError(
                 new[]
@@ -167,7 +178,8 @@ public class FhirConditionalUpdateHandler(
                     $"Conditional update criteria was not selective enough, more than a single resource was found to match."
                 }),
             HttpStatusCode: HttpStatusCode.PreconditionFailed,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     public static bool MatchedResourceIdEqualsProvidedResourcedId(string matchedResourceId,

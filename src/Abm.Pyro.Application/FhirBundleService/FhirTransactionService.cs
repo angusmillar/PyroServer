@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using FluentResults;
@@ -27,19 +28,20 @@ public class FhirTransactionService(
     IValidator validator,
     ISearchQueryService searchQueryService,
     IResourceStoreSearch resourceStoreSearch,
-    IFhirNarrativeSupport fhirNarrativeSupport)
+    IFhirNarrativeSupport fhirNarrativeSupport,
+    IRepositoryEventCollector repositoryEventCollector)
     : IFhirBundleService
 {
-    private Dictionary<string, StringValues>? RequestHeaders;
-    private readonly Dictionary<string, BundleEntryTransactionMetaData> BundleEntryTransactionMetaDataDictionary = new();
-    private CancellationTokenSource? CancellationTokenSource;
+    private Dictionary<string, StringValues>? _requestHeaders;
+    private readonly Dictionary<string, BundleEntryTransactionMetaData> _bundleEntryTransactionMetaDataDictionary = new();
+    private CancellationTokenSource? _cancellationTokenSource;
 
     public async Task<FhirResourceResponse> Process(FhirBundleRequest request,
         CancellationToken cancellationToken)
     {
-        RequestHeaders = request.Headers;
+        _requestHeaders = request.Headers;
 
-        CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         OperationOutcome? errorBundleRequestOperationOutcome = ValidateAllBundleRequestPropertiesSet(request.Bundle.Entry);
         if (errorBundleRequestOperationOutcome is not null)
@@ -50,54 +52,54 @@ public class FhirTransactionService(
         //PreProcessing to resolve resource ids
         OperationOutcome? preProcessDeletesOperationOutcomeError = await fhirTransactionDeleteService.PreProcessDeletes(
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            bundleEntryTransactionMetaDataDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
         if (preProcessDeletesOperationOutcomeError is not null)
         {
             return GetBadRequestFhirResourceResponse(preProcessDeletesOperationOutcomeError);
         }
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         OperationOutcome? preProcessPostsOperationOutcomeError = await fhirTransactionPostService.PreProcessPosts(
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            bundleEntryTransactionMetaDataDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
         if (preProcessPostsOperationOutcomeError is not null)
         {
             return GetBadRequestFhirResourceResponse(preProcessPostsOperationOutcomeError);
         }
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         OperationOutcome? preProcessPutsOperationOutcomeError = await fhirTransactionPutService.PreProcessPuts(
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            bundleEntryTransactionMetaDataDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
         if (preProcessPutsOperationOutcomeError is not null)
         {
             return GetBadRequestFhirResourceResponse(preProcessPutsOperationOutcomeError);
         }
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         //Resource References Updating for new resource Ids generated by Creates (POST) or Updates (PUT), Deletes do not need to go through here.
-        OperationOutcome? updateResourceReferencesErrorOperationOutcome = await UpdateResourceReferences(bundle: request.Bundle, cancellationToken: CancellationTokenSource.Token);
+        OperationOutcome? updateResourceReferencesErrorOperationOutcome = await UpdateResourceReferences(bundle: request.Bundle, cancellationToken: _cancellationTokenSource.Token);
         if (updateResourceReferencesErrorOperationOutcome is not null)
         {
             return GetBadRequestFhirResourceResponse(updateResourceReferencesErrorOperationOutcome);
@@ -105,13 +107,13 @@ public class FhirTransactionService(
 
         await fhirTransactionDeleteService.PreProcessDeletes(
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            bundleEntryTransactionMetaDataDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         //Resource Commit Processing, the order matters here
@@ -124,66 +126,73 @@ public class FhirTransactionService(
 
         // 1. Process any DELETE interactions
         await fhirTransactionDeleteService.PreProcessDeletes(entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            bundleEntryTransactionMetaDataDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         // 2. Process any POST interactions
         await fhirTransactionPostService.ProcessPosts(
             tenant: request.Tenant,
+            requestId: request.RequestId,
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            transactionResourceActionOutcomeDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            transactionResourceActionOutcomeDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         // 3. Process any PUT or PATCH interactions
         await fhirTransactionPutService.ProcessPuts(
             tenant: request.Tenant,
+            requestId: request.RequestId,
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            transactionResourceActionOutcomeDictionary: BundleEntryTransactionMetaDataDictionary,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            transactionResourceActionOutcomeDictionary: _bundleEntryTransactionMetaDataDictionary,
+            cancellationToken: _cancellationTokenSource.Token);
 
-        if (BundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
+        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
         {
-            return GetBadRequestFhirResourceResponse(BundleEntryTransactionMetaDataDictionary);
+            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
         // 4. Process any GET or HEAD interactions
         OperationOutcome? getFailedOperationOutcome = await fhirTransactionGetService.ProcessGets(
             tenant: request.Tenant,
+            requestId: request.RequestId,
             entryList: request.Bundle.Entry,
-            requestHeaders: RequestHeaders,
-            cancellationToken: CancellationTokenSource.Token);
+            requestHeaders: _requestHeaders,
+            cancellationToken: _cancellationTokenSource.Token);
 
         if (getFailedOperationOutcome is not null)
         {
+            repositoryEventCollector.Clear();
             return new FhirResourceResponse(
                 Resource: getFailedOperationOutcome,
                 HttpStatusCode: HttpStatusCode.BadRequest,
-                Headers: new Dictionary<string, StringValues>());
+                Headers: new Dictionary<string, StringValues>(),
+                RepositoryEventCollector: repositoryEventCollector);
         }
 
         // 5. Resolve any conditional references
         // This is actually performed with in the UpdateResourceReferences method
 
         
-        //Setup to rerun a successful Transaction Response Bundle  
+        //Setup to return a successful Transaction Response Bundle  
         UpdateBundleToTransactionResponse(bundle: request.Bundle, requestTimeStamp: request.TimeStamp);
+        
         return new FhirResourceResponse(
             Resource: request.Bundle,
             HttpStatusCode: HttpStatusCode.OK,
-            Headers: new Dictionary<string, StringValues>()
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector
         );
     }
 
@@ -243,12 +252,14 @@ public class FhirTransactionService(
 
     private FhirResourceResponse GetBadRequestFhirResourceResponse(OperationOutcome operationOutcome)
     {
+        repositoryEventCollector.Clear();
         return new FhirResourceResponse(
             Resource: operationOutcome,
             HttpStatusCode: HttpStatusCode.BadRequest,
             Headers: new Dictionary<string, StringValues>(),
             ResourceOutcomeInfo: null,
-            CanCommitTransaction: false);
+            CanCommitTransaction: false,
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private async Task<OperationOutcome?> UpdateResourceReferences(Bundle bundle, CancellationToken cancellationToken)
@@ -373,6 +384,11 @@ public class FhirTransactionService(
             return null;
         }
 
+        if (string.IsNullOrWhiteSpace(resourceReference.Reference))
+        {
+            return null;
+        }
+        
         Result<FhirUri> resourceReferenceFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(uri: resourceReference.Reference);
         if (resourceReferenceFhirUriResult.IsFailed)
         {
@@ -400,7 +416,7 @@ public class FhirTransactionService(
         //Updates all references located in the resource's narrative
         if (entry.Resource is DomainResource domainResource)
         {
-            fhirNarrativeSupport.UpdateAllReferences(domainResource.Text, BundleEntryTransactionMetaDataDictionary);    
+            fhirNarrativeSupport.UpdateAllReferences(domainResource.Text, _bundleEntryTransactionMetaDataDictionary);    
         }
 
         return null;
@@ -437,13 +453,13 @@ public class FhirTransactionService(
             return null;
         }
 
-        ArgumentNullException.ThrowIfNull(RequestHeaders);
+        ArgumentNullException.ThrowIfNull(_requestHeaders);
 
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(resourceReferenceFhirUri.ResourceName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, resourceReferenceFhirUri.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
             searchQueryServiceOutcome: searchQueryServiceOutcome,
-            headers: RequestHeaders));
+            headers: _requestHeaders));
         if (!searchQueryValidatorResult.IsValid)
         {
             return searchQueryValidatorResult.GetOperationOutcome();
@@ -489,7 +505,7 @@ public class FhirTransactionService(
         BundleEntryTransactionMetaData? transactionResourceActionOutcome = null;
         if (fhirUrlFhirUri.IsUrn)
         {
-            transactionResourceActionOutcome = BundleEntryTransactionMetaDataDictionary.Values.FirstOrDefault(x =>
+            transactionResourceActionOutcome = _bundleEntryTransactionMetaDataDictionary.Values.FirstOrDefault(x =>
                 x.ForFullUrl.IsUrn &&
                 x.ForFullUrl.UrnType.Equals(fhirUrlFhirUri.UrnType) &&
                 x.ForFullUrl.Urn.Equals(fhirUrlFhirUri.Urn));    
@@ -497,7 +513,7 @@ public class FhirTransactionService(
         
         if (transactionResourceActionOutcome is null && !string.IsNullOrWhiteSpace(fhirUrlFhirUri.ResourceName) && !string.IsNullOrWhiteSpace(fhirUrlFhirUri.ResourceId))
         {
-            transactionResourceActionOutcome = BundleEntryTransactionMetaDataDictionary.Values.FirstOrDefault(x =>
+            transactionResourceActionOutcome = _bundleEntryTransactionMetaDataDictionary.Values.FirstOrDefault(x =>
             x.ForFullUrl.ResourceName.Equals(fhirUrlFhirUri.ResourceName) &&
             x.ForFullUrl.ResourceId.Equals(fhirUrlFhirUri.ResourceId));
         }

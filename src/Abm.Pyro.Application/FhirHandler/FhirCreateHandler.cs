@@ -3,15 +3,16 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.Indexing;
+using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
+using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 using SummaryType = Hl7.Fhir.Rest.SummaryType;
 
@@ -25,14 +26,16 @@ public class FhirCreateHandler(
     IFhirResponseHttpHeaderSupport fhirResponseHttpHeaderSupport,
     IIndexer indexer,
     IPreferredReturnTypeService preferredReturnTypeService,
-    IServiceBaseUrlCache serviceBaseUrlCache)
+    IServiceBaseUrlCache serviceBaseUrlCache,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
-    public Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    public Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return Handle(new FhirCreateRequest(
             RequestSchema: "http",
-            tenant: tenant,
+            Tenant: tenant,
+            RequestId: requestId,
             RequestPath: string.Empty,
             QueryString: null,
             Headers: headers,
@@ -83,6 +86,9 @@ public class FhirCreateHandler(
         );
   
         resourceStore = await resourceStoreAdd.Add(resourceStore);
+
+        AddRepositoryCreateEvent(resourceStoreId: resourceStore.ResourceStoreId, requestId: request.RequestId);
+
         ServiceBaseUrl serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
         
         var responseHeaders = fhirResponseHttpHeaderSupport.ForCreate(
@@ -94,15 +100,36 @@ public class FhirCreateHandler(
             requestSchema: request.RequestSchema,
             serviceBaseUrl: serviceBaseUrl.Url);
 
-        return preferredReturnTypeService.GetResponse(HttpStatusCode.Created, request.Resource, resourceStore.VersionId, request.Headers, responseHeaders);
+        return preferredReturnTypeService.GetResponse(
+            httpStatusCode: HttpStatusCode.Created, 
+            resource: request.Resource,
+            versionId: resourceStore.VersionId, 
+            requestHeaders: request.Headers, 
+            responseHeaders: responseHeaders, 
+            repositoryEventQueue: repositoryEventCollector);
     }
 
-    private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private void AddRepositoryCreateEvent(int? resourceStoreId, string requestId)
     {
+        if (!resourceStoreId.HasValue)
+        {
+            throw new ApplicationException(nameof(resourceStoreId));
+        }
+
+        repositoryEventCollector.Add(
+            requestId: requestId,
+            repositoryEventType: RepositoryEventType.Create,
+            resourceStoreId: resourceStoreId.Value);
+    }
+
+    private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private static void SetResourceMeta(Resource resource,

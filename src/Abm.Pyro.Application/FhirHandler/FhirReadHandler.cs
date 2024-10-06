@@ -2,6 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
@@ -10,6 +11,7 @@ using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
+using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;
@@ -20,10 +22,11 @@ public class FhirReadHandler(
   IFhirResponseHttpHeaderSupport fhirResponseHttpHeaderSupport,
   IFhirResourceTypeSupport fhirResourceTypeSupport,
   IFhirDeSerializationSupport fhirDeSerializationSupport,
-  IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport)
+  IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport,
+  IRepositoryEventCollector repositoryEventCollector)
   : IRequestHandler<FhirReadRequest, FhirOptionalResourceResponse>, IFhirReadHandler
 {
-  public async Task<FhirOptionalResourceResponse> Handle(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken, Dictionary<string, StringValues>? headers = null)
+  public async Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceName, string resourceId, CancellationToken cancellationToken, Dictionary<string, StringValues>? headers = null)
   {
     if (headers is null)
     {
@@ -32,7 +35,8 @@ public class FhirReadHandler(
     
     return await Handle(new FhirReadRequest(
       RequestSchema: "http",
-      tenant: tenant,
+      Tenant: tenant,
+      RequestId: requestId,
       RequestPath: string.Empty,
       QueryString: null,
       Headers: headers,
@@ -54,10 +58,15 @@ public class FhirReadHandler(
     FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.ResourceName);
 
     ResourceStore? resourceStore = await resourceStoreGetByResourceId.Get(request.ResourceId, fhirResourceType);
-
+    
     if (resourceStore is null)
     {
-      return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.NotFound, Headers: new Dictionary<string, StringValues>());
+      repositoryEventCollector.Clear();
+      return new FhirOptionalResourceResponse(
+        Resource: null, 
+        HttpStatusCode: HttpStatusCode.NotFound, 
+        Headers: new Dictionary<string, StringValues>(),
+        RepositoryEventCollector: repositoryEventCollector);
     }
     
     if (!IfNoneMatch(request.Headers, resourceStore))
@@ -77,27 +86,37 @@ public class FhirReadHandler(
     
     if (resourceStore.IsDeleted)
     {
-      return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.Gone, Headers: headers);
+      repositoryEventCollector.Clear();
+      return new FhirOptionalResourceResponse(
+        Resource: null, 
+        HttpStatusCode: HttpStatusCode.Gone, 
+        Headers: headers,
+        RepositoryEventCollector: repositoryEventCollector);
     }
 
+    AddRepositoryEvent(resourceStore.ResourceStoreId, request.RequestId);
+    
     Resource? resource = fhirDeSerializationSupport.ToResource(resourceStore.Json);
     return new FhirOptionalResourceResponse(
       Resource: resource, 
       HttpStatusCode: HttpStatusCode.OK, 
       Headers: headers, 
+      RepositoryEventCollector: repositoryEventCollector,
       ResourceOutcomeInfo: new ResourceOutcomeInfo(
         resourceId: resourceStore.ResourceId, 
         versionId: resourceStore.VersionId));
   }
-  
-  private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+
+  private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
   {
+    repositoryEventCollector.Clear();
     return new FhirOptionalResourceResponse(
       Resource: validatorResult.GetOperationOutcome(), 
       HttpStatusCode: validatorResult.GetHttpStatusCode(),
-      Headers: new Dictionary<string, StringValues>());
+      Headers: new Dictionary<string, StringValues>(),
+      RepositoryEventCollector: repositoryEventCollector);
   }
-  
+
   private bool IfNoneMatch(Dictionary<string, StringValues> requestHeaders, ResourceStore resourceStore)
   {
     int? ifNoneMatchVersionId = fhirRequestHttpHeaderSupport.GetIfNoneMatch(requestHeaders);
@@ -118,8 +137,23 @@ public class FhirReadHandler(
     return resourceStoreLastUpdatedUtc > ifModifiedSinceUtc;
   }
 
-  private static FhirOptionalResourceResponse NotModifiedResponse()
+  private FhirOptionalResourceResponse NotModifiedResponse()
   {
-    return new FhirOptionalResourceResponse(Resource: null, HttpStatusCode: HttpStatusCode.NotModified, Headers: new Dictionary<string, StringValues>());
+    repositoryEventCollector.Clear();
+    return new FhirOptionalResourceResponse(
+      Resource: null, 
+      HttpStatusCode: HttpStatusCode.NotModified, 
+      Headers: new Dictionary<string, StringValues>(),
+      RepositoryEventCollector: repositoryEventCollector);
+  }
+
+  private void AddRepositoryEvent(int? resourceStoreId, string requestId)
+  {
+    ArgumentNullException.ThrowIfNull(resourceStoreId);
+
+    repositoryEventCollector.Add(
+      requestId: requestId,
+      repositoryEventType: RepositoryEventType.Read, 
+      resourceStoreId: resourceStoreId.Value);
   }
 }

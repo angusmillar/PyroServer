@@ -15,10 +15,11 @@ public class CorrelationBehavior<TRequest, TResponse>(
     RequestHandlerDelegate<TResponse> next, 
     CancellationToken cancellationToken)
   {
-    string xRequestId = GuidSupport.NewFhirGuid();
+    string xRequestId = String.Empty;
     string? xCorrelationId = null;
     if (request is FhirRequestBase fhirRequestBase)
     {
+      xRequestId = fhirRequestBase.RequestId;
       xCorrelationId = fhirRequestHttpHeaderSupport.GetXRequestId(fhirRequestBase.Headers);
     }
     

@@ -7,6 +7,7 @@ public interface IFhirTransactionGetService
 {
     Task<OperationOutcome?> ProcessGets(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         CancellationToken cancellationToken);

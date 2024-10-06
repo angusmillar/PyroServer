@@ -24,7 +24,7 @@ public class DatabaseVersionValidationOnStartupService(
         string[] pendingDbMigrationsList = await databasePendingMigrations.Get(tenant);
         if (pendingDbMigrationsList.Length == 0)
         {
-            logger.LogInformation("Tenant {Tenant} database version valid", 
+            logger.LogInformation("Tenant {Tenant} database version ok", 
                 tenant.DisplayName);
             return;
         }

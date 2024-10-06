@@ -22,6 +22,7 @@ public class FhirTransactionGetService(
 {
     public async Task<OperationOutcome?> ProcessGets(
         string tenant,
+        string requestId,
         List<Bundle.EntryComponent> entryList,
         Dictionary<string, StringValues> requestHeaders,
         CancellationToken cancellationToken)
@@ -68,7 +69,8 @@ public class FhirTransactionGetService(
                 
                 FhirResourceResponse searchResponse = await fhirSearchHandler.Handle(
                     tenant: tenant,
-                    ResourceName: requestFhirUri.ResourceName,
+                    requestId: requestId,
+                    resourceName: requestFhirUri.ResourceName,
                     query: requestFhirUri.Query,
                     headers: GetRequestHeaders(getEntry: getEntry, requestHeaders: requestHeaders),
                     cancellationToken: cancellationToken);
@@ -102,6 +104,7 @@ public class FhirTransactionGetService(
             
             FhirOptionalResourceResponse readResponse = await fhirReadHandler.Handle(
                 tenant: tenant,
+                requestId: requestId,
                 resourceName: requestFhirUri.ResourceName,
                 resourceId: requestFhirUri.ResourceId,
                 cancellationToken: cancellationToken,

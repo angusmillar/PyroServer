@@ -2,6 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using Hl7.Fhir.Model;
@@ -9,6 +10,7 @@ using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
@@ -22,7 +24,8 @@ public class FhirHistoryInstanceLevelHandler(
     ISearchQueryService searchQueryService,
     IResourceStoreGetHistoryByResourceId resourceStoreGetHistoryByResourceId,
     IFhirBundleCreationSupport fhirBundleCreationSupport,
-    IPaginationSupport paginationSupport)
+    IPaginationSupport paginationSupport,
+    IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirHistoryInstanceLevelRequest, FhirResourceResponse>
 {
     public async Task<FhirResourceResponse> Handle(FhirHistoryInstanceLevelRequest request,
@@ -47,6 +50,8 @@ public class FhirHistoryInstanceLevelHandler(
 
         ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistoryByResourceId.Get(fhirResourceType, request.ResourceId, searchQueryServiceOutcome);
 
+        AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
+
         Bundle bundle = await fhirBundleCreationSupport.CreateBundle(resourceStoreSearchOutcome, Bundle.BundleType.History, request.RequestSchema);
 
         await paginationSupport.SetBundlePagination(bundle: bundle,
@@ -55,19 +60,41 @@ public class FhirHistoryInstanceLevelHandler(
             requestPath: request.RequestPath,
             pagesTotal: resourceStoreSearchOutcome.PagesTotal,
             pageCurrentlyRequired: resourceStoreSearchOutcome.PageRequested);
-
+        
         return new FhirResourceResponse(
             Resource: bundle,
             HttpStatusCode: HttpStatusCode.OK,
             Headers: new Dictionary<string, StringValues>(), 
-            ResourceOutcomeInfo: null);
+            ResourceOutcomeInfo: null,
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+
+    private void AddRepositoryEvents(ResourceStoreSearchOutcome resourceStoreSearchOutcome, string requestId)
+    {
+        AddRepositoryEvent(resourceStoreSearchOutcome.ResourceStoreList, requestId);
+        AddRepositoryEvent(resourceStoreSearchOutcome.IncludedResourceStoreList, requestId);
+    }
+
+    private void AddRepositoryEvent(List<ResourceStore> resourceStoreList, string requestId)
+    {
+        foreach (var resourceStoreId in resourceStoreList.Select(x => x.ResourceStoreId))
+        {
+            ArgumentNullException.ThrowIfNull(resourceStoreId);
+            
+            repositoryEventCollector.Add(
+                requestId: requestId,
+                repositoryEventType: RepositoryEventType.Read, 
+                resourceStoreId: resourceStoreId.Value);
+        }
     }
     
-    private static FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
+        repositoryEventCollector.Clear();
         return new FhirResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 }

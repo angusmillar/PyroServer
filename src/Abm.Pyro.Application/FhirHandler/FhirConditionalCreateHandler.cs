@@ -2,6 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using MediatR;
@@ -22,7 +23,8 @@ public class FhirConditionalCreateHandler(
     IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport,
     IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse> fhirCreateHandler,
     ISearchQueryService searchQueryService,
-    IResourceStoreSearch resourceStoreSearch)
+    IResourceStoreSearch resourceStoreSearch,
+     IRepositoryEventCollector repositoryEventCollector)
     : IRequestHandler<FhirConditionalCreateRequest, FhirOptionalResourceResponse>
 {
     public async Task<FhirOptionalResourceResponse> Handle(FhirConditionalCreateRequest request,
@@ -74,25 +76,28 @@ public class FhirConditionalCreateHandler(
         throw new ApplicationException($"Conditional create has encountered and unknown action.");
     }
     
-    private static FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
     
-    private static FhirOptionalResourceResponse InvalidSearchQueryResponse(FhirResourceResponse? searchQueryValidationResponse)
+    private FhirOptionalResourceResponse InvalidSearchQueryResponse(FhirResourceResponse? searchQueryValidationResponse)
     {
         if (searchQueryValidationResponse is null)
         {
             throw new NullReferenceException(nameof(searchQueryValidationResponse));
         }
 
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: searchQueryValidationResponse.Resource,
             HttpStatusCode: searchQueryValidationResponse.HttpStatusCode,
-            Headers: searchQueryValidationResponse.Headers);
+            Headers: searchQueryValidationResponse.Headers,
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
     private async Task<FhirOptionalResourceResponse> ProcessAsCreate(FhirConditionalCreateRequest request,
@@ -100,7 +105,8 @@ public class FhirConditionalCreateHandler(
     {
         return await fhirCreateHandler.Handle(new FhirCreateRequest(
                 RequestSchema: request.RequestSchema,
-                tenant: request.tenant,
+                Tenant: request.Tenant,
+                RequestId: request.RequestId,
                 RequestPath: request.RequestPath,
                 QueryString: request.QueryString,
                 Headers: new Dictionary<string, StringValues>(),
@@ -111,20 +117,23 @@ public class FhirConditionalCreateHandler(
             cancellationToken);
     }
 
-    private static FhirOptionalResourceResponse PreconditionFailedResponse()
+    private FhirOptionalResourceResponse PreconditionFailedResponse()
     {
+        repositoryEventCollector.Clear();
         return new FhirOptionalResourceResponse(
             Resource: null,
             HttpStatusCode: HttpStatusCode.PreconditionFailed,
-            Headers: new Dictionary<string, StringValues>());
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 
-    private static FhirOptionalResourceResponse OkResponse(ResourceStore resourceStore)
+    private FhirOptionalResourceResponse OkResponse(ResourceStore resourceStore)
     {
         return new FhirOptionalResourceResponse(
             Resource: null,
             HttpStatusCode: HttpStatusCode.OK,
-            Headers: new Dictionary<string, StringValues>(), 
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector,
             ResourceOutcomeInfo: new ResourceOutcomeInfo(
                 resourceId: resourceStore.ResourceId, 
                 versionId: resourceStore.VersionId));
