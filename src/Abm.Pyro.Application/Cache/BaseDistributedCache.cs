@@ -25,8 +25,8 @@ namespace Abm.Pyro.Application.Cache;
 
     protected async Task SetAsync(string key, T value, DistributedCacheEntryOptions options)
     {
-      byte[] Bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, GetJsonSerializerOptions()));
-      await distributedCache.SetAsync(TenantKey(key), Bytes, options);      
+      byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(value, GetJsonSerializerOptions()));
+      await distributedCache.SetAsync(TenantKey(key), bytes, options);      
     }
 
     protected async Task RemoveAsync(string key)
