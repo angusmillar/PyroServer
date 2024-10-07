@@ -50,7 +50,7 @@ public class DatabaseTransactionBehavior<TRequest, TResponse>(
 
     private async Task PublishRepositoryEvents()
     {
-        if (_transactionResponse?.RepositoryEventCollector is null)
+        if (_transactionResponse?.RepositoryEventCollector is null || _transactionResponse.RepositoryEventCollector.RepositoryEventList.Count == 0)
         {
             return;
         }

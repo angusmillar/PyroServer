@@ -67,7 +67,7 @@ public class TenantService(
         return new Domain.Configuration.Tenant()
         {
             Code = "*TenantNotSet*",
-            DisplayName = "Tenant has not been set",
+            DisplayName = "Tenant has not been set. Are you calling from a background service and forgotten to set it?",
             SqlConnectionStringCode = "*TenantNotSet*"
         };
     }

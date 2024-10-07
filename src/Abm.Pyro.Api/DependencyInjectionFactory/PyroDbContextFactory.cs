@@ -1,14 +1,22 @@
-﻿using Abm.Pyro.Domain.Configuration;
+﻿using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Repository;
 using Abm.Pyro.Repository.DependencyFactory;
 using Microsoft.EntityFrameworkCore;
 
 namespace Abm.Pyro.Api.DependencyInjectionFactory;
 
-public class PyroDbContextFactory(IServiceProvider serviceProvider, IWebHostEnvironment env) : IPyroDbContextFactory
+public class PyroDbContextFactory(
+    IServiceProvider serviceProvider,
+    ITenantService tenantService,
+    IWebHostEnvironment env) : IPyroDbContextFactory
 {
-    public PyroDbContext Get(Tenant tenant)
+    public PyroDbContext Get(Tenant? tenant)
     {
+        if (tenant == null)
+        {
+            tenant = tenantService.GetScopedTenant();
+        }
         var configuration = serviceProvider.GetRequiredService<IConfiguration>();
         
         string? connectionString = configuration.GetConnectionString(tenant.SqlConnectionStringCode);

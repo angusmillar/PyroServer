@@ -12,10 +12,12 @@ using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirBundleService;
+using Abm.Pyro.Application.FhirClient;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResolver;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Application.Indexing;
@@ -42,6 +44,8 @@ using Abm.Pyro.Application.OnStartupService;
 using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Validation;
 using Abm.Pyro.Repository.DependencyFactory;
+using Polly;
+using Polly.Extensions.Http;
 using Serilog.Core;
 
 Log.Logger = new LoggerConfiguration()
@@ -119,6 +123,14 @@ try
         opt.TriggersEvery = TimeSpan.FromSeconds(1); 
     });
     
+    var retryPolicy = HttpPolicyExtensions
+        .HandleTransientHttpError() // HttpRequestException, 5XX and 408
+        .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(retryAttempt));
+    
+    // FHIR HTTP Client registration
+    builder.Services.AddHttpClient<IFhirHttpClientFactory, FhirHttpClientFactory>()
+        .AddPolicyHandler(retryPolicy);
+    
     // Services  --------------------------------------------------------------------------------------
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
     builder.Services.AddSingleton<IFhirJsonSerializersOptions, FhirJsonSerializersOptions>();
@@ -159,6 +171,9 @@ try
     // RepositoryEvent Services-----------------------
     builder.Services.AddScoped<IRepositoryEventCollector, RepositoryEventCollector>();
     builder.Services.AddSingleton<IRepositoryEventChannel, RepositoryEventChannel>();
+    
+    // FHIR Subscriptions & Notification
+    builder.Services.AddScoped<IFhirNotificationService, FhirNotificationService>();
     
     // Fhir Batch & Transaction bundle services ----------------------
     builder.Services.AddScoped<IMetaDataService, MetaDataService>();

@@ -1,14 +1,16 @@
 ﻿using System.Threading.Channels;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.Tenant;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Abm.Pyro.Application.Notification;
 
 public class RepositoryEventChannel(
     ILogger<RepositoryEventChannel> logger,
-    IServiceScopeFactory serviceScopeFactory,
-    IFhirNotificationService fhirNotificationService) : IRepositoryEventChannel
+    IHostEnvironment hostEnvironment,
+    IServiceScopeFactory serviceScopeFactory) : IRepositoryEventChannel
 {
     private readonly Channel<ICollection<RepositoryEvent>> _channel = Channel.CreateBounded<ICollection<RepositoryEvent>>(
         new BoundedChannelOptions(capacity: 5000)
@@ -25,10 +27,26 @@ public class RepositoryEventChannel(
     {
         await foreach (ICollection<RepositoryEvent> repositoryEventList in _channel.Reader.ReadAllAsync(cancellationToken))
         {
-            //await Task.Delay(10, cancellationToken: cancellationToken);
+            if (repositoryEventList.Count == 0)
+            {
+                continue;
+            }
+
+            ThrowIfInvalidTenants(repositoryEventList);
+            
+            //Helps with log messages order, but needs to go for production deployments
+            if (hostEnvironment.IsDevelopment())
+            {
+                await Task.Delay(5, cancellationToken: cancellationToken);    
+            }
+            
             using var scope = serviceScopeFactory.CreateScope();
             try
             {
+                ITenantService tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
+                tenantService.SetScopedTenant(repositoryEventList.First().Tenant);
+                
+                IFhirNotificationService fhirNotificationService = scope.ServiceProvider.GetRequiredService<IFhirNotificationService>();
                 await fhirNotificationService.ProcessEventList(repositoryEventList);
                 
             }
@@ -38,4 +56,12 @@ public class RepositoryEventChannel(
             }
         }
     }
+    private static void ThrowIfInvalidTenants(ICollection<RepositoryEvent> repositoryEventList)
+    {
+        if (!repositoryEventList.All(x => x.Tenant.Equals(repositoryEventList.First().Tenant)))
+        {
+            throw new ApplicationException($"All Repository Events in a collection must have the same {nameof(Tenant)}");
+        }
+    }
+    
 }
