@@ -111,14 +111,12 @@ try
     builder.Services.AddAppStartUpService<FhirServiceBaseUrlManagementOnStartupService>();
     builder.Services.AddAppStartUpService<ValidateAndPrimeResourceEndpointPoliciesOnStartupService>();
     
-    // -InMemoryMessageQueue -----------------------
-    builder.Services.AddScoped<IRepositoryEventCollector, RepositoryEventCollector>();
-    builder.Services.AddSingleton<IRepositoryEventChannel, RepositoryEventChannel>();
-    
-    //Runs a background services which polls for new FHIR Tasks from the external Order Repositories
+    //Runs a background services which processes and handles system-wide notification events, for example FHIR Subscriptions & notifications  
     builder.Services.AddTimedHostedService<NotificationManager>(opt =>
     {
-        opt.TriggersEvery = TimeSpan.FromSeconds(10);
+        // This service continuously runs, therefore, the 1 sec is only incurred on application start-up,
+        // or an uncaught exception seen cycling  
+        opt.TriggersEvery = TimeSpan.FromSeconds(1); 
     });
     
     // Services  --------------------------------------------------------------------------------------
@@ -158,6 +156,10 @@ try
     builder.Services.AddSingleton<IFhirPathResolve, FhirPathResolve>();
     builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
+    // RepositoryEvent Services-----------------------
+    builder.Services.AddScoped<IRepositoryEventCollector, RepositoryEventCollector>();
+    builder.Services.AddSingleton<IRepositoryEventChannel, RepositoryEventChannel>();
+    
     // Fhir Batch & Transaction bundle services ----------------------
     builder.Services.AddScoped<IMetaDataService, MetaDataService>();
 
@@ -189,6 +191,7 @@ try
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlCache>();
     builder.Services.AddScoped<IMetaDataCache, MetaDataCache>();
 
+    // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
     builder.Services.AddScoped<IFhirConditionalDeleteHandler, FhirConditionalDeleteHandler>();
     builder.Services.AddScoped<IFhirCreateHandler, FhirCreateHandler>();
@@ -197,8 +200,7 @@ try
     builder.Services.AddScoped<IFhirReadHandler, FhirReadHandler>();
     builder.Services.AddScoped<IFhirSearchHandler, FhirSearchHandler>();
 
-
-    // Fhir Handler MediatR pipelines (Loads all MediatR Handlers and behaviors) --------------------------- 
+    // MediatR pipeline (Loads all MediatR Handlers and behaviors) --------------------------- 
     builder.Services.AddMediatR(config =>
     {
         config.RegisterServicesFromAssemblyContaining<IApplicationLayerAssemblyMarker>()
@@ -268,11 +270,10 @@ try
     builder.Services.AddSingleton<IIndexQuantityPredicateFactory, IndexQuantityPredicateFactory>();
     builder.Services.AddSingleton<IIndexUriPredicateFactory, IndexUriPredicateFactory>();
     builder.Services.AddSingleton<IIndexCompositePredicateFactory, IndexCompositePredicateFactory>();
-
-    builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();    
+    
+    // Tenant and Tenanted db queries and repositories 
     builder.Services.AddScoped<ITenantService, TenantService>();
-    
-    
+    builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     builder.Services.AddTransient<IPyroDbContextFactory, PyroDbContextFactory>();
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
     
