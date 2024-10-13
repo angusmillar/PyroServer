@@ -18,16 +18,17 @@ public class RepositoryEventCollector(
         _repositoryEventList.Add(repositoryEvent);
     }
    
-    public void Add(string requestId, RepositoryEventType repositoryEventType, int resourceStoreId)
+    public void Add(FhirResourceTypeId resourceType, string requestId, RepositoryEventType repositoryEventType, string resourceId)
     {
         if (_eventTimestampUtc is null)
         {
             _eventTimestampUtc = dateTimeProvider.Now.UtcDateTime;
         }
         _repositoryEventList.Add(new RepositoryEvent(
+            ResourceType: resourceType,
             RequestId: requestId,
             RepositoryEventType: repositoryEventType, 
-            ResourceStoreId: resourceStoreId, 
+            ResourceId: resourceId, 
             Tenant: tenantService.GetScopedTenant(), 
             EventTimestampUtc: _eventTimestampUtc.Value));
     }

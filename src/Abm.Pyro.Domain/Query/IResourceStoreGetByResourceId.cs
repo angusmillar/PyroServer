@@ -5,5 +5,5 @@ namespace Abm.Pyro.Domain.Query;
 
 public interface IResourceStoreGetByResourceId
 {
-  Task<ResourceStore?> Get(string resourceId, FhirResourceTypeId resourceType);
+  Task<ResourceStore?> Get(FhirResourceTypeId resourceType, string resourceId);
 }

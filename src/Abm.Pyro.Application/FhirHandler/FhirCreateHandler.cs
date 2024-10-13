@@ -1,7 +1,9 @@
 ﻿using System.Net;
+using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
@@ -14,11 +16,14 @@ using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
+using Microsoft.Extensions.Logging;
 using SummaryType = Hl7.Fhir.Rest.SummaryType;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.FhirHandler;
 
 public class FhirCreateHandler(
+    ILogger<FhirCreateHandler> logger,
     IValidator validator,
     IResourceStoreAdd resourceStoreAdd,
     IFhirSerializationSupport fhirSerializationSupport,
@@ -27,9 +32,13 @@ public class FhirCreateHandler(
     IIndexer indexer,
     IPreferredReturnTypeService preferredReturnTypeService,
     IServiceBaseUrlCache serviceBaseUrlCache,
-    IRepositoryEventCollector repositoryEventCollector)
+    IRepositoryEventCollector repositoryEventCollector,
+    IActiveSubscriptionCache activeSubscriptionCache,
+    IFhirSubscriptionService fhirSubscriptionService)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
+
+    private AcceptSubscriptionOutcome? _acceptSubscriptionOutcome = null;
     public Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
     {
         return Handle(new FhirCreateRequest(
@@ -62,6 +71,16 @@ public class FhirCreateHandler(
 
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.Resource.TypeName);
 
+        //Manage the acceptance or rejection of requests to create new active Subscriptions
+        if (request.Resource is Subscription subscription)
+        {
+            _acceptSubscriptionOutcome = await fhirSubscriptionService.CanSubscriptionBeAccepted(subscription);
+            if (_acceptSubscriptionOutcome is not null && !_acceptSubscriptionOutcome.Success)
+            {
+                return InvalidSubscriptionRegistrationResponse(_acceptSubscriptionOutcome);
+            }
+        }
+        
         SetResourceMeta(request.Resource, request.TimeStamp);
 
         IndexerOutcome indexerOutcome = await indexer.Process(request.Resource, fhirResourceType);
@@ -87,7 +106,17 @@ public class FhirCreateHandler(
   
         resourceStore = await resourceStoreAdd.Add(resourceStore);
 
-        AddRepositoryCreateEvent(resourceStoreId: resourceStore.ResourceStoreId, requestId: request.RequestId);
+        AddRepositoryCreateEvent(
+            resourceType:resourceStore.ResourceType, 
+            resourceId: resourceStore.ResourceId, 
+            requestId: request.RequestId);
+
+
+        //Refreshes the Subscription Cache if this was a successful Subscription registration 
+        await ManageActiveSubscriptionCacheRefreshing(
+            resourceId: resourceStore.ResourceId, 
+            versionId: resourceStore.VersionId);
+        
 
         ServiceBaseUrl serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
         
@@ -109,17 +138,22 @@ public class FhirCreateHandler(
             repositoryEventQueue: repositoryEventCollector);
     }
 
-    private void AddRepositoryCreateEvent(int? resourceStoreId, string requestId)
+    private async Task ManageActiveSubscriptionCacheRefreshing(string resourceId, int versionId)
     {
-        if (!resourceStoreId.HasValue)
+        if (_acceptSubscriptionOutcome is not null && _acceptSubscriptionOutcome.Success)
         {
-            throw new ApplicationException(nameof(resourceStoreId));
+            await activeSubscriptionCache.RefreshCache();
+            logger.LogInformation("Subscription activated for resource Id: {ResourceID}, Version Id: {VersionId}", resourceId, versionId);
         }
+    }
 
+    private void AddRepositoryCreateEvent(FhirResourceTypeId resourceType,  string resourceId, string requestId)
+    {
         repositoryEventCollector.Add(
+            resourceType: resourceType,
             requestId: requestId,
             repositoryEventType: RepositoryEventType.Create,
-            resourceStoreId: resourceStoreId.Value);
+            resourceId: resourceId);
     }
 
     private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
@@ -128,6 +162,16 @@ public class FhirCreateHandler(
         return new FhirOptionalResourceResponse(
             Resource: validatorResult.GetOperationOutcome(), 
             HttpStatusCode: validatorResult.GetHttpStatusCode(),
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+    
+    private FhirOptionalResourceResponse InvalidSubscriptionRegistrationResponse(AcceptSubscriptionOutcome acceptSubscriptionOutcome)
+    {
+        repositoryEventCollector.Clear();
+        return new FhirOptionalResourceResponse(
+            Resource: acceptSubscriptionOutcome.OperationOutcome, 
+            HttpStatusCode: HttpStatusCode.BadRequest,
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
     }

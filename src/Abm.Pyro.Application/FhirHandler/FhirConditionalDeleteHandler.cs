@@ -53,8 +53,8 @@ public class FhirConditionalDeleteHandler(
         
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, request.QueryString);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
-            searchQueryServiceOutcome: searchQueryServiceOutcome, 
-            headers: request.Headers));
+            SearchQueryServiceOutcome: searchQueryServiceOutcome, 
+            Headers: request.Headers));
         if (!searchQueryValidatorResult.IsValid)
         {
             return InvalidValidatorResultResponse(searchQueryValidatorResult);

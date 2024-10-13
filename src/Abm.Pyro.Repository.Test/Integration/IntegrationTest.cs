@@ -91,9 +91,7 @@ public class IntegrationTest : IDisposable, IAsyncDisposable
         var resourceStoreGetByResourceId = new ResourceStoreGetByResourceId(_context);
         
         // Act
-        ResourceStore? resourceStore = await resourceStoreGetByResourceId.Get(
-            resourceId: "123", 
-            resourceType: FhirResourceTypeId.Patient);
+        ResourceStore? resourceStore = await resourceStoreGetByResourceId.Get(resourceType: FhirResourceTypeId.Patient, resourceId: "123");
         
         //Assert
         Assert.NotNull(resourceStore);

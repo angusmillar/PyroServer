@@ -458,8 +458,8 @@ public class FhirTransactionService(
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(resourceReferenceFhirUri.ResourceName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, resourceReferenceFhirUri.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
-            searchQueryServiceOutcome: searchQueryServiceOutcome,
-            headers: _requestHeaders));
+            SearchQueryServiceOutcome: searchQueryServiceOutcome,
+            Headers: _requestHeaders));
         if (!searchQueryValidatorResult.IsValid)
         {
             return searchQueryValidatorResult.GetOperationOutcome();

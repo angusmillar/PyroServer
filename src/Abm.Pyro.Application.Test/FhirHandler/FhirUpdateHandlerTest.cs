@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using Abm.Pyro.Application.Cache;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Utility;
@@ -38,35 +39,35 @@ namespace Abm.Pyro.Application.Test.FhirHandler;
 
 public class FhirUpdateHandlerTest
 {
-    private readonly Mock<IValidator> ValidatorMock;
-    private readonly IFhirResourceTypeSupport FhirResourceTypeSupport;
-    private readonly Mock<IResourceStoreGetForUpdateByResourceId> ResourceStoreGetForUpdateByResourceIdMock;
-    private readonly Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>> FhirCreateHandlerMock;
-    private readonly Mock<IResourceStoreAdd> ResourceStoreAddMock;
-    private readonly IIndexer Indexer;
-    private readonly IFhirSerializationSupport FhirSerializationSupport;
-    private readonly IResourceStoreUpdate ResourceStoreUpdate;
-    private readonly IFhirResponseHttpHeaderSupport FhirResponseHttpHeaderSupport;
-    private readonly IFhirRequestHttpHeaderSupport FhirRequestHttpHeaderSupport;
-    private readonly IOperationOutcomeSupport OperationOutcomeSupport;
-    private readonly Mock<IPreferredReturnTypeService> PreferredReturnTypeServiceMock;
-    private readonly Mock<IOptions<IndexingSettings>> IndexingSettingsOptionsMock;
-    private readonly Mock<IRepositoryEventCollector> RepositoryEventCollectorMock;
-    private readonly DateTime Now;
+    private readonly Mock<IValidator> _validatorMock;
+    private readonly IFhirResourceTypeSupport _fhirResourceTypeSupport;
+    private readonly Mock<IResourceStoreGetForUpdateByResourceId> _resourceStoreGetForUpdateByResourceIdMock;
+    private readonly Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>> _fhirCreateHandlerMock;
+    private readonly Mock<IResourceStoreAdd> _resourceStoreAddMock;
+    private readonly IIndexer _indexer;
+    private readonly IFhirSerializationSupport _fhirSerializationSupport;
+    private readonly IResourceStoreUpdate _resourceStoreUpdate;
+    private readonly IFhirResponseHttpHeaderSupport _fhirResponseHttpHeaderSupport;
+    private readonly IFhirRequestHttpHeaderSupport _fhirRequestHttpHeaderSupport;
+    private readonly IOperationOutcomeSupport _operationOutcomeSupport;
+    private readonly Mock<IPreferredReturnTypeService> _preferredReturnTypeServiceMock;
+    private readonly Mock<IOptions<IndexingSettings>> _indexingSettingsOptionsMock;
+    private readonly Mock<IRepositoryEventCollector> _repositoryEventCollectorMock;
+    private readonly DateTime _now;
    
     //Setup
     protected FhirUpdateHandlerTest()
     {
         
-        Now = DateTime.Now;
+        _now = DateTime.Now;
         
-        ValidatorMock = new Mock<IValidator>();
-        ValidatorMock.Setup(x => 
+        _validatorMock = new Mock<IValidator>();
+        _validatorMock.Setup(x => 
                 x.Validate(
                     It.IsAny<IValidatable>()))
             .Returns(new ValidatorResult(isValid: true, httpStatusCode: null, operationOutcome: null));
         
-        FhirResourceTypeSupport = new FhirResourceTypeSupport();
+        _fhirResourceTypeSupport = new FhirResourceTypeSupport();
 
         var observationResource = GetObservationResource();
         
@@ -76,8 +77,8 @@ public class FhirUpdateHandlerTest
             isCurrent: true,
             isDeleted: false);
         
-        ResourceStoreGetForUpdateByResourceIdMock = new Mock<IResourceStoreGetForUpdateByResourceId>();
-        ResourceStoreGetForUpdateByResourceIdMock.Setup(x => 
+        _resourceStoreGetForUpdateByResourceIdMock = new Mock<IResourceStoreGetForUpdateByResourceId>();
+        _resourceStoreGetForUpdateByResourceIdMock.Setup(x => 
             x.Get(
                 It.IsAny<FhirResourceTypeId>(), 
                 It.IsAny<string>()))
@@ -101,8 +102,8 @@ public class FhirUpdateHandlerTest
             indexUriList: new List<IndexUri>(),
             rowVersion: 100);
         
-        ResourceStoreAddMock = new Mock<IResourceStoreAdd>();
-        ResourceStoreAddMock.Setup(x => 
+        _resourceStoreAddMock = new Mock<IResourceStoreAdd>();
+        _resourceStoreAddMock.Setup(x => 
             x.Add(
                 It.IsAny<ResourceStore>()))
             .ReturnsAsync((ResourceStore)resourceStoreHistoryEntity);
@@ -114,11 +115,12 @@ public class FhirUpdateHandlerTest
         
         var repositoryEventCollector = new RepositoryEventCollector(TenantServiceFactory.GetTest(), dateTimeProviderMock.Object);
         repositoryEventCollector.Add(new RepositoryEvent(
+            ResourceType: FhirResourceTypeId.Observation,
             RequestId: "requestId",
             RepositoryEventType: RepositoryEventType.Create,
-            ResourceStoreId: 1,
+            ResourceId: observationResource.Id,
             Tenant: TenantServiceFactory.GetTest().GetScopedTenant(),
-            EventTimestampUtc: Now.ToUniversalTime()));
+            EventTimestampUtc: _now.ToUniversalTime()));
         
         var createdObservationResource = GetObservationResource();
         var fhirResponse = new FhirOptionalResourceResponse(
@@ -126,8 +128,8 @@ public class FhirUpdateHandlerTest
             HttpStatusCode: HttpStatusCode.Created,
             Headers: new Dictionary<string, StringValues>()
             {
-                { HttpHeaderName.Date, new StringValues(Now.ToString("r")) },
-                { HttpHeaderName.LastModified, new StringValues(Now.ToString("r")) },
+                { HttpHeaderName.Date, new StringValues(_now.ToString("r")) },
+                { HttpHeaderName.LastModified, new StringValues(_now.ToString("r")) },
                 { HttpHeaderName.ETag, new StringValues(createdObservationResource.VersionId) },
                 {
                     HttpHeaderName.Location,
@@ -138,8 +140,8 @@ public class FhirUpdateHandlerTest
             },
             RepositoryEventCollector: repositoryEventCollector);
         
-        FhirCreateHandlerMock = new Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>>();
-        FhirCreateHandlerMock.Setup(x => 
+        _fhirCreateHandlerMock = new Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>>();
+        _fhirCreateHandlerMock.Setup(x => 
             x.Handle(
                 It.IsAny<FhirCreateRequest>(), 
                 It.IsAny<CancellationToken>()))
@@ -159,7 +161,7 @@ public class FhirUpdateHandlerTest
                 It.IsAny<Resource>(), 
                 It.IsAny<FhirResourceTypeId>()))
             .ReturnsAsync(indexerOutcome);
-        Indexer = indexerMock.Object;
+        _indexer = indexerMock.Object;
 
         var fhirSerializationSupportMock = new Mock<IFhirSerializationSupport>();
         fhirSerializationSupportMock.Setup(x => 
@@ -168,7 +170,7 @@ public class FhirUpdateHandlerTest
                 It.IsAny<Hl7.Fhir.Rest.SummaryType?>(), 
                 It.IsAny<bool>()))
             .Returns("The Observation resource's JSON object would be here, but why bother for the unit test!");
-        FhirSerializationSupport = fhirSerializationSupportMock.Object;
+        _fhirSerializationSupport = fhirSerializationSupportMock.Object;
 
 
         ResourceStore? resourceStoreUpdate = new ResourceStore(
@@ -180,7 +182,7 @@ public class FhirUpdateHandlerTest
             resourceType: FhirResourceTypeId.Observation,
             httpVerb: HttpVerbId.Post,
             json: observationResource.ToJson(),
-            lastUpdatedUtc: Now, //utc
+            lastUpdatedUtc: _now, //utc
             indexReferenceList: new List<IndexReference>(),
             indexStringList: new List<IndexString>(),
             indexDateTimeList: new List<IndexDateTime>(),
@@ -194,10 +196,10 @@ public class FhirUpdateHandlerTest
             x.Update(
                 It.IsAny<ResourceStoreUpdateProjection>(),
                 It.IsAny<bool>()));
-        ResourceStoreUpdate = resourceStoreUpdateMock.Object;
+        _resourceStoreUpdate = resourceStoreUpdateMock.Object;
         
-        FhirResponseHttpHeaderSupport = new FhirResponseHttpHeaderSupport();
-        FhirRequestHttpHeaderSupport = new FhirRequestHttpHeaderSupport();
+        _fhirResponseHttpHeaderSupport = new FhirResponseHttpHeaderSupport();
+        _fhirRequestHttpHeaderSupport = new FhirRequestHttpHeaderSupport();
 
         var operationOutcome = new OperationOutcome();
         operationOutcome.Issue = new List<OperationOutcome.IssueComponent>()
@@ -212,7 +214,7 @@ public class FhirUpdateHandlerTest
         };
         var operationOutcomeSupportMock = new Mock<IOperationOutcomeSupport>();
         operationOutcomeSupportMock.Setup(x => x.GetError(It.IsAny<string[]>())).Returns(operationOutcome);
-        OperationOutcomeSupport = operationOutcomeSupportMock.Object;
+        _operationOutcomeSupport = operationOutcomeSupportMock.Object;
         
         
         var updatedObservationResource = GetObservationResource();
@@ -227,14 +229,14 @@ public class FhirUpdateHandlerTest
             HttpStatusCode: HttpStatusCode.OK, 
             Headers: new Dictionary<string, StringValues>()
             {
-                {HttpHeaderName.Date, new StringValues(Now.ToString("r"))},
-                {HttpHeaderName.LastModified, new StringValues(Now.ToString("r"))},
+                {HttpHeaderName.Date, new StringValues(_now.ToString("r"))},
+                {HttpHeaderName.LastModified, new StringValues(_now.ToString("r"))},
                 {HttpHeaderName.ETag, new StringValues(updatedObservationResource.VersionId)}
             },
             RepositoryEventCollector: repositoryEventCollector);
         
-        PreferredReturnTypeServiceMock = new Mock<IPreferredReturnTypeService>();
-        PreferredReturnTypeServiceMock
+        _preferredReturnTypeServiceMock = new Mock<IPreferredReturnTypeService>();
+        _preferredReturnTypeServiceMock
             .Setup(x => 
                 x.GetResponse(
                     It.IsAny<HttpStatusCode>(), 
@@ -246,15 +248,15 @@ public class FhirUpdateHandlerTest
             .Returns(fhirOptionalResourceResponse);
         
         
-        IndexingSettingsOptionsMock = new Mock<IOptions<IndexingSettings>>();
-        IndexingSettingsOptionsMock.Setup(x => x.Value).Returns(new IndexingSettings() { RemoveHistoricResourceIndexesOnUpdateOrDelete = true});
+        _indexingSettingsOptionsMock = new Mock<IOptions<IndexingSettings>>();
+        _indexingSettingsOptionsMock.Setup(x => x.Value).Returns(new IndexingSettings() { RemoveHistoricResourceIndexesOnUpdateOrDelete = true});
 
-        RepositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
-        RepositoryEventCollectorMock
+        _repositoryEventCollectorMock = new Mock<IRepositoryEventCollector>();
+        _repositoryEventCollectorMock
             .Setup(x => 
                 x.Add(It.IsAny<RepositoryEvent>()));
+        
     }
-
     
     private static Observation GetObservationResource()
     {
@@ -281,20 +283,20 @@ public class FhirUpdateHandlerTest
             
             //Arrange
             var target = new FhirUpdateHandler(
-                ValidatorMock.Object,
-                FhirResourceTypeSupport,
-                ResourceStoreGetForUpdateByResourceIdMock.Object,
-                FhirCreateHandlerMock.Object,
-                ResourceStoreAddMock.Object,
-                Indexer,
-                FhirSerializationSupport,
-                ResourceStoreUpdate,
-                FhirResponseHttpHeaderSupport,
-                FhirRequestHttpHeaderSupport,
-                OperationOutcomeSupport,
-                PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object,
-                RepositoryEventCollectorMock.Object);
+                _validatorMock.Object,
+                _fhirResourceTypeSupport,
+                _resourceStoreGetForUpdateByResourceIdMock.Object,
+                _fhirCreateHandlerMock.Object,
+                _resourceStoreAddMock.Object,
+                _indexer,
+                _fhirSerializationSupport,
+                _resourceStoreUpdate,
+                _fhirResponseHttpHeaderSupport,
+                _fhirRequestHttpHeaderSupport,
+                _operationOutcomeSupport,
+                _preferredReturnTypeServiceMock.Object,
+                _indexingSettingsOptionsMock.Object,
+                _repositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -315,7 +317,7 @@ public class FhirUpdateHandlerTest
             FhirOptionalResourceResponse response = await target.Handle(request: fhirUpdateRequest, cancellationToken: cancellationTokenSource.Token);
 
             //Verify
-            ResourceStoreGetForUpdateByResourceIdMock.Verify(x => 
+            _resourceStoreGetForUpdateByResourceIdMock.Verify(x => 
                     x.Get(
                         It.Is<FhirResourceTypeId>(p => 
                             p.Equals(FhirResourceTypeId.Observation)),
@@ -323,7 +325,7 @@ public class FhirUpdateHandlerTest
                 times: Times.Once);
             
             
-            PreferredReturnTypeServiceMock.Verify(x => 
+            _preferredReturnTypeServiceMock.Verify(x => 
                 x.GetResponse(
                     It.Is<HttpStatusCode>(s => s.Equals(HttpStatusCode.OK)), 
                     It.IsAny<Resource>(), 
@@ -341,9 +343,9 @@ public class FhirUpdateHandlerTest
             Assert.Equal("2", observation!.VersionId);
             Assert.NotNull(response.Headers);
            
-            Assert.Equal(Now.ToString("r"), response.Headers[HttpHeaderName.LastModified]);
+            Assert.Equal(_now.ToString("r"), response.Headers[HttpHeaderName.LastModified]);
             Assert.Equal("2", response.Headers[HttpHeaderName.ETag]);
-            Assert.Equal(Now.ToString("r"), response.Headers[HttpHeaderName.Date]);
+            Assert.Equal(_now.ToString("r"), response.Headers[HttpHeaderName.Date]);
         }
         
         [Fact]
@@ -360,20 +362,20 @@ public class FhirUpdateHandlerTest
                 .ReturnsAsync((ResourceStoreUpdateProjection?)null); 
             
             var target = new FhirUpdateHandler(
-                ValidatorMock.Object,
-                FhirResourceTypeSupport,
+                _validatorMock.Object,
+                _fhirResourceTypeSupport,
                 resourceStoreGetForUpdateByResourceIdMock.Object,
-                FhirCreateHandlerMock.Object,
-                ResourceStoreAddMock.Object,
-                Indexer,
-                FhirSerializationSupport,
-                ResourceStoreUpdate,
-                FhirResponseHttpHeaderSupport,
-                FhirRequestHttpHeaderSupport,
-                OperationOutcomeSupport,
-                PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object,
-                RepositoryEventCollectorMock.Object);
+                _fhirCreateHandlerMock.Object,
+                _resourceStoreAddMock.Object,
+                _indexer,
+                _fhirSerializationSupport,
+                _resourceStoreUpdate,
+                _fhirResponseHttpHeaderSupport,
+                _fhirRequestHttpHeaderSupport,
+                _operationOutcomeSupport,
+                _preferredReturnTypeServiceMock.Object,
+                _indexingSettingsOptionsMock.Object,
+                _repositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -400,7 +402,7 @@ public class FhirUpdateHandlerTest
                     It.Is<string>( v => v.Equals(fhirUpdateRequest.ResourceId))),
                 times: Times.Once);
             
-            FhirCreateHandlerMock.Verify(x => 
+            _fhirCreateHandlerMock.Verify(x => 
                 x.Handle(
                     It.IsAny<FhirCreateRequest>(), 
                     It.IsAny<CancellationToken>()), 
@@ -417,7 +419,7 @@ public class FhirUpdateHandlerTest
            
             //Assert.Equal(Now.ToString("r"), response.Headers[HttpHeaderName.LastModified]);
             Assert.Equal("1", response.Headers[HttpHeaderName.ETag]);
-            Assert.Equal(Now.ToString("r"), response.Headers[HttpHeaderName.Date]);
+            Assert.Equal(_now.ToString("r"), response.Headers[HttpHeaderName.Date]);
         }
         
         
@@ -426,20 +428,20 @@ public class FhirUpdateHandlerTest
         {
             //Arrange
             var target = new FhirUpdateHandler(
-                ValidatorMock.Object,
-                FhirResourceTypeSupport,
-                ResourceStoreGetForUpdateByResourceIdMock.Object,
-                FhirCreateHandlerMock.Object,
-                ResourceStoreAddMock.Object,
-                Indexer,
-                FhirSerializationSupport,
-                ResourceStoreUpdate,
-                FhirResponseHttpHeaderSupport,
-                FhirRequestHttpHeaderSupport,
-                OperationOutcomeSupport,
-                PreferredReturnTypeServiceMock.Object,
-                IndexingSettingsOptionsMock.Object,
-                RepositoryEventCollectorMock.Object);
+                _validatorMock.Object,
+                _fhirResourceTypeSupport,
+                _resourceStoreGetForUpdateByResourceIdMock.Object,
+                _fhirCreateHandlerMock.Object,
+                _resourceStoreAddMock.Object,
+                _indexer,
+                _fhirSerializationSupport,
+                _resourceStoreUpdate,
+                _fhirResponseHttpHeaderSupport,
+                _fhirRequestHttpHeaderSupport,
+                _operationOutcomeSupport,
+                _preferredReturnTypeServiceMock.Object,
+                _indexingSettingsOptionsMock.Object,
+                _repositoryEventCollectorMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -465,7 +467,7 @@ public class FhirUpdateHandlerTest
                 cancellationToken: cancellationTokenSource.Token);
 
             //Verify
-            ResourceStoreGetForUpdateByResourceIdMock.Verify(x => 
+            _resourceStoreGetForUpdateByResourceIdMock.Verify(x => 
                     x.Get(
                         It.Is<FhirResourceTypeId>(p => 
                             p.Equals(FhirResourceTypeId.Observation)),

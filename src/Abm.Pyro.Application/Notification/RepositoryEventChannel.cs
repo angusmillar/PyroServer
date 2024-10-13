@@ -47,7 +47,7 @@ public class RepositoryEventChannel(
                 tenantService.SetScopedTenant(repositoryEventList.First().Tenant);
                 
                 IFhirNotificationService fhirNotificationService = scope.ServiceProvider.GetRequiredService<IFhirNotificationService>();
-                await fhirNotificationService.ProcessEventList(repositoryEventList);
+                await fhirNotificationService.ProcessEventList(repositoryEventList, cancellationToken);
                 
             }
             catch (Exception exception)

@@ -201,8 +201,8 @@ public class FhirTransactionPutService(
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(putEntry.Resource.TypeName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, bundleEntryTransactionMetaData.RequestUrl.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
-            searchQueryServiceOutcome: searchQueryServiceOutcome, 
-            headers: requestHeaders));
+            SearchQueryServiceOutcome: searchQueryServiceOutcome, 
+            Headers: requestHeaders));
         if (!searchQueryValidatorResult.IsValid)
         {
             bundleEntryTransactionMetaData.FailureOperationOutcome = searchQueryValidatorResult.GetOperationOutcome();

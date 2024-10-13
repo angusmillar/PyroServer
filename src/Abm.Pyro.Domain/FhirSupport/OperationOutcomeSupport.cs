@@ -112,7 +112,27 @@ public class OperationOutcomeSupport : IOperationOutcomeSupport
         
         return result;
     }
-   
+
+    public string[] ExtractErrorMessages(OperationOutcome operationOutcome)
+    {
+        List<string> messages = new List<string>();
+
+        if (operationOutcome.Issue is null)
+        {
+            return messages.ToArray();
+        }
+        foreach (var issue in operationOutcome.Issue)
+        {
+            if (string.IsNullOrWhiteSpace(issue.Details.Text))
+            {
+                messages.Add(issue.Details.Text);    
+            }
+        }
+
+        return messages.ToArray();
+        
+    }
+    
     private List<OperationOutcome.IssueComponent> GetIssueComponentList(string[] messageList,
         OperationOutcome.IssueSeverity issueSeverity,
         OperationOutcome.IssueType issueType)

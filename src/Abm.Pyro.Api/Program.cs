@@ -123,14 +123,17 @@ try
         opt.TriggersEvery = TimeSpan.FromSeconds(1); 
     });
     
-    var retryPolicy = HttpPolicyExtensions
-        .HandleTransientHttpError() // HttpRequestException, 5XX and 408
-        .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(retryAttempt));
-    
     // FHIR HTTP Client registration
-    builder.Services.AddHttpClient<IFhirHttpClientFactory, FhirHttpClientFactory>()
-        .AddPolicyHandler(retryPolicy);
+    builder.Services.AddScoped<IFhirHttpClientFactory, FhirHttpClientFactory>();
     
+    IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
+        .HandleTransientHttpError() // HttpRequestException, 5XX and 408
+        .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+    
+    builder.Services.AddHttpClient(FhirHttpClientFactory.HttpClientName)
+        .AddPolicyHandler(retryPolicy);
+
+
     // Services  --------------------------------------------------------------------------------------
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
     builder.Services.AddSingleton<IFhirJsonSerializersOptions, FhirJsonSerializersOptions>();
@@ -174,6 +177,8 @@ try
     
     // FHIR Subscriptions & Notification
     builder.Services.AddScoped<IFhirNotificationService, FhirNotificationService>();
+    builder.Services.AddScoped<IFhirSubscriptionService, FhirSubscriptionService>();
+    builder.Services.AddScoped<IFhirSubscriptionRepository, FhirSubscriptionRepository>();
     
     // Fhir Batch & Transaction bundle services ----------------------
     builder.Services.AddScoped<IMetaDataService, MetaDataService>();
@@ -205,7 +210,8 @@ try
     builder.Services.AddScoped<ISearchParameterCache, SearchParameterCache>();
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlCache>();
     builder.Services.AddScoped<IMetaDataCache, MetaDataCache>();
-
+    builder.Services.AddScoped<IActiveSubscriptionCache, ActiveSubscriptionCache>();
+    
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
     builder.Services.AddScoped<IFhirConditionalDeleteHandler, FhirConditionalDeleteHandler>();

@@ -7,7 +7,7 @@ namespace Abm.Pyro.Repository.Query;
 
 public class ResourceStoreGetByResourceId(PyroDbContext context) : IResourceStoreGetByResourceId
 {
-  public async Task<ResourceStore?> Get(string resourceId, FhirResourceTypeId resourceType)
+  public async Task<ResourceStore?> Get(FhirResourceTypeId resourceType, string resourceId)
   {
     return await context.Set<ResourceStore>()
                         .SingleOrDefaultAsync(x =>

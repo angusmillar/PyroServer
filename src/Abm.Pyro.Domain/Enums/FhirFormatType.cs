@@ -4,8 +4,8 @@ namespace Abm.Pyro.Domain.Enums;
 
 public enum FhirFormatType 
 {
-  [EnumInfo("json", "application/fhir+xml" )]
+  [EnumInfo("json", "application/fhir+json" )]
   Json,
-  [EnumInfo("xml", "application/fhir+json")]
+  [EnumInfo("xml", "application/fhir+xml")]
   Xml    
 };

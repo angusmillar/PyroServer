@@ -71,7 +71,7 @@ public class FhirUpdateHandler(
     }
     
     FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.Resource.TypeName);
-
+    
     if (PreviousResourceStore is null)
     {
       PreviousResourceStore = await resourceStoreGetForUpdateByResourceId.Get(fhirResourceType, request.Resource.Id);  
@@ -93,6 +93,11 @@ public class FhirUpdateHandler(
       ), cancellationToken);
     }
 
+    if (fhirResourceType is FhirResourceTypeId.Subscription)
+    {
+      return InvalidSubscriptionUpdateResponse();
+    }
+    
     if (IfMatchPreconditionFailure(request.Headers, PreviousResourceStore.VersionId, out var ifMatchPreconditionFailureFhirResourceResponse))
     {
       return ifMatchPreconditionFailureFhirResourceResponse ?? throw new NullReferenceException(nameof(ifMatchPreconditionFailureFhirResourceResponse));
@@ -126,7 +131,10 @@ public class FhirUpdateHandler(
     await resourceStoreUpdate.Update(PreviousResourceStore, deleteFhirIndexes: indexingSettingsOptions.Value.RemoveHistoricResourceIndexesOnUpdateOrDelete);
     updatedResourceStore = await resourceStoreAdd.Add(updatedResourceStore);
 
-    AddRepositoryEvent(updatedResourceStore.ResourceStoreId, request.ResourceId);
+    AddRepositoryEvent(
+      resourceType: updatedResourceStore.ResourceType, 
+      resourceId: updatedResourceStore.ResourceId, 
+      requestId: request.RequestId);
     
     var responseHeaders = fhirResponseHttpHeaderSupport.ForUpdate(
       lastUpdatedUtc: updatedResourceStore.LastUpdatedUtc,
@@ -149,6 +157,21 @@ public class FhirUpdateHandler(
     return new FhirOptionalResourceResponse(
       Resource: validatorResult.GetOperationOutcome(), 
       HttpStatusCode: validatorResult.GetHttpStatusCode(),
+      Headers: new Dictionary<string, StringValues>(),
+      RepositoryEventCollector: repositoryEventCollector);
+  }
+  
+  private FhirOptionalResourceResponse InvalidSubscriptionUpdateResponse()
+  {
+    repositoryEventCollector.Clear();
+    return new FhirOptionalResourceResponse(
+      Resource: operationOutcomeSupport.GetError(new []
+      {
+        "FHIR Subscription resources can only be created via POST requests or PUT (Update as Create) requests, and later Deleted by the Client. ",
+        "The Server is responsible for monitoring and activating Subscriptions to produce FHIR Notifications." +
+        "Clients can not Update Subscriptions resource, they can only Create and Delete them.",
+      }), 
+      HttpStatusCode: HttpStatusCode.BadRequest,
       Headers: new Dictionary<string, StringValues>(),
       RepositoryEventCollector: repositoryEventCollector);
   }
@@ -182,13 +205,14 @@ public class FhirUpdateHandler(
     return true;
   }
   
-  private void AddRepositoryEvent(int? resourceStoreId, string requestId)
+  private void AddRepositoryEvent(FhirResourceTypeId resourceType, string resourceId, string requestId)
   {
-    ArgumentNullException.ThrowIfNull(resourceStoreId);
+    ArgumentNullException.ThrowIfNull(resourceId);
             
     repositoryEventCollector.Add(
+      resourceType: resourceType,
       requestId: requestId,
       repositoryEventType: RepositoryEventType.Update, 
-      resourceStoreId: resourceStoreId.Value);
+      resourceId: resourceId);
   }
 }

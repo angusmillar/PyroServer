@@ -209,8 +209,8 @@ public class FhirTransactionDeleteService(
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(bundleEntryTransactionMetaData.RequestUrl.ResourceName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, bundleEntryTransactionMetaData.RequestUrl.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
-            searchQueryServiceOutcome: searchQueryServiceOutcome,
-            headers: requestHeaders));
+            SearchQueryServiceOutcome: searchQueryServiceOutcome,
+            Headers: requestHeaders));
         if (!searchQueryValidatorResult.IsValid)
         {
             bundleEntryTransactionMetaData.FailureOperationOutcome = searchQueryValidatorResult.GetOperationOutcome();

@@ -80,7 +80,7 @@ public class FhirReadHandlerTest
         
         var resourceStoreGetByResourceIdMock = new Mock<IResourceStoreGetByResourceId>();
         resourceStoreGetByResourceIdMock.Setup(x => 
-            x.Get(It.IsAny<string>(), It.IsAny<FhirResourceTypeId>()))
+            x.Get(It.IsAny<FhirResourceTypeId>(), It.IsAny<string>()))
             .Returns(Task.FromResult((ResourceStore?)resourceStore));
         ResourceStoreGetByResourceId = resourceStoreGetByResourceIdMock.Object;
         
@@ -155,7 +155,7 @@ public class FhirReadHandlerTest
             //return no resource from the Database
             var resourceStoreGetByResourceIdMock = new Mock<IResourceStoreGetByResourceId>();
             resourceStoreGetByResourceIdMock.Setup(x => 
-                    x.Get(It.IsAny<string>(), It.IsAny<FhirResourceTypeId>()))
+                    x.Get(It.IsAny<FhirResourceTypeId>(), It.IsAny<string>()))
                 .Returns(Task.FromResult((ResourceStore?)null));
             
             var target = new FhirReadHandler(
@@ -216,7 +216,7 @@ public class FhirReadHandlerTest
             
             var resourceStoreGetByResourceIdMock = new Mock<IResourceStoreGetByResourceId>();
             resourceStoreGetByResourceIdMock.Setup(x => 
-                    x.Get(It.IsAny<string>(), It.IsAny<FhirResourceTypeId>()))
+                    x.Get(It.IsAny<FhirResourceTypeId>(), It.IsAny<string>()))
                 .Returns(Task.FromResult((ResourceStore?)resourceStore));
             
             var target = new FhirReadHandler(

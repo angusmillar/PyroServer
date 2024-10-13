@@ -14,18 +14,18 @@ public class SearchQueryValidator(
 {
     public override ValidatorResult Validate(SearchQueryServiceOutcomeAndHeaders item)
     {
-        if (item.searchQueryServiceOutcome.HasInvalidQuery)
+        if (item.SearchQueryServiceOutcome.HasInvalidQuery)
         {
-            FailureMessageList.AddRange(item.searchQueryServiceOutcome.InvalidSearchQueryMessageList());
+            FailureMessageList.AddRange(item.SearchQueryServiceOutcome.InvalidSearchQueryMessageList());
         }
         
-        if (item.searchQueryServiceOutcome.HasUnsupportedQuery && fhirRequestHttpHeaderSupport.GetPreferHandling(item.headers) == PreferHandlingType.Strict)
+        if (item.SearchQueryServiceOutcome.HasUnsupportedQuery && fhirRequestHttpHeaderSupport.GetPreferHandling(item.Headers) == PreferHandlingType.Strict)
         {
-            FailureMessageList.AddRange(item.searchQueryServiceOutcome.UnsupportedQueryMessageList());
+            FailureMessageList.AddRange(item.SearchQueryServiceOutcome.UnsupportedQueryMessageList());
         }
         
         return GetValidatorResult();
     }
 }
 
-public record SearchQueryServiceOutcomeAndHeaders(SearchQueryServiceOutcome searchQueryServiceOutcome, Dictionary<string, StringValues> headers) : IValidatable;
+public record SearchQueryServiceOutcomeAndHeaders(SearchQueryServiceOutcome SearchQueryServiceOutcome, Dictionary<string, StringValues> Headers) : IValidatable;

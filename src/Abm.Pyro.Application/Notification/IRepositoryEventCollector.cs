@@ -4,7 +4,7 @@ namespace Abm.Pyro.Application.Notification;
 
 public interface IRepositoryEventCollector
 {
-    void Add(string requestId, RepositoryEventType repositoryEventType, int resourceStoreId);
+    void Add(FhirResourceTypeId resourceType, string requestId, RepositoryEventType repositoryEventType, string resourceId);
     void Add(RepositoryEvent repositoryEvent);
     
     public IReadOnlyCollection<RepositoryEvent> RepositoryEventList { get; }

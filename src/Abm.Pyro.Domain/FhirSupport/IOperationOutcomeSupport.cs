@@ -12,5 +12,6 @@ public interface IOperationOutcomeSupport
   OperationOutcome GetWarning(string[]? messageList, OperationOutcome? operationOutcome);
   OperationOutcome GetInformation(string[] messageList);
   OperationOutcome GetInformation(string[]? messageList, OperationOutcome? operationOutcome);
-  public OperationOutcome MergeOperationOutcomeList(IEnumerable<OperationOutcome> operationOutcomeList);
+  OperationOutcome MergeOperationOutcomeList(IEnumerable<OperationOutcome> operationOutcomeList);
+  string[] ExtractErrorMessages(OperationOutcome operationOutcome);
 }

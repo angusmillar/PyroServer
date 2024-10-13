@@ -1,4 +1,6 @@
-﻿using Hl7.Fhir.Model;
+﻿using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.Cache;
+using Hl7.Fhir.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Abm.Pyro.Domain.Configuration;
@@ -14,6 +16,7 @@ namespace Abm.Pyro.Application.MetaDataService;
 public class MetaDataService(
     ILogger<MetaDataService> logger,
     IOptions<ImplementationSettings> implementationSettings,
+    IServiceBaseUrlCache serviceBaseUrlCache,
     IOptions<ServiceBaseUrlSettings> serviceBaseUrlSettings,
     ISearchParameterMetaDataGetByBaseResourceType searchParameterQuery) : IMetaDataService
 {
@@ -47,7 +50,7 @@ public class MetaDataService(
         capStat.Jurisdiction = null;
         capStat.Kind = CapabilityStatementKind.Capability;
         capStat.Software = GetSoftware();
-        capStat.Implementation = GetImplementationComponent();
+        capStat.Implementation = await GetImplementationComponent();
         capStat.FhirVersionElement = new Code<FHIRVersion>() { Value = FHIRVersion.N4_0_1 };
         capStat.Format = new[] { "application/fhir+json" };
         capStat.Rest = await GetRest();
@@ -269,12 +272,14 @@ public class MetaDataService(
         };
     }
 
-    private CapabilityStatement.ImplementationComponent GetImplementationComponent()
+    private async Task<CapabilityStatement.ImplementationComponent> GetImplementationComponent()
     {
+        var serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
+        Uri serviceBaseUri = serviceBaseUrlSettings.Value.Url;
         return new CapabilityStatement.ImplementationComponent()
         {
             Description = implementationSettings.Value.Description,
-            Url = Path.Combine(serviceBaseUrlSettings.Value.Url.OriginalString, "fhir")
+            Url = $"{serviceBaseUri.Scheme}://{serviceBaseUrl.Url}"
         };
     }
 

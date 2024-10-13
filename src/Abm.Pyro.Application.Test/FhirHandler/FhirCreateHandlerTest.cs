@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
+using Abm.Pyro.Application.Cache;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Primitives;
@@ -10,6 +11,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Domain.Cache;
@@ -18,6 +20,7 @@ using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Validation;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
 
@@ -25,6 +28,7 @@ namespace Abm.Pyro.Application.Test.FhirHandler;
 
 public class FhirCreateHandlerTest
 {
+    private readonly Mock<ILogger<FhirCreateHandler>> _loggerMock;
     private readonly Mock<IValidator> _validatorMock;
     private readonly Mock<IResourceStoreAdd> _resourceStoreAddMock;
     private readonly Mock<IFhirSerializationSupport> _fhirSerializationSupportMock;
@@ -34,11 +38,17 @@ public class FhirCreateHandlerTest
     private readonly Mock<IPreferredReturnTypeService> _preferredReturnTypeServiceMock;
     private readonly Mock<IServiceBaseUrlCache> _serviceBaseUrlCacheMock;
     private readonly Mock<IRepositoryEventCollector> _repositoryEventCollectorMock;
+    private readonly Mock<IActiveSubscriptionCache> _activeSubscriptionCacheMock;
+    private readonly Mock<IFhirSubscriptionService> _fhirSubscriptionService;
+    
+    
 
     //Setup
     protected FhirCreateHandlerTest()
     {
         var now = DateTime.Now;
+        
+        _loggerMock = Mock.Of<Mock<ILogger<FhirCreateHandler>>>();
         
         Observation observationResourceFromDbAdd = GetObservationResource();
         
@@ -131,8 +141,15 @@ public class FhirCreateHandlerTest
                 x.GetRequiredPrimaryAsync())
             .ReturnsAsync(new ServiceBaseUrl(serviceBaseUrlId: 1, url: "https://thisFhirServer.com.au/fhir", isPrimary: true));
 
-        
+        _activeSubscriptionCacheMock = new Mock<IActiveSubscriptionCache>();
+        _activeSubscriptionCacheMock.Setup(x =>
+            x.RefreshCache());
 
+        _fhirSubscriptionService = new Mock<IFhirSubscriptionService>();
+        _fhirSubscriptionService
+            .Setup(x =>
+                x.CanSubscriptionBeAccepted(It.IsAny<Subscription>()))
+            .ReturnsAsync(new AcceptSubscriptionOutcome(Success: true, OperationOutcome: null));
     }
 
 
@@ -160,6 +177,7 @@ public class FhirCreateHandlerTest
         {
             //Arrange
             var target = new FhirCreateHandler(
+                _loggerMock.Object,
                 _validatorMock.Object,
                 _resourceStoreAddMock.Object,
                 _fhirSerializationSupportMock.Object,
@@ -168,7 +186,9 @@ public class FhirCreateHandlerTest
                 _indexerMock.Object,
                 _preferredReturnTypeServiceMock.Object,
                 _serviceBaseUrlCacheMock.Object,
-                _repositoryEventCollectorMock.Object
+                _repositoryEventCollectorMock.Object,
+                _activeSubscriptionCacheMock.Object,
+                _fhirSubscriptionService.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();

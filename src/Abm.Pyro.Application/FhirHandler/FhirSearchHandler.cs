@@ -54,8 +54,8 @@ public class FhirSearchHandler(
     
     SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, request.QueryString);
     ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
-      searchQueryServiceOutcome: searchQueryServiceOutcome, 
-      headers: request.Headers));
+      SearchQueryServiceOutcome: searchQueryServiceOutcome, 
+      Headers: request.Headers));
     if (!searchQueryValidatorResult.IsValid)
     {
       return InvalidValidatorResultResponse(searchQueryValidatorResult);
@@ -102,14 +102,13 @@ public class FhirSearchHandler(
 
   private void AddRepositoryEvent(List<ResourceStore> resourceStoreList, string requestId)
   {
-    foreach (var resourceStoreId in resourceStoreList.Select(x => x.ResourceStoreId))
+    foreach (var resourceStore in resourceStoreList)
     {
-      ArgumentNullException.ThrowIfNull(resourceStoreId);
-      
       repositoryEventCollector.Add(
+        resourceType: resourceStore.ResourceType,
         requestId: requestId,
         repositoryEventType: RepositoryEventType.Read, 
-        resourceStoreId: resourceStoreId.Value);
+        resourceId: resourceStore.ResourceId);
     }
   }
 }

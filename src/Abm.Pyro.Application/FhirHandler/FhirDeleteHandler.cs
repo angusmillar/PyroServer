@@ -1,8 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
+using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.Notification;
 using MediatR;
 using Microsoft.Extensions.Options;
@@ -26,7 +28,8 @@ public class FhirDeleteHandler(
     IResourceStoreAdd resourceStoreAdd,
     IFhirResourceTypeSupport fhirResourceTypeSupport,
     IOptions<IndexingSettings> indexingSettingsOptions,
-    IRepositoryEventCollector repositoryEventCollector)
+    IRepositoryEventCollector repositoryEventCollector,
+    IActiveSubscriptionCache activeSubscriptionCache)
     : IRequestHandler<FhirDeleteRequest, FhirOptionalResourceResponse>, IFhirDeleteHandler
 {
     private ResourceStoreUpdateProjection? _previousResourceStore;
@@ -59,13 +62,8 @@ public class FhirDeleteHandler(
 
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.ResourceName);
 
-
-        if (_previousResourceStore is null)
-        {
-            _previousResourceStore =
-                await resourceStoreGetForUpdateByResourceId.Get(fhirResourceType, request.ResourceId);
-        }
-
+        _previousResourceStore = await resourceStoreGetForUpdateByResourceId.Get(fhirResourceType, request.ResourceId);
+        
         if (_previousResourceStore is null)
         {
             repositoryEventCollector.Clear();
@@ -91,7 +89,7 @@ public class FhirDeleteHandler(
                     resourceId: request.ResourceId,
                     versionId: _previousResourceStore.VersionId));
         }
-
+    
         var deletedResourceStore = new ResourceStore(
             resourceStoreId: null,
             resourceId: request.ResourceId,
@@ -115,8 +113,13 @@ public class FhirDeleteHandler(
         await resourceStoreUpdate.Update(_previousResourceStore,
             indexingSettingsOptions.Value.RemoveHistoricResourceIndexesOnUpdateOrDelete);
         deletedResourceStore = await resourceStoreAdd.Add(deletedResourceStore);
+        
+        AddRepositoryDeleteEvent(deletedResourceStore.ResourceType, deletedResourceStore.ResourceId, request.RequestId);
 
-        AddRepositoryDeleteEvent(deletedResourceStore.ResourceStoreId, request.ResourceId);
+        if (fhirResourceType is FhirResourceTypeId.Subscription)
+        {
+            await activeSubscriptionCache.RefreshCache();
+        }
         
         return new FhirOptionalResourceResponse(
             Resource: null,
@@ -141,16 +144,12 @@ public class FhirDeleteHandler(
             ResourceOutcomeInfo: null);
     }
     
-    private void AddRepositoryDeleteEvent(int? resourceStoreId, string requestId)
+    private void AddRepositoryDeleteEvent(FhirResourceTypeId resourceType, string resourceId, string requestId)
     {
-        if (!resourceStoreId.HasValue)
-        {
-            throw new ApplicationException(nameof(resourceStoreId));
-        }
-
         repositoryEventCollector.Add(
+            resourceType: resourceType,
             requestId: requestId,
             repositoryEventType: RepositoryEventType.Delete, 
-            resourceStoreId: resourceStoreId.Value);
+            resourceId: resourceId);
     }
 }

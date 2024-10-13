@@ -7,10 +7,12 @@ using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Repository.Predicates;
 using Abm.Pyro.Repository.Service;
 using Abm.Pyro.Repository.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Abm.Pyro.Repository.Query;
 
 public class ResourceStoreSearch(
+    ILogger<ResourceStoreSearch> logger,
     PyroDbContext context,
     ISearchPredicateFactory searchPredicateFactory,
     IChainedPredicateFactory chainedPredicateFactory,
@@ -19,12 +21,27 @@ public class ResourceStoreSearch(
     IResourceIncludesService resourceIncludesService)
     : IResourceStoreSearch
 {
+    
+    public async Task<int> GetSearchTotalCount(SearchQueryServiceOutcome searchQueryServiceOutcome)
+    {
+        var predicate = await GetSearchPredicate(searchQueryServiceOutcome);
+        try
+        {
+            IQueryable<ResourceStore> query = context.Set<ResourceStore>();
+            query = query.AsExpandable().Where(predicate);
+            return await query.CountAsync();
+            
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Error in GetSearchTotalCount");
+            throw;
+        }
+    }
+    
     public async Task<ResourceStoreSearchOutcome> GetSearch(SearchQueryServiceOutcome searchQueryServiceOutcome)
     {
-        ExpressionStarter<ResourceStore> predicate = searchPredicateFactory.CurrentMainResourcePredicate(searchQueryServiceOutcome.ResourceContext);
-        predicate.Extend(await searchPredicateFactory.GetResourceStoreIndexPredicate(searchQueryServiceOutcome.SearchQueryList), PredicateOperator.And);
-        predicate.Extend(await chainedPredicateFactory.GetChainedPredicate(searchQueryServiceOutcome.SearchQueryList), PredicateOperator.And);
-        predicate.Extend(await hasPredicateFactory.GetHasPredicate(searchQueryServiceOutcome.HasList), PredicateOperator.And);
+        var predicate = await GetSearchPredicate(searchQueryServiceOutcome);
 
         try
         {
@@ -55,8 +72,17 @@ public class ResourceStoreSearch(
         }
         catch (Exception exception)
         {
-            string message = exception.Message;
+            logger.LogError(exception, "Error in GetSearch");
             throw;
         }
+    }
+
+    private async Task<ExpressionStarter<ResourceStore>> GetSearchPredicate(SearchQueryServiceOutcome searchQueryServiceOutcome)
+    {
+        ExpressionStarter<ResourceStore> predicate = searchPredicateFactory.CurrentMainResourcePredicate(searchQueryServiceOutcome.ResourceContext);
+        predicate.Extend(await searchPredicateFactory.GetResourceStoreIndexPredicate(searchQueryServiceOutcome.SearchQueryList), PredicateOperator.And);
+        predicate.Extend(await chainedPredicateFactory.GetChainedPredicate(searchQueryServiceOutcome.SearchQueryList), PredicateOperator.And);
+        predicate.Extend(await hasPredicateFactory.GetHasPredicate(searchQueryServiceOutcome.HasList), PredicateOperator.And);
+        return predicate;
     }
 }
