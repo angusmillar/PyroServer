@@ -4,5 +4,11 @@ namespace Abm.Pyro.Domain.FhirSupport;
 
 public interface IFhirUriFactory
 {
-  bool TryParse(string requestUri, [NotNullWhen(true)] out FhirUri? fhirUri, out string errorMessage);
+  Task<(bool Success, FhirUri? fhirUri, string errorMessage)> TryParse2(
+    string requestUri);
+  
+  bool TryParse(
+    string requestUri, 
+    [NotNullWhen(true)] out FhirUri? fhirUri, 
+    out string errorMessage);
 }

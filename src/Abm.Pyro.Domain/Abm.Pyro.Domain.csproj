@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="Hl7.Fhir.R4" Version="5.4.0" />
+      <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />

@@ -41,10 +41,12 @@ using Abm.Pyro.Application.Manager;
 using Abm.Pyro.Application.MetaDataService;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.OnStartupService;
-using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.ServiceBaseUrlService;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using Abm.Pyro.Repository.DependencyFactory;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using Serilog.Core;
 
@@ -125,10 +127,12 @@ try
     
     // FHIR HTTP Client registration
     builder.Services.AddScoped<IFhirHttpClientFactory, FhirHttpClientFactory>();
+
     
+    var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 10);
     IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
         .HandleTransientHttpError() // HttpRequestException, 5XX and 408
-        .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+        .WaitAndRetryAsync(sleepDurations: jitterBackoff);
     
     builder.Services.AddHttpClient(FhirHttpClientFactory.HttpClientName)
         .AddPolicyHandler(retryPolicy);
@@ -157,7 +161,7 @@ try
     builder.Services.AddScoped<IFhirBundleCommonSupport, FhirBundleCommonSupport>();
     builder.Services.AddScoped<IFhirNarrativeSupport, FhirNarrativeSupport>();
 
-    builder.Services.AddSingleton<IFhirUriFactory, FhirUriFactory>();
+    builder.Services.AddScoped<IFhirUriFactory, FhirUriFactory>();
     builder.Services.AddSingleton<IFhirResponseHttpHeaderSupport, FhirResponseHttpHeaderSupport>();
     builder.Services.AddTransient<IFhirRequestHttpHeaderSupport, FhirRequestHttpHeaderSupport>();
     builder.Services.AddSingleton<IFhirDateTimeFactory, FhirDateTimeFactory>();
@@ -168,7 +172,7 @@ try
 
     builder.Services.AddScoped<IPaginationSupport, PaginationSupport>();
     builder.Services.AddScoped<IFhirBundleCreationSupport, FhirBundleCreationCreationSupport>();
-    builder.Services.AddSingleton<IFhirPathResolve, FhirPathResolve>();
+    builder.Services.AddScoped<IFhirPathResolve, FhirPathResolve>();
     builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
     // RepositoryEvent Services-----------------------
@@ -211,6 +215,7 @@ try
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlCache>();
     builder.Services.AddScoped<IMetaDataCache, MetaDataCache>();
     builder.Services.AddScoped<IActiveSubscriptionCache, ActiveSubscriptionCache>();
+    builder.Services.AddScoped<IPrimaryServiceBaseUrlService, PrimaryServiceBaseUrlService>();
     
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
@@ -258,6 +263,7 @@ try
     builder.Services.AddScoped<IResourceStoreHistoryAdd, ResourceStoreHistoryAdd>();
     builder.Services.AddScoped<IResourceStoreUpdate, ResourceStoreUpdate>();
     builder.Services.AddScoped<IResourceStoreGetByResourceId, ResourceStoreGetByResourceId>();
+    builder.Services.AddScoped<IResourceStoreGetByResourceStoreId, ResourceStoreGetByResourceStoreId>();
     builder.Services.AddScoped<IResourceStoreGetByVersionId, ResourceStoreGetByVersionId>();
     builder.Services.AddScoped<IResourceStoreGetHistoryByResourceId, ResourceStoreGetHistoryByResourceId>();
     builder.Services.AddScoped<IResourceStoreGetHistory, ResourceStoreGetHistory>();

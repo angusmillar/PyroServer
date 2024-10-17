@@ -11,7 +11,7 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
 
   public override object CloneDeep()
   {
-    var clone = new SearchQueryQuantity(SearchParameter, this.ResourceTypeContext, this.RawValue);
+    var clone = new SearchQueryQuantity(SearchParameter, ResourceTypeContext, RawValue);
     base.CloneDeep(clone);
     clone.ValueList = new List<SearchQueryQuantityValue>();
     clone.ValueList.AddRange(ValueList);
@@ -19,13 +19,13 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
   }
 
 
-  public override void ParseValue(string values)
+  public override Task ParseValue(string values)
   {
-    this.IsValid = true;
+    IsValid = true;
     ValueList.Clear();
-    foreach (var value in values.Split(SearchQueryBase.OrDelimiter))
+    foreach (var value in values.Split(OrDelimiter))
     {
-      if (this.Modifier.HasValue && this.Modifier == SearchModifierCodeId.Missing)
+      if (Modifier.HasValue && Modifier == SearchModifierCodeId.Missing)
       {
         bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
         if (isMissing.HasValue)
@@ -34,8 +34,8 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
         }
         else
         {
-          this.InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
-          this.IsValid = false;
+          InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
+          IsValid = false;
           break;
         }
       }
@@ -55,10 +55,10 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
 
         string[] split = value.Trim().Split(VerticalBarDelimiter);
         SearchComparatorId? prefix = SearchQueryValuePrefixBase.GetPrefix(split[0]);
-        if (!SearchQueryValuePrefixBase.ValidatePreFix(this.SearchParameter.Type, prefix) && prefix.HasValue)
+        if (!SearchQueryValuePrefixBase.ValidatePreFix(SearchParameter.Type, prefix) && prefix.HasValue)
         {
-          this.InvalidMessage = $"The search parameter had an unsupported prefix of '{prefix.Value.GetCode()}'. ";
-          this.IsValid = false;
+          InvalidMessage = $"The search parameter had an unsupported prefix of '{prefix.Value.GetCode()}'. ";
+          IsValid = false;
           break;
         }
         string numberAsString = SearchQueryValuePrefixBase.RemovePrefix(split[0], prefix).Trim();
@@ -78,8 +78,8 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
           }
           else
           {
-            this.InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
-            this.IsValid = false;
+            InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
+            IsValid = false;
             break;
           }
         }
@@ -109,8 +109,8 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
           }
           else
           {
-            this.InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
-            this.IsValid = false;
+            InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
+            IsValid = false;
             break;
           }
         }
@@ -142,29 +142,31 @@ public class SearchQueryQuantity(SearchParameterProjection searchParameter, Fhir
           }
           else
           {
-            this.InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
-            this.IsValid = false;
+            InvalidMessage = $"Expected a Quantity value yet was unable to parse the provided value '{numberAsString}' as a Decimal. ";
+            IsValid = false;
             break;
           }
         }
         else
         {
-          this.InvalidMessage = $"Expected a Quantity value type yet found to many {SearchQueryQuantity.VerticalBarDelimiter} Delimiters. ";
-          this.IsValid = false;
+          InvalidMessage = $"Expected a Quantity value type yet found to many {VerticalBarDelimiter} Delimiters. ";
+          IsValid = false;
           break;
         }
       }
     }
     if (ValueList.Count > 1)
     {
-      this.HasLogicalOrProperties = true;
+      HasLogicalOrProperties = true;
     }
 
     if (ValueList.Count != 0)
     {
-      return;
+      return Task.CompletedTask;;
     }
-    this.InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
-    this.IsValid = false;
+    InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
+    IsValid = false;
+    
+    return Task.CompletedTask;
   }
 }

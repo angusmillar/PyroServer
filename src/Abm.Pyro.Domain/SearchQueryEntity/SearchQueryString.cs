@@ -11,21 +11,21 @@ public class SearchQueryString(SearchParameterProjection searchParameter, FhirRe
 
     public override object CloneDeep()
     {
-      var clone = new SearchQueryString(SearchParameter, this.ResourceTypeContext, RawValue);
+      var clone = new SearchQueryString(SearchParameter, ResourceTypeContext, RawValue);
       base.CloneDeep(clone);
       clone.ValueList = new List<SearchQueryStringValue>();
-      clone.ValueList.AddRange(this.ValueList);
+      clone.ValueList.AddRange(ValueList);
       return clone;
     }
 
 
-    public override void ParseValue(string values)
+    public override Task ParseValue(string values)
     {
-      this.IsValid = true;
+      IsValid = true;
       ValueList.Clear();
       foreach (string value in values.Split(OrDelimiter))
       {
-        if (Modifier.HasValue && Modifier.Value == SearchModifierCodeId.Missing)
+        if (Modifier is SearchModifierCodeId.Missing)
         {
           bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
           if (isMissing.HasValue)
@@ -34,8 +34,8 @@ public class SearchQueryString(SearchParameterProjection searchParameter, FhirRe
           }
           else
           {
-            this.InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet the value was expected to be true or false yet found '{value}'. ";
-            this.IsValid = false;
+            InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet the value was expected to be true or false yet found '{value}'. ";
+            IsValid = false;
             break;
           }
         }
@@ -52,9 +52,11 @@ public class SearchQueryString(SearchParameterProjection searchParameter, FhirRe
 
       if (ValueList.Count == 0)
       {
-        this.InvalidMessage = $"Unable to parse any values into a {this.GetType().Name} from the string: {values}.";
-        this.IsValid = false;
+        InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
+        IsValid = false;
       }
+      
+      return Task.CompletedTask;
     }
   }
 

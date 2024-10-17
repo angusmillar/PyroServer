@@ -1,5 +1,4 @@
-﻿using Abm.Pyro.Application.Tenant;
-using Abm.Pyro.Domain.Cache;
+﻿using Abm.Pyro.Domain.Cache;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -31,3 +31,23 @@ public record FhirUpdateRequest(
             TimeStamp),
         IRequest<FhirOptionalResourceResponse>, 
         IValidatable;
+
+public record SystemSubscriptionUpdateRequest(
+    string Tenant,
+    string RequestId,
+    string ResourceName,
+    Resource Resource,
+    string ResourceId,
+    DateTimeOffset TimeStamp)
+    : FhirUpdateRequest(
+        RequestSchema: "http",
+        Tenant,
+        RequestId,
+        RequestPath: string.Empty,
+        QueryString: null,
+        Headers: new Dictionary<string, StringValues>(),
+        ResourceName,
+        Resource,
+        ResourceId,
+        TimeStamp);
+        

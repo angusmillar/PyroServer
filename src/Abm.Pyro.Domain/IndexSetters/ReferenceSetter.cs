@@ -176,15 +176,18 @@ public class ReferenceSetter(
       return Array.Empty<IndexReference>();
     }
 
-    if (!fhirUriFactory.TryParse(uriString.Trim(), out FhirSupport.FhirUri? referenceUri, errorMessage: out string errorMessage))
+    var fhirUriParseOutcome = await fhirUriFactory.TryParse2(uriString.Trim());
+    if (!fhirUriParseOutcome.Success)
     {
-      string message = $"One of the resources references found in the submitted resource is invalid. The reference was : {uriString}. The error was: {errorMessage}";
+      string message = $"One of the resources references found in the submitted resource is invalid. The reference was : {uriString}. The error was: {fhirUriParseOutcome.errorMessage}";
       throw new FhirErrorException(HttpStatusCode.BadRequest, new[] { message });
     }
 
-    if (referenceUri.UriPrimaryServiceRoot is not null)
+    ArgumentNullException.ThrowIfNull(fhirUriParseOutcome.fhirUri);
+    
+    if (fhirUriParseOutcome.fhirUri.UriPrimaryServiceRoot is not null)
     {
-      ServiceBaseUrl serviceBaseUrl = await GetServiceBaseUrl(referenceUri);
+      ServiceBaseUrl serviceBaseUrl = await GetServiceBaseUrl(fhirUriParseOutcome.fhirUri);
       
       var resourceIndex = new IndexReference(
         indexReferenceId: null,
@@ -192,12 +195,12 @@ public class ReferenceSetter(
         resourceStore: null,
         searchParameterStoreId: SearchParameterId,
         searchParameterStore: null,
-        resourceType: fhrFhirResourceTypeSupport.GetRequiredFhirResourceType(referenceUri.ResourceName),
+        resourceType: fhrFhirResourceTypeSupport.GetRequiredFhirResourceType(fhirUriParseOutcome.fhirUri.ResourceName),
         serviceBaseUrlId: serviceBaseUrl.ServiceBaseUrlId,
         serviceBaseUrl: null,
-        resourceId: referenceUri.ResourceId,
-        versionId: referenceUri.VersionId.NullIfEmptyString(),
-        canonicalVersionId: referenceUri.CanonicalVersionId.NullIfEmptyString());
+        resourceId: fhirUriParseOutcome.fhirUri.ResourceId,
+        versionId: fhirUriParseOutcome.fhirUri.VersionId.NullIfEmptyString(),
+        canonicalVersionId: fhirUriParseOutcome.fhirUri.CanonicalVersionId.NullIfEmptyString());
 
       return new List<IndexReference> { resourceIndex };
     }

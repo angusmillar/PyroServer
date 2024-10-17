@@ -4,9 +4,9 @@ using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirClient;
 using Abm.Pyro.Application.FhirHandler;
+using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
-using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
@@ -14,6 +14,7 @@ using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
@@ -68,7 +69,7 @@ public class FhirNotificationService(
             {
                 break;
             }
-
+            
             await ProcessRepositoryEvent(fhirNotifiableEvent, cancellationToken);
         }
     }
@@ -129,11 +130,25 @@ public class FhirNotificationService(
         {
             if (SendPayloadInNotification(activeSubscription.Payload))
             {
+                logger.LogDebug("Sending PUT notification for Subscription/{SubscriptionId} against " +
+                                "{ResourceType}/{resourceId} on {EventType} event",  
+                    activeSubscription.ResourceId, 
+                    repositoryEvent.ResourceType.GetCode(), 
+                    repositoryEvent.ResourceId,
+                    repositoryEvent.RepositoryEventType.GetCode());
+                
                 await SendRestHookPutNotificationWithResource(cancellationToken, activeSubscription, resource);
                 LogSuccess(repositoryEvent, activeSubscription);
                 return;
             }
 
+            logger.LogDebug("Sending POST notification for Subscription/{SubscriptionId} against " +
+                            "{ResourceType}/{resourceId} on {EventType} event",  
+                activeSubscription.ResourceId, 
+                repositoryEvent.ResourceType.GetCode(), 
+                repositoryEvent.ResourceId,
+                repositoryEvent.RepositoryEventType.GetCode());
+            
             await SendRestHookPostNotification(cancellationToken, activeSubscription);
             LogSuccess(repositoryEvent, activeSubscription);
         }
@@ -142,22 +157,27 @@ public class FhirNotificationService(
                                    exception is FhirOperationException)
         {
             var status = SubscriptionStatus.Error;
+            
             await UpdateSubscriptionResourceStatus(
                 resourceId: activeSubscription.ResourceId,
                 versionId: activeSubscription.VersionId,
                 status: status,
                 statusReason:
-                $"System set status to {status} due to failed notification sending attempts. {exception.Message}",
+                $"Subscription notifications channel failed, the system has set the Subscription's status to {status} " +
+                $"due to many failed notification attempts. {exception.Message}",
                 cancellationToken: cancellationToken);
 
-            logger.LogError(exception,
-                "System set status to {Status} due to failed notification sending attempts",
-                status.ToString());
+            logger.LogDebug(exception,
+                "Subscription notifications channel failed after many failed notification attempts, " +
+                "Tenant: {Tenant}, Subscription Id {SubscriptionId}, Version: {SubscriptionVersionId}, Message: {Message}",
+                tenantService.GetScopedTenant().Code,
+                activeSubscription.ResourceId, 
+                activeSubscription.VersionId,
+                exception.Message);
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "Unhandled exception when attempting to send a FHIR Notification");
-            throw;
         }
     }
 
@@ -194,6 +214,7 @@ public class FhirNotificationService(
         AddHeadersFromSubscription(activeSubscription.Headers, fhirClient.RequestHeaders);
 
         await fhirClient.UpdateAsync(resource: resource, false, cancellationToken);
+        
     }
     
     private async Task SendRestHookPostNotification(
@@ -255,7 +276,7 @@ public class FhirNotificationService(
         await UpdateSubscriptionResourceStatus(
             resourceId: activeSubscription.ResourceId,
             versionId: activeSubscription.VersionId,
-            status: SubscriptionStatus.Error,
+            status: SubscriptionStatus.Off,
             statusReason:
             $"The Subscription.criteria failed validation while responding to a possible notification event. {searchQueryValidatorErrorMessage}",
             cancellationToken: cancellationToken);
@@ -300,7 +321,7 @@ public class FhirNotificationService(
         string resourceId,
         int versionId,
         SubscriptionStatus status,
-        string? statusReason,
+        string statusReason,
         CancellationToken cancellationToken)
     {
         ResourceStore? resourceStore = await resourceStoreGetByResourceId.Get(
@@ -343,14 +364,17 @@ public class FhirNotificationService(
         };
 
         subscription.Error = statusReason;
-
-        await fhirUpdateHandler.Handle(
-            tenant: tenantService.GetScopedTenant().Code,
-            requestId: $"System:{GuidSupport.NewFhirGuid()}",
-            resourceId: resourceId,
-            resource: resource,
-            headers: new Dictionary<string, StringValues>(),
+        
+        await fhirUpdateHandler.HandleSystemSubscriptionUpdate(new SystemSubscriptionUpdateRequest(
+                Tenant: tenantService.GetScopedTenant().Code,
+                RequestId: $"System:{GuidSupport.NewFhirGuid()}",
+                ResourceName: FhirResourceTypeId.Subscription.GetCode(),
+                Resource: subscription,
+                ResourceId: resourceId,
+                TimeStamp: DateTimeOffset.Now
+            ),
             cancellationToken: cancellationToken);
+        
     }
 
     private async Task<bool> IsEndDatedSubscription(
@@ -391,10 +415,13 @@ public class FhirNotificationService(
         ActiveSubscription activeSubscription)
     {
         logger.LogDebug(
-            "FHIR Notification triggered for Tenant {Tenant} Request Id {RequestId} against SubscriptionId {SubscriptionId} for Resource {ResourceName}/{ResourceId} due to Repository event {RepositoryEventType}",
+            "FHIR Notification triggered for Tenant {Tenant} on Request Id {RequestId} for " +
+            "Subscription/{SubscriptionId}/_history/{SubscriptionVersionId} against Resource {ResourceName}/{ResourceId} " +
+            "due to a {RepositoryEventType} Repository event",
             repositoryEvent.Tenant.Code,
             repositoryEvent.RequestId,
             activeSubscription.ResourceId,
+            activeSubscription.VersionId,
             repositoryEvent.ResourceType.GetCode(),
             repositoryEvent.ResourceId,
             repositoryEvent.RepositoryEventType.GetCode());

@@ -3,6 +3,7 @@ using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
 using Abm.Pyro.Domain.Benchmark.Extensions;
+using Abm.Pyro.Domain.Benchmark.FhirSupport;
 
 // var config = DefaultConfig.Instance
 //     .AddJob(Job
@@ -17,8 +18,8 @@ var config = DefaultConfig.Instance
         .WithToolchain(InProcessNoEmitToolchain.Instance));
 
 //var summary = BenchmarkRunner.Run<StringSupportBenchmark>();
-//var summary = BenchmarkRunner.Run<FhirUriFactoryBenchmark>(config);
-var summary = BenchmarkRunner.Run<ResourceExtensionsBenchmark>(config);
+var summary = BenchmarkRunner.Run<FhirUriFactoryBenchmark>(config);
+//var summary = BenchmarkRunner.Run<ResourceExtensionsBenchmark>(config);
 
 
 

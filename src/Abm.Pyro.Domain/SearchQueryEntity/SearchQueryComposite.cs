@@ -10,20 +10,20 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
 
   public override object CloneDeep()
   {
-    var clone = new SearchQueryComposite(this.SearchParameter, this.ResourceTypeContext, this.RawValue);
+    var clone = new SearchQueryComposite(SearchParameter, ResourceTypeContext, RawValue);
     base.CloneDeep(clone);
     clone.ValueList = new List<SearchQueryCompositeValue>();
-    clone.ValueList.AddRange(this.ValueList);
+    clone.ValueList.AddRange(ValueList);
     return clone;
   }
 
   public void ParseCompositeValue(List<SearchQueryBase> searchParameterBaseList, string values)
   {
     ValueList = new List<SearchQueryCompositeValue>();
-    foreach (string value in values.Split(SearchQueryBase.OrDelimiter))
+    foreach (string value in values.Split(OrDelimiter))
     {
       //var DtoSearchParameterCompositeValue = new SearchQueryCompositeValue();
-      if (this.Modifier.HasValue && this.Modifier == SearchModifierCodeId.Missing)
+      if (Modifier.HasValue && Modifier == SearchModifierCodeId.Missing)
       {
         bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
         if (isMissing.HasValue)
@@ -32,20 +32,20 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
         }
         else
         {
-          this.InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
-          this.IsValid = false;
+          InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
+          IsValid = false;
           break;
         }
       }
       else
       {
-        string[] compositeSplit = value.Split(SearchQueryBase.CompositeDelimiter);
+        string[] compositeSplit = value.Split(CompositeDelimiter);
         if (compositeSplit.Count() != searchParameterBaseList.Count)
         {
           StringBuilder sb = new StringBuilder();
-          sb.Append($"The SearchParameter {this.SearchParameter.Code} is a Composite type search parameter which means it expects more than a single search value where each value must be separated by a '{SearchQueryBase.CompositeDelimiter}' delimiter character. " +
+          sb.Append($"The SearchParameter {SearchParameter.Code} is a Composite type search parameter which means it expects more than a single search value where each value must be separated by a '{CompositeDelimiter}' delimiter character. " +
                     $"However, this instance provided had more or less values than is required for the search parameter used. " +
-                    $"{this.SearchParameter.Code} expects {searchParameterBaseList.Count} values yet {compositeSplit.Length} found. ");
+                    $"{SearchParameter.Code} expects {searchParameterBaseList.Count} values yet {compositeSplit.Length} found. ");
           sb.Append("The values expected for this parameter are as follows: ");
           int counter = 1;
           foreach (var item in searchParameterBaseList)
@@ -59,8 +59,8 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
             sb.Append($"Value: {counter.ToString()} is to be a {item.SearchParameter.Type.GetCode()} search parameter type as per the single search parameter '{item.SearchParameter.Code}' for the resource types {resourceNameList}. ");
             counter++;
           }
-          this.InvalidMessage = sb.ToString();
-          this.IsValid = false;
+          InvalidMessage = sb.ToString();
+          IsValid = false;
           break;
         }
 
@@ -80,8 +80,8 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
             int itemCount = i + 1;
             string error = $"Value: {itemCount.ToString()} is to be a {searchParameterBaseList[i].SearchParameter.Type.GetCode()} search parameter type as per the single search parameter '{searchParameterBaseList[i].SearchParameter.Code}' for the resource type {resourceNameList}. " +
                            $"However, an error was found in parsing its value. Further information: {searchParameterBaseList[i].InvalidMessage}";
-            this.InvalidMessage = error;
-            this.IsValid = false;
+            InvalidMessage = error;
+            IsValid = false;
             break;
           }
           searchQueryCompositeValue.SearchQueryBaseList.Add(searchParameterBaseList[i]);
@@ -91,7 +91,7 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
     }
     if (ValueList.Count > 1)
     {
-      this.HasLogicalOrProperties = true;
+      HasLogicalOrProperties = true;
     }
 
     if (ValueList.Count != 0)
@@ -99,11 +99,11 @@ public class SearchQueryComposite(SearchParameterProjection searchParameter, Fhi
       return;
     }
       
-    this.InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
-    this.IsValid = false;
+    InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
+    IsValid = false;
   }
 
-  public override void ParseValue(string values)
+  public override Task ParseValue(string values)
   {
     throw new ApplicationException("Internal Server Error: Composite Search Parameters values must be parsed with the specialized method 'TryParseCompositeValue'");
   }

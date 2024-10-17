@@ -11,20 +11,20 @@ namespace Abm.Pyro.Domain.SearchQueryEntity;
 
     public override object CloneDeep()
     {
-      var clone = new SearchQueryToken(SearchParameter, this.ResourceTypeContext, this.RawValue);
+      var clone = new SearchQueryToken(SearchParameter, ResourceTypeContext, RawValue);
       base.CloneDeep(clone);
       clone.ValueList = new List<SearchQueryTokenValue>();
-      clone.ValueList.AddRange(this.ValueList);
+      clone.ValueList.AddRange(ValueList);
       return clone;
     }
 
-    public override void ParseValue(string values)
+    public override Task ParseValue(string values)
     {
-      this.IsValid = true;
+      IsValid = true;
       ValueList = new List<SearchQueryTokenValue>();
       foreach (var value in values.Split(OrDelimiter))
       {
-        if (this.Modifier is SearchModifierCodeId.Missing)
+        if (Modifier is SearchModifierCodeId.Missing)
         {
           bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
           if (isMissing.HasValue)
@@ -33,8 +33,8 @@ namespace Abm.Pyro.Domain.SearchQueryEntity;
           }
           else
           {
-            this.InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
-            this.IsValid = false;
+            InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
+            IsValid = false;
             break;
           }
         }
@@ -42,14 +42,14 @@ namespace Abm.Pyro.Domain.SearchQueryEntity;
         {
           if (value.Contains(TokenDelimiter))
           {
-            string[] codeSystemSplit = value.Split(SearchQueryToken.TokenDelimiter);
+            string[] codeSystemSplit = value.Split(TokenDelimiter);
             string code = codeSystemSplit[1].Trim();
             string system = codeSystemSplit[0].Trim();
             SearchQueryTokenValue.TokenSearchType? tokenSearchType;
             if (String.IsNullOrEmpty(code) && String.IsNullOrEmpty(system))
             {
-              this.InvalidMessage = $"Unable to parse the Token search parameter value of '{value}' as there was no Code and System separated by a '{SearchQueryToken.TokenDelimiter}' delimiter";
-              this.IsValid = false;
+              InvalidMessage = $"Unable to parse the Token search parameter value of '{value}' as there was no Code and System separated by a '{TokenDelimiter}' delimiter";
+              IsValid = false;
               break;
             }
             if (String.IsNullOrEmpty(system))
@@ -84,8 +84,8 @@ namespace Abm.Pyro.Domain.SearchQueryEntity;
             string code = value.Trim();
             if (String.IsNullOrEmpty(code))
             {
-              this.InvalidMessage = $"Unable to parse the Token search parameter value of '{value}' as there was no Code found.";
-              this.IsValid = false;
+              InvalidMessage = $"Unable to parse the Token search parameter value of '{value}' as there was no Code found.";
+              IsValid = false;
               break;
             }
             ValueList.Add(new SearchQueryTokenValue(false, tokenSearchType, code, null));
@@ -95,16 +95,18 @@ namespace Abm.Pyro.Domain.SearchQueryEntity;
 
       if (ValueList.Count > 1)
       {
-        this.HasLogicalOrProperties = true;
+        HasLogicalOrProperties = true;
       }
 
       if (ValueList.Count != 0)
       {
-        return;
+        return Task.CompletedTask;;
       }
       
-      this.InvalidMessage = $"Unable to parse any values into a {this.GetType().Name} from the string: {values}.";
-      this.IsValid = false;
+      InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
+      IsValid = false;
+      
+      return Task.CompletedTask;
     }
     
   }

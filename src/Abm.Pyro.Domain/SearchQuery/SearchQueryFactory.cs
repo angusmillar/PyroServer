@@ -42,7 +42,7 @@ public class SearchQueryFactory(
         {
           throw new NullReferenceException(nameof(searchQueryBase.TypeModifierResource));
         }
-        searchQueryBase.ParseValue($"{searchQueryBase.TypeModifierResource.GetCode()}/{parameterValue}");
+        await searchQueryBase.ParseValue($"{searchQueryBase.TypeModifierResource.GetCode()}/{parameterValue}");
       }
       else if (searchQueryBase.SearchParameter.Type == SearchParamType.Composite)
       {

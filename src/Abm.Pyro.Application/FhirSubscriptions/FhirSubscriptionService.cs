@@ -1,24 +1,18 @@
 using System.Collections.ObjectModel;
-using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.EndpointPolicy;
-using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.SearchQuery;
-using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
-using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
-using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.FhirSubscriptions;
 
@@ -92,13 +86,14 @@ public class FhirSubscriptionService(
         string endpoint, 
         FhirUri criteriaFhirUri)
     {
-        if (criteriaFhirUri.IsRelativeToServer)
+        if (endpoint.IsEqualUri(criteriaFhirUri.PrimaryServiceRootServers.OriginalString))
         {
             _operationOutcomeList.Add(operationOutcomeSupport.GetError([
                 $"Could not activate the FHIR Subscription because the channel endpoint " +
                 $"was equal to the server's own Service Base URL, Type is rest-hook, and Payload is populated. " +
                 $"This would create a circular reference and infinite FHIR notification cycles."
             ]));
+            
             return true;
             
         }

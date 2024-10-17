@@ -15,10 +15,10 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
-using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Application.Test.Factories;
 using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Configuration;
@@ -31,6 +31,7 @@ using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
+using Microsoft.Extensions.Logging;
 using Xunit;
 using ResourceType = Hl7.Fhir.Model.ResourceType;
 using Task = System.Threading.Tasks.Task;
@@ -39,9 +40,14 @@ namespace Abm.Pyro.Application.Test.FhirHandler;
 
 public class FhirUpdateHandlerTest
 {
+    
+    private readonly DateTime _now;
+    
+    private readonly Mock<ILogger<FhirUpdateHandler>> _loggerMock;
     private readonly Mock<IValidator> _validatorMock;
     private readonly IFhirResourceTypeSupport _fhirResourceTypeSupport;
     private readonly Mock<IResourceStoreGetForUpdateByResourceId> _resourceStoreGetForUpdateByResourceIdMock;
+    private readonly Mock<IResourceStoreGetByResourceStoreId> _resourceStoreGetByResourceStoreIdMock;
     private readonly Mock<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>> _fhirCreateHandlerMock;
     private readonly Mock<IResourceStoreAdd> _resourceStoreAddMock;
     private readonly IIndexer _indexer;
@@ -53,13 +59,18 @@ public class FhirUpdateHandlerTest
     private readonly Mock<IPreferredReturnTypeService> _preferredReturnTypeServiceMock;
     private readonly Mock<IOptions<IndexingSettings>> _indexingSettingsOptionsMock;
     private readonly Mock<IRepositoryEventCollector> _repositoryEventCollectorMock;
-    private readonly DateTime _now;
+    private readonly Mock<IActiveSubscriptionCache> _activeSubscriptionCacheMock;
+    private readonly Mock<IFhirSubscriptionService> _fhirSubscriptionService;
+    private readonly Mock<IFhirDeSerializationSupport> _fhirDeSerializationSupportMock;
+    
    
     //Setup
     protected FhirUpdateHandlerTest()
     {
         
         _now = DateTime.Now;
+     
+        _loggerMock = Mock.Of<Mock<ILogger<FhirUpdateHandler>>>();
         
         _validatorMock = new Mock<IValidator>();
         _validatorMock.Setup(x => 
@@ -83,6 +94,31 @@ public class FhirUpdateHandlerTest
                 It.IsAny<FhirResourceTypeId>(), 
                 It.IsAny<string>()))
             .ReturnsAsync((ResourceStoreUpdateProjection?)resourceStoreFoundForUpdate);
+        
+        
+        
+        _resourceStoreGetByResourceStoreIdMock = new Mock<IResourceStoreGetByResourceStoreId>();
+        _resourceStoreGetByResourceStoreIdMock.Setup(x =>
+            x.Get(It.IsAny<int>()))
+            .ReturnsAsync(new ResourceStore(
+                resourceStoreId: 333,
+                resourceId: "subsciption1",
+                versionId: 1,
+                isCurrent: true,
+                isDeleted: false,
+                resourceType: FhirResourceTypeId.Subscription,
+                httpVerb: HttpVerbId.Post,
+                json: string.Empty,
+                lastUpdatedUtc: new DateTime(2023, 01, 01, 10, 00, 00), //utc
+                indexReferenceList: new List<IndexReference>(),
+                indexStringList: new List<IndexString>(),
+                indexDateTimeList: new List<IndexDateTime>(),
+                indexQuantityList: new List<IndexQuantity>(),
+                indexTokenList: new List<IndexToken>(),
+                indexUriList: new List<IndexUri>(),
+                rowVersion: 100));
+        
+        
         
         ResourceStore? resourceStoreHistoryEntity = new ResourceStore(
             resourceStoreId: 1,
@@ -256,6 +292,26 @@ public class FhirUpdateHandlerTest
             .Setup(x => 
                 x.Add(It.IsAny<RepositoryEvent>()));
         
+        _activeSubscriptionCacheMock = new Mock<IActiveSubscriptionCache>();
+        _activeSubscriptionCacheMock.Setup(x =>
+            x.RefreshCache());
+
+        _fhirSubscriptionService = new Mock<IFhirSubscriptionService>();
+        _fhirSubscriptionService
+            .Setup(x =>
+                x.CanSubscriptionBeAccepted(It.IsAny<Subscription>()))
+            .ReturnsAsync(new AcceptSubscriptionOutcome(Success: true, OperationOutcome: null));
+
+        _fhirDeSerializationSupportMock = new Mock<IFhirDeSerializationSupport>();
+        _fhirDeSerializationSupportMock.Setup(x =>
+                x.ToResource(It.IsAny<string>()))
+            .Returns(new Subscription()
+            {
+                Id = "subscription1",
+                Status = Subscription.SubscriptionStatus.Active  
+            });
+
+
     }
     
     private static Observation GetObservationResource()
@@ -283,9 +339,11 @@ public class FhirUpdateHandlerTest
             
             //Arrange
             var target = new FhirUpdateHandler(
+                _loggerMock.Object,
                 _validatorMock.Object,
                 _fhirResourceTypeSupport,
                 _resourceStoreGetForUpdateByResourceIdMock.Object,
+                _resourceStoreGetByResourceStoreIdMock.Object,
                 _fhirCreateHandlerMock.Object,
                 _resourceStoreAddMock.Object,
                 _indexer,
@@ -296,7 +354,10 @@ public class FhirUpdateHandlerTest
                 _operationOutcomeSupport,
                 _preferredReturnTypeServiceMock.Object,
                 _indexingSettingsOptionsMock.Object,
-                _repositoryEventCollectorMock.Object);
+                _repositoryEventCollectorMock.Object, 
+                _activeSubscriptionCacheMock.Object, 
+                _fhirSubscriptionService.Object,
+                _fhirDeSerializationSupportMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -361,10 +422,13 @@ public class FhirUpdateHandlerTest
                         It.IsAny<string>()))
                 .ReturnsAsync((ResourceStoreUpdateProjection?)null); 
             
+            
             var target = new FhirUpdateHandler(
+                _loggerMock.Object,
                 _validatorMock.Object,
                 _fhirResourceTypeSupport,
                 resourceStoreGetForUpdateByResourceIdMock.Object,
+                _resourceStoreGetByResourceStoreIdMock.Object,
                 _fhirCreateHandlerMock.Object,
                 _resourceStoreAddMock.Object,
                 _indexer,
@@ -375,8 +439,11 @@ public class FhirUpdateHandlerTest
                 _operationOutcomeSupport,
                 _preferredReturnTypeServiceMock.Object,
                 _indexingSettingsOptionsMock.Object,
-                _repositoryEventCollectorMock.Object);
-                
+                _repositoryEventCollectorMock.Object, 
+                _activeSubscriptionCacheMock.Object, 
+                _fhirSubscriptionService.Object,
+                _fhirDeSerializationSupportMock.Object); 
+            
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;
@@ -426,11 +493,13 @@ public class FhirUpdateHandlerTest
         [Fact]
         public async Task Update_IfMatch_IsPreconditionFailure()
         {
-            //Arrange
+            
             var target = new FhirUpdateHandler(
+                _loggerMock.Object,
                 _validatorMock.Object,
                 _fhirResourceTypeSupport,
                 _resourceStoreGetForUpdateByResourceIdMock.Object,
+                _resourceStoreGetByResourceStoreIdMock.Object,
                 _fhirCreateHandlerMock.Object,
                 _resourceStoreAddMock.Object,
                 _indexer,
@@ -441,8 +510,12 @@ public class FhirUpdateHandlerTest
                 _operationOutcomeSupport,
                 _preferredReturnTypeServiceMock.Object,
                 _indexingSettingsOptionsMock.Object,
-                _repositoryEventCollectorMock.Object);
-                
+                _repositoryEventCollectorMock.Object, 
+                _activeSubscriptionCacheMock.Object, 
+                _fhirSubscriptionService.Object,
+                _fhirDeSerializationSupportMock.Object);
+            
+            //Arrange
             var cancellationTokenSource = new CancellationTokenSource();
 
             var timeStamp = DateTimeOffset.Now;

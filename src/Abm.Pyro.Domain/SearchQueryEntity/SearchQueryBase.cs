@@ -73,7 +73,7 @@ public abstract class SearchQueryBase(SearchParameterProjection searchParameter,
 
     }
   }
-  public abstract void ParseValue(string value);
+  public abstract Task ParseValue(string value);
   public abstract object CloneDeep();
   public virtual object CloneDeep(SearchQueryBase clone)
   {

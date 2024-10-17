@@ -16,50 +16,63 @@ public class SearchQueryUri(SearchParameterProjection searchParameter, FhirResou
     return clone;
   }
 
-  public override void ParseValue(string values)
+  public override Task ParseValue(string values)
   {
-    this.IsValid = true;
+    IsValid = true;
     ValueList.Clear();
     foreach (string value in values.Split(OrDelimiter))
     {
-      if (this.Modifier is SearchModifierCodeId.Missing)
+      ProcessValue(value);
+      if (!IsValid)
       {
-        bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
-        if (isMissing.HasValue)
-        {
-          ValueList.Add(new SearchQueryUriValue(isMissing.Value, null));
-        }
-        else
-        {
-          this.InvalidMessage = $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
-          this.IsValid = false;
-          break;
-        }
-      }
-      else
-      {
-        if (Uri.TryCreate(value.Trim(), UriKind.RelativeOrAbsolute, out Uri? tempUri))
-        {
-          ValueList.Add(new SearchQueryUriValue(false, tempUri));
-        }
-        else
-        {
-          this.InvalidMessage = $"Unable to parse the given URI search parameter string of : {value.Trim()}";
-          this.IsValid = false;
-          break;
-        }
+        break;
       }
     }
 
     if (ValueList.Count > 1)
     {
-      this.HasLogicalOrProperties = true;
+      HasLogicalOrProperties = true;
     }
 
     if (ValueList.Count != 0)
-      return;
+    {
+      return Task.CompletedTask;;
+    }
 
-    this.InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
-    this.IsValid = false;
+    InvalidMessage = $"Unable to parse any values into a {GetType().Name} from the string: {values}.";
+    IsValid = false;
+    
+    return Task.CompletedTask;;
   }
+
+  private void ProcessValue(string value)
+  {
+    if (Modifier is SearchModifierCodeId.Missing)
+    {
+      bool? isMissing = SearchQueryValueBase.ParseModifierEqualToMissing(value);
+      if (!isMissing.HasValue)
+      {
+        InvalidMessage =
+          $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be true or false yet found '{value}'. ";
+        IsValid = false;
+        return;
+      }
+      
+      ValueList.Add(new SearchQueryUriValue(isMissing.Value, null));
+      
+    }
+    else
+    {
+      if (!Uri.TryCreate(value.Trim(), UriKind.RelativeOrAbsolute, out Uri? tempUri))
+      {
+        InvalidMessage = $"Unable to parse the given URI search parameter string of : {value.Trim()}";
+        IsValid = false;
+        return;
+      }
+      
+      ValueList.Add(new SearchQueryUriValue(false, tempUri));
+      
+    }
+  }
+  
 }

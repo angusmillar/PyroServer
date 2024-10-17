@@ -13,7 +13,7 @@ public class FhirBundleCreationCreationSupport(
   IFhirDeSerializationSupport fhirDeSerializationSupport,
   IServiceBaseUrlCache serviceBaseUrlCache) : IFhirBundleCreationSupport
 {
-  private ServiceBaseUrl? PrimaryServiceBaseUrl;
+  private Model.ServiceBaseUrl? PrimaryServiceBaseUrl;
 
   public async Task<Bundle> CreateBundle(ResourceStoreSearchOutcome resourceStoreSearchOutcome, Bundle.BundleType bundleType, string requestSchema)
   {

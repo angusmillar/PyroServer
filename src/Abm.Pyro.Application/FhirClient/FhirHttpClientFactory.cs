@@ -10,6 +10,7 @@ public class FhirHttpClientFactory(IHttpClientFactory httpClientFactory) : IFhir
     public Hl7.Fhir.Rest.FhirClient CreateFhirClient(string baseUrl)
     {
         HttpClient httpClient = httpClientFactory.CreateClient(HttpClientName);
+        httpClient.Timeout = TimeSpan.FromMinutes(7);
         var fhirClientSettings = new FhirClientSettings()
         {
             PreferredFormat = ResourceFormat.Json,

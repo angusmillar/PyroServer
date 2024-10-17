@@ -3,7 +3,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text;
 using System.Text.Json;
-using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.TenantService;
 
 namespace Abm.Pyro.Application.Cache;
 

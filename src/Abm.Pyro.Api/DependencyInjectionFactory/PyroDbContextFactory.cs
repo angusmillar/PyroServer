@@ -1,5 +1,5 @@
-﻿using Abm.Pyro.Application.Tenant;
-using Abm.Pyro.Domain.Configuration;
+﻿using Abm.Pyro.Domain.Configuration;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Repository;
 using Abm.Pyro.Repository.DependencyFactory;
 using Microsoft.EntityFrameworkCore;

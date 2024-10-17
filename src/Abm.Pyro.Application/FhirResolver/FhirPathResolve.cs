@@ -8,10 +8,15 @@ public class FhirPathResolve(IFhirUriFactory fhirUriFactory) : IFhirPathResolve
 {
   public ITypedElement? Resolver(string url)
   {
-    if (fhirUriFactory.TryParse(url, out FhirUri? fhirUri, out string _))
+    
+    var task = fhirUriFactory.TryParse2(url);
+    var fhirUriParseOutcome = task.Result;
+    
+    if (fhirUriParseOutcome.Success)
     {
+      
         var defaultModelFactory = new Hl7.Fhir.Serialization.DefaultModelFactory();
-        Type? type = ModelInfo.GetTypeForFhirType(fhirUri.ResourceName);
+        Type? type = ModelInfo.GetTypeForFhirType(fhirUriParseOutcome.fhirUri!.ResourceName);
         if (type is null)
         {
           return null;
@@ -19,11 +24,33 @@ public class FhirPathResolve(IFhirUriFactory fhirUriFactory) : IFhirPathResolve
         }
         if (defaultModelFactory.Create(type) is DomainResource domainResource)
         {
-          domainResource.Id = fhirUri.ResourceId;
+          domainResource.Id = fhirUriParseOutcome.fhirUri!.ResourceId;
           return domainResource.ToTypedElement().ToScopedNode();
         }
         throw new ApplicationException($"Unable to create a domain resource of type '{type.Name}'.");
     }
     return null;
   }
+  
+  
+  // public ITypedElement? ResolverOLD(string url)
+  // {
+  //   if (fhirUriFactory.TryParse(url, out FhirUri? fhirUri, out string _))
+  //   {
+  //     var defaultModelFactory = new Hl7.Fhir.Serialization.DefaultModelFactory();
+  //     Type? type = ModelInfo.GetTypeForFhirType(fhirUri.ResourceName);
+  //     if (type is null)
+  //     {
+  //       return null;
+  //       //throw new ApplicationException($"ResourceName of '{fhirUri.ResourceName}' can not be converted to a FHIR Type.");
+  //     }
+  //     if (defaultModelFactory.Create(type) is DomainResource domainResource)
+  //     {
+  //       domainResource.Id = fhirUri.ResourceId;
+  //       return domainResource.ToTypedElement().ToScopedNode();
+  //     }
+  //     throw new ApplicationException($"Unable to create a domain resource of type '{type.Name}'.");
+  //   }
+  //   return null;
+  // }
 }

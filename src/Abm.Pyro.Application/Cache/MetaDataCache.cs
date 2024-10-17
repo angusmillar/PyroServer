@@ -1,9 +1,9 @@
 ﻿using Abm.Pyro.Application.MetaDataService;
-using Abm.Pyro.Application.Tenant;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Microsoft.Extensions.Caching.Distributed;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.Cache;

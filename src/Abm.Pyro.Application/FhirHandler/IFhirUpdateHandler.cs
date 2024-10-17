@@ -1,4 +1,5 @@
-﻿using Abm.Pyro.Application.FhirResponse;
+﻿using Abm.Pyro.Application.FhirRequest;
+using Abm.Pyro.Application.FhirResponse;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Projection;
@@ -15,4 +16,8 @@ public interface IFhirUpdateHandler
         Dictionary<string, StringValues> headers, 
         CancellationToken cancellationToken, 
         ResourceStoreUpdateProjection? previousResourceStore = null);
+    
+    Task<FhirOptionalResourceResponse> HandleSystemSubscriptionUpdate(
+        SystemSubscriptionUpdateRequest systemSubscriptionUpdateRequest, 
+        CancellationToken cancellationToken);
 }

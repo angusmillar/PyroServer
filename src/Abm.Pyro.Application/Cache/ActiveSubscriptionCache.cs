@@ -1,5 +1,5 @@
 ﻿using Abm.Pyro.Application.FhirSubscriptions;
-using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.TenantService;
 using Microsoft.Extensions.Caching.Distributed;
 using Task = System.Threading.Tasks.Task;
 

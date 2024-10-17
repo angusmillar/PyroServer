@@ -1,9 +1,9 @@
-﻿using Abm.Pyro.Application.Tenant;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.Query;
+using Abm.Pyro.Domain.TenantService;
 
 namespace Abm.Pyro.Application.Cache;
 

@@ -61,6 +61,7 @@ namespace Abm.Pyro.Application.Indexing
             //in my view should not be searchParameters, just as _sort or _count are not.
             if (searchParameter.Type != SearchParamType.Composite)
             {
+                //FhirPathCompiler.DefaultSymbolTable.AddFhirExtensions();
                 ElementNavFhirExtensions.PrepareFhirSymbolTableFunctions();
                 IEnumerable<ITypedElement> typedElementList = GetTypedElementList(fhirResource, searchParameter);
                 foreach (ITypedElement typedElement in typedElementList)

@@ -4,6 +4,7 @@ using Moq;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.Test.Factories;
 using Xunit;
 
 namespace Abm.Pyro.Domain.Test.FhirSupport;
@@ -15,25 +16,26 @@ public class FhirUriFactoryTest
     private const string BaseUrlRemote = "http://remoteBase/stuff";
 
 
-    private IFhirUriFactory GetFhirUriFactory(string serversBase)
-    {
-      var orderRepositorySettingsOptionsMock = new Mock<IOptions<ServiceBaseUrlSettings>>();
-      orderRepositorySettingsOptionsMock.Setup(x => x.Value)
-        .Returns(new ServiceBaseUrlSettings()
-        {
-          Url = new Uri(serversBase)
-        });
-      
-      // Prepare
-     return new FhirUriFactory(orderRepositorySettingsOptionsMock.Object, new FhirResourceTypeSupport());
-    }
+    // private IFhirUriFactory GetFhirUriFactory(string serversBase)
+    // {
+    //   var orderRepositorySettingsOptionsMock = new Mock<IOptions<ServiceBaseUrlSettings>>();
+    //   orderRepositorySettingsOptionsMock.Setup(x => x.Value)
+    //     .Returns(new ServiceBaseUrlSettings()
+    //     {
+    //       Url = new Uri(serversBase)
+    //     });
+    //   
+    //   // Prepare
+    //  return new FhirUriFactory(orderRepositorySettingsOptionsMock.Object, new FhirResourceTypeSupport());
+    // }
     
     
     [Fact]
     public void IsAbsoluteUriFalseTest()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -51,7 +53,8 @@ public class FhirUriFactoryTest
     public void IsAbsoluteUriTrueTest()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "https://OtherFhirServer.com.au/fhir/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -70,7 +73,9 @@ public class FhirUriFactoryTest
     public void ServiceBaseUriMatch()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+
 
       string requestUri = "https://SomeFhirServer.com.au/over-here/fhir/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -87,7 +92,8 @@ public class FhirUriFactoryTest
     public void ConditionalDelete()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "Patient?identifier=123456";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -105,7 +111,8 @@ public class FhirUriFactoryTest
     public void ServiceBaseUriMatchHostCaseInsensitive()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "https://SOMEFHIRSERVER.cOm.aU/over-here/fhir/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -122,7 +129,8 @@ public class FhirUriFactoryTest
     public void ServiceBaseUriMissMatchPathCaseSensitive()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "https://SomeFhirServer.com.au/OVER-HERE/FHIR/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -139,7 +147,8 @@ public class FhirUriFactoryTest
     public void FhirUriFactoryIsRelativeToServerHostCaseInsensitiveTest()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://SomeFhirServer.com.au/over-here/fhir");
 
       string requestUri = "https://somefhirserver.com.au/over-here/fhir/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -155,7 +164,8 @@ public class FhirUriFactoryTest
     public void FhirUriFactoryNotRelativeToServerPathCaseSensitiveTest()
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory("https://127.0.0.1:777/Over-Here/fhir");
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory("https://127.0.0.1:777/Over-Here/fhir");
 
       string requestUri = "https://localhost:777/Over-Here/fhir/Patient/100";
       if (fhirUriFactory.TryParse(requestUri,out FhirUri? fhirUri, out string errorMessage))
@@ -176,7 +186,8 @@ public class FhirUriFactoryTest
     [InlineData( BaseUrlServer, "", "Patient", "1132b5d1-10c6-4293-a0e3-7bccb1462e3a", "11")]
     public void TestFhirUriHistory(string serversBase, string requestBase, string resourceName, string resourceId, string versionId)
     {
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl;
       if (!string.IsNullOrWhiteSpace(versionId))
@@ -287,7 +298,8 @@ public class FhirUriFactoryTest
     public void TestFhirUriCanonical(string resourceName, string resourceId, string canonicalVersionId)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(BaseUrlServer);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(BaseUrlServer);
 
 
       string requestUrl = $"{resourceName}/{resourceId}|{canonicalVersionId}";
@@ -332,7 +344,8 @@ public class FhirUriFactoryTest
     public void TestFhirUriBaseHistory( string serversBase, string requestBase)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/_history";
 
@@ -383,7 +396,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_ResourceIdOnly( string serversBase, string resourceId)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       //Act
       if (fhirUriFactory.TryParse(resourceId,  out FhirUri? fhirUri, out string errorMessage))
@@ -433,7 +447,8 @@ public class FhirUriFactoryTest
     public void IsValidContained()
     {
       //Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(BaseUrlServer);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(BaseUrlServer);
 
       string fhirUriString = "#100";
       //Act
@@ -450,7 +465,8 @@ public class FhirUriFactoryTest
     public void IsInValidContained()
     {
       //Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(BaseUrlServer);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(BaseUrlServer);
 
       string fhirUriString = "Patient/#100";
       //Act
@@ -467,7 +483,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_Contained( string serversBase, string resourceName, string resourceId)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl;
       if (!string.IsNullOrWhiteSpace(resourceName))
@@ -558,7 +575,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_OperationBase( string serversBase, string requestBase, string operationName, string query)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/${operationName}?{query}";
 
@@ -605,7 +623,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_OperationResource( string serversBase, string requestBase, string resourceName, string operationName, string query)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/{resourceName}/${operationName}?{query}";
 
@@ -652,7 +671,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_OperationResourceInstance( string serversBase, string requestBase, string resourceName, string resourceId, string operationName, string query)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/{resourceName}/{resourceId}/${operationName}?{query}";
 
@@ -699,7 +719,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_FormData( string serversBase, string requestBase, string resourceName, string search)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/{resourceName}/{search}";
 
@@ -746,7 +767,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_RubbishOnTheEnd( string serversBase, string requestBase, string resourceName)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = $"{requestBase}/{resourceName}/10/Rubbish";
 
@@ -768,7 +790,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_urn_uuid( string serversBase, string uuid)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = uuid;
 
@@ -815,7 +838,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri_urn_oid( string serversBase, string uuid)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = uuid;
 
@@ -862,7 +886,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri__urn_oid_invalid( string serversBase, string uuid)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = uuid;
 
@@ -885,7 +910,8 @@ public class FhirUriFactoryTest
     public void TestFhirUri__urn_uuid_invalid( string serversBase, string uuid)
     {
       // Prepare
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl = uuid;
 
@@ -911,7 +937,8 @@ public class FhirUriFactoryTest
     {
       // Prepare
       //hit: the resource is unknown because we do not pass it into the GetFhirUriFactory below, we only pass in the resourceName and not the compatmentName 
-      IFhirUriFactory fhirUriFactory = GetFhirUriFactory(serversBase);
+      IFhirUriFactory fhirUriFactory =
+        FhirUriFactoryFactory.GetFhirUriFactory(serversBase);
 
       string requestUrl;
       if (string.IsNullOrWhiteSpace(query))

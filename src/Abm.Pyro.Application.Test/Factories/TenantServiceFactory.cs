@@ -1,5 +1,5 @@
-﻿using Abm.Pyro.Application.Tenant;
-using Abm.Pyro.Domain.Configuration;
+﻿using Abm.Pyro.Domain.Configuration;
+using Abm.Pyro.Domain.TenantService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

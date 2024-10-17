@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace Abm.Pyro.Application.Tenant;
+namespace Abm.Pyro.Domain.TenantService;
 
 public class TenantService(
     ILogger<TenantService> logger,

@@ -1,6 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.Model;
+using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.Support;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Options;
@@ -8,12 +11,11 @@ using Microsoft.Extensions.Options;
 namespace Abm.Pyro.Domain.FhirSupport;
 
 public class FhirUriFactory(
-  IOptions<ServiceBaseUrlSettings> serviceBaseUrlSettings,
+  IPrimaryServiceBaseUrlService primaryServiceBaseUrlService,
   IFhirResourceNameSupport fhirResourceNameSupport)
   : IFhirUriFactory
 {
-  private readonly ServiceBaseUrlSettings ServiceBaseUrlSettings = serviceBaseUrlSettings.Value;
-
+  
   private const string MetadataName = "metadata";
   private const string HistoryName = "_history";
   private const string SearchFormDataName = "_search";
@@ -26,13 +28,28 @@ public class FhirUriFactory(
   private const char ContainedReferenceToken = '#';
   private const char QueryToken = '?';
   private const char OperationToken = '$';
+
+
+  public async Task<(bool Success, FhirUri? fhirUri, string errorMessage)>  TryParse2(
+    string requestUri)
+  {
+    FhirUri fhirUriParse = new FhirUri(await primaryServiceBaseUrlService.GetUriAsync());
+
+    if (ProcessRequestUri(System.Net.WebUtility.UrlDecode(requestUri), fhirUriParse))
+    {
+      return (Success: true, fhirUri: fhirUriParse, errorMessage: string.Empty);
+    }
+    
+    return (Success: false, fhirUri: null, errorMessage: fhirUriParse.ParseErrorMessage);
+    
+  }
   
   public bool TryParse(string requestUri, [NotNullWhen(true)] out  FhirUri? fhirUri, out string errorMessage)
   {
     fhirUri = null;
-    FhirUri fhirUriParse = new FhirUri(ServiceBaseUrlSettings.Url);
+    FhirUri fhirUriParse = new FhirUri(primaryServiceBaseUrlService.GetUri());
 
-    if (ProcessRequestUri(System.Net.WebUtility.UrlDecode(requestUri), fhirUriParse))
+    if (ProcessRequestUri(requestUri, fhirUriParse))
     {
       fhirUri = fhirUriParse;
       errorMessage = string.Empty;
@@ -45,6 +62,8 @@ public class FhirUriFactory(
   }
   private bool ProcessRequestUri(string requestUri, FhirUri fhirUri)
   {
+    requestUri = System.Net.WebUtility.UrlDecode(requestUri);
+    
     fhirUri.OriginalString = requestUri;
 
     string chainResult = ResolveQueryUriPart(requestUri, fhirUri);

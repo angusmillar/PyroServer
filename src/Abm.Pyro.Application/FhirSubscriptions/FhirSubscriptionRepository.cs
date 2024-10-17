@@ -2,7 +2,6 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.SearchQuery;
-using Abm.Pyro.Application.Tenant;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Query;

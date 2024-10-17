@@ -1,6 +1,8 @@
 ﻿using System.Threading.Channels;
 using Abm.Pyro.Application.FhirSubscriptions;
-using Abm.Pyro.Application.Tenant;
+using Abm.Pyro.Domain.Configuration;
+using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.TenantService;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -38,6 +40,11 @@ public class RepositoryEventChannel(
             if (hostEnvironment.IsDevelopment())
             {
                 await Task.Delay(5, cancellationToken: cancellationToken);    
+            }
+            
+            foreach (var repositoryEvent in repositoryEventList)
+            {
+                logger.LogDebug("Repository Event Raised for Tenant: {Tenant}, EventType: {EventType}, Resource: {ResourceType}/{ResourceId} ", repositoryEvent.Tenant.Code, repositoryEvent.RepositoryEventType.GetCode(), repositoryEvent.ResourceType.GetCode(), repositoryEvent.ResourceId);
             }
             
             using var scope = serviceScopeFactory.CreateScope();

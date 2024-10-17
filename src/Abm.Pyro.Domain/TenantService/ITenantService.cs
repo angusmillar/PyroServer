@@ -1,4 +1,4 @@
-﻿namespace Abm.Pyro.Application.Tenant;
+﻿namespace Abm.Pyro.Domain.TenantService;
 
 public interface ITenantService
 {

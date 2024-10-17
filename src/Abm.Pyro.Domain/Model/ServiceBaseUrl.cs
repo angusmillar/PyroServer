@@ -14,5 +14,6 @@ namespace Abm.Pyro.Domain.Model;
     public int? ServiceBaseUrlId { get; set; }
     public string Url { get; set; }
     public bool IsPrimary { get; set; }
+    
   }
 

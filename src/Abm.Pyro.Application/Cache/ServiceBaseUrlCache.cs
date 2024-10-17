@@ -1,10 +1,10 @@
 ﻿using System.Net;
-using Abm.Pyro.Application.Tenant;
 using Microsoft.Extensions.Caching.Distributed;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Exceptions;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
+using Abm.Pyro.Domain.TenantService;
 
 namespace Abm.Pyro.Application.Cache;
 
