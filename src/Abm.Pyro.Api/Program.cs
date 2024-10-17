@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Abm.Pyro.Api.ContentFormatters;
+using Abm.Pyro.Api.Context;
 using Abm.Pyro.Api.DependencyInjectionFactory;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Api.Middleware;
@@ -129,7 +130,7 @@ try
     builder.Services.AddScoped<IFhirHttpClientFactory, FhirHttpClientFactory>();
 
     
-    var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 10);
+    var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 6);
     IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
         .HandleTransientHttpError() // HttpRequestException, 5XX and 408
         .WaitAndRetryAsync(sleepDurations: jitterBackoff);
@@ -300,7 +301,9 @@ try
     
     // Tenant and Tenanted db queries and repositories 
     builder.Services.AddScoped<ITenantService, TenantService>();
+    builder.Services.AddScoped<IGetHttpContextRequestPath, GetHttpContextRequestPath>();
     builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+    
     builder.Services.AddTransient<IPyroDbContextFactory, PyroDbContextFactory>();
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
     

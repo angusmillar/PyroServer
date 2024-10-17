@@ -2,7 +2,7 @@
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Exceptions;
 using Abm.Pyro.Domain.Support;
-using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,11 +11,11 @@ namespace Abm.Pyro.Domain.TenantService;
 public class TenantService(
     ILogger<TenantService> logger,
     IOptions<TenantSettings> tenantSettings,
-    IHttpContextAccessor httpContextAccessor) : ITenantService
+    IGetHttpContextRequestPath getHttpContextRequestPath) : ITenantService
 {
-    private Domain.Configuration.Tenant? _scopedTenant;
+    private Tenant? _scopedTenant;
 
-    public IReadOnlyCollection<Domain.Configuration.Tenant> GetTenantList()
+    public IReadOnlyCollection<Tenant> GetTenantList()
     {
         if (!tenantSettings.Value.TenantList.Any())
         {
@@ -29,17 +29,16 @@ public class TenantService(
         return tenantSettings.Value.TenantList.ToList().AsReadOnly();
     }
 
-    public void SetScopedTenant(Domain.Configuration.Tenant tenant)
+    public void SetScopedTenant(Tenant tenant)
     {
         _scopedTenant = tenant;
     }
 
-    public Domain.Configuration.Tenant GetScopedTenant()
+    public Tenant GetScopedTenant()
     {
-        if (_scopedTenant is null && httpContextAccessor.HttpContext?.Request.Path.Value is not null)
+        if (_scopedTenant is null)
         {
-            string? requestTenantUrlCode =
-                TryGetRequestTenantUrlCode(httpContextAccessor.HttpContext?.Request.Path.Value);
+            string? requestTenantUrlCode = TryGetRequestTenantUrlCode(getHttpContextRequestPath.Get());
 
             if (requestTenantUrlCode is null)
             {
@@ -62,9 +61,9 @@ public class TenantService(
         return _scopedTenant;
     }
 
-    private static Domain.Configuration.Tenant GetDefaultTenant()
+    private static Tenant GetDefaultTenant()
     {
-        return new Domain.Configuration.Tenant()
+        return new Tenant()
         {
             Code = "*TenantNotSet*",
             DisplayName = "Tenant has not been set. Are you calling from a background service and forgotten to set it?",
