@@ -50,7 +50,7 @@ public class SearchQueryFactory(
       }
       else
       {
-        searchQueryBase.ParseValue(parameterValueString);
+        await searchQueryBase.ParseValue(parameterValueString);
       }
     }
     return result;

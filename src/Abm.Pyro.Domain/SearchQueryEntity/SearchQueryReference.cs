@@ -158,7 +158,7 @@ public class SearchQueryReference(
             IsValid = false;
         }
 
-        ValueList.Add(new SearchQueryReferenceValue(isMissing.Value, null));
+        ValueList.Add(new SearchQueryReferenceValue(isMissing!.Value, null));
     }
 
     

@@ -1,6 +1,5 @@
 ﻿using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.TenantService;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -13,8 +12,8 @@ public class TenantServiceFactory
     {
         var logger = new Mock<ILogger<TenantService>>();
         var tenantSettingsMock = new Mock<IOptions<TenantSettings>>();
-        var httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-        TenantService tenantService =  new TenantService(logger.Object, tenantSettingsMock.Object, httpContextAccessorMock.Object);
+        var getHttpContextRequestPathMock = new Mock<IGetHttpContextRequestPath>();
+        TenantService tenantService =  new TenantService(logger.Object, tenantSettingsMock.Object, getHttpContextRequestPathMock.Object);
 
         var tenant = new Domain.Configuration.Tenant()
         {
