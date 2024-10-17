@@ -130,7 +130,10 @@ try
     builder.Services.AddScoped<IFhirHttpClientFactory, FhirHttpClientFactory>();
 
     
-    var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 6);
+    var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(
+        medianFirstRetryDelay: TimeSpan.FromSeconds(1), 
+        retryCount: 12);
+    
     IAsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
         .HandleTransientHttpError() // HttpRequestException, 5XX and 408
         .WaitAndRetryAsync(sleepDurations: jitterBackoff);
