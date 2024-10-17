@@ -1,6 +1,6 @@
 ﻿using Abm.Pyro.Domain.TenantService;
 
-namespace Abm.Pyro.Api.Context;
+namespace Abm.Pyro.Api.HttpContextAccess;
 
 public class GetHttpContextRequestPath(IHttpContextAccessor httpContextAccessor): IGetHttpContextRequestPath
 {
