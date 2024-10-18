@@ -325,8 +325,8 @@ public class FhirUpdateHandler(
             Resource: operationOutcomeSupport.GetError(
                 new[]
                 {
-                    $"{HttpHeaderName.IfMatch} header precondition failure. Version update was for version {ifMatchVersion} however " +
-                    $"the server found version {resourceStoreVersionId}. "
+                    $"Optimistic concurrency via the request's {HttpHeaderName.IfMatch} header has caused a precondition " +
+                    $"failure. Version update was for version {ifMatchVersion} however the server found version {resourceStoreVersionId}. "
                 }),
             HttpStatusCode: HttpStatusCode.PreconditionFailed,
             Headers: new Dictionary<string, StringValues>(),
