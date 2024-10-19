@@ -52,7 +52,7 @@ public class DateTimeSetterTest
             
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: "Resource.meta.lastUpdated",
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
                     ElementResolver = fhirPathResolveMock.Object.Resolver 
                 });
@@ -92,7 +92,7 @@ public class DateTimeSetterTest
             
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: "Patient.birthDate",
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
                     ElementResolver = fhirPathResolveMock.Object.Resolver 
                 });
@@ -135,7 +135,7 @@ public class DateTimeSetterTest
             
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: "(Patient.deceased as dateTime)",
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
                     ElementResolver = fhirPathResolveMock.Object.Resolver 
                 });
@@ -176,7 +176,7 @@ public class DateTimeSetterTest
             
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: "Observation.effective",
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
                     ElementResolver = fhirPathResolveMock.Object.Resolver 
                 });

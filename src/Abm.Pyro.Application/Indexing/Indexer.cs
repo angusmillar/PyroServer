@@ -81,10 +81,10 @@ namespace Abm.Pyro.Application.Indexing
             try
             {
                 ScopedNode resourceModel = new ScopedNode(fhirResource.ToTypedElement());
-
+                
                 return resourceModel.Select(
                     expression: searchParameter.Expression,
-                    ctx: new FhirEvaluationContext(resourceModel)
+                    ctx: new FhirEvaluationContext()
                     {
                         ElementResolver = fhirPathResolve.Resolver //Add our custom resolver to handle fhirpath Resolve() functions 
                     });

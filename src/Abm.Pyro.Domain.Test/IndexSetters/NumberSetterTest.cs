@@ -64,13 +64,13 @@ public class NumberSetterTest
         {
             ScopedNode resourceModel = new ScopedNode(resource.ToTypedElement());
                 
-            var FhirPathResolveMock = new Mock<IFhirPathResolve>();
+            var fhirPathResolveMock = new Mock<IFhirPathResolve>();
 
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: expression,
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
-                    ElementResolver = FhirPathResolveMock.Object.Resolver
+                    ElementResolver = fhirPathResolveMock.Object.Resolver
                 });
             return typedElementList;
         }

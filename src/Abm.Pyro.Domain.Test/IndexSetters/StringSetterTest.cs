@@ -62,7 +62,7 @@ public class StringSetterTest
 
             IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
                 expression: expression,
-                ctx: new FhirEvaluationContext(resourceModel)
+                ctx: new FhirEvaluationContext()
                 {
                     ElementResolver = fhirPathResolveMock.Object.Resolver
                 });

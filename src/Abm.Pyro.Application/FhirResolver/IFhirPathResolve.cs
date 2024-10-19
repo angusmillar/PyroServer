@@ -3,5 +3,5 @@ namespace Abm.Pyro.Application.FhirResolver;
 
 public interface IFhirPathResolve
 {
-  ITypedElement? Resolver(string url);
+  ITypedElement Resolver(string url);
 }
