@@ -1,7 +1,10 @@
 using System.IO.Compression;
+using System.Net;
+using System.Linq;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Abm.Pyro.Domain.Extensions;
 using Abm.Pyro.Api.ContentFormatters;
 using Abm.Pyro.Api.DependencyInjectionFactory;
 using Abm.Pyro.Api.Extensions;
@@ -46,6 +49,7 @@ using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using Abm.Pyro.Repository.DependencyFactory;
+using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
@@ -77,7 +81,12 @@ try
         .Bind(builder.Configuration.GetSection(ImplementationSettings.SectionName))
         .ValidateDataAnnotations()
         .ValidateOnStart();
-
+    
+    builder.Services.AddOptions<KnownProxiesSettings>()
+        .Bind(builder.Configuration.GetSection(KnownProxiesSettings.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+    
     builder.Services.AddOptions<ServiceBaseUrlSettings>()
         .Bind(builder.Configuration.GetSection(ServiceBaseUrlSettings.SectionName))
         .ValidateDataAnnotations()
@@ -353,6 +362,21 @@ try
         options.Level = CompressionLevel.SmallestSize;
     });
 
+    KnownProxiesSettings? knownProxiesSettings = builder.Configuration.GetRequiredSection(KnownProxiesSettings.SectionName)
+        .Get<KnownProxiesSettings>();
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor | 
+            ForwardedHeaders.XForwardedProto | 
+            ForwardedHeaders.XForwardedHost | 
+            ForwardedHeaders.XForwardedPrefix;
+
+        knownProxiesSettings?.ProxyIpAddressOrHostName.ForEach((proxy) => 
+            proxy.ResolveIp(errorMessage: $"Invalid {KnownProxiesSettings.SectionName} IP or Hostname {proxy}")
+                .ToList().ForEach((ip) => options.KnownProxies.Add(ip)));
+    });
+    
     builder.Services.AddControllers();
     builder.Services.AddMvcCore(config =>
     {
@@ -384,6 +408,8 @@ try
         app.UseSwaggerUI();
     }
 
+    app.UseForwardedHeaders();
+    
     app.UseRequestDecompression();
     app.UseResponseCompression();
 
