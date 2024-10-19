@@ -3,16 +3,17 @@ using Abm.Pyro.Domain.Exceptions;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Hl7.Fhir.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace Abm.Pyro.Domain.FhirSupport;
 
 public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
 {
-  private readonly JsonSerializerOptions Options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
+  //private readonly JsonSerializerOptions Options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
 
   public JsonSerializerOptions ForDeserialization()
   {
-    return Options;
+    return new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);;
   }
   
   public JsonSerializerOptions ForSerialization(SummaryType? summaryType, bool pretty = false)
@@ -22,7 +23,9 @@ public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
                      SummaryFilter = GetSerializationFilter(summaryType)
                    };
     
-     return pretty ? Options.ForFhir(settings).Pretty() : Options.ForFhir(settings);
+    var options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
+      
+     return pretty ? options.ForFhir(settings).Pretty() : options.ForFhir(settings);
   }
   
   private static SerializationFilter? GetSerializationFilter(SummaryType? summaryType)
