@@ -362,8 +362,7 @@ try
         options.Level = CompressionLevel.SmallestSize;
     });
 
-    KnownProxiesSettings? knownProxiesSettings = builder.Configuration.GetRequiredSection(KnownProxiesSettings.SectionName)
-        .Get<KnownProxiesSettings>();
+    
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders =
@@ -371,9 +370,14 @@ try
             ForwardedHeaders.XForwardedProto | 
             ForwardedHeaders.XForwardedHost | 
             ForwardedHeaders.XForwardedPrefix;
-
+        
+        KnownProxiesSettings? knownProxiesSettings = builder.Configuration
+            .GetRequiredSection(KnownProxiesSettings.SectionName)
+            .Get<KnownProxiesSettings>();
+        
         knownProxiesSettings?.ProxyIpAddressOrHostName.ForEach((proxy) => 
-            proxy.ResolveIp(errorMessage: $"Invalid {KnownProxiesSettings.SectionName} IP or Hostname {proxy}")
+            proxy.ResolveIp(errorMessage: $"Invalid configuration for section {KnownProxiesSettings.SectionName}, " +
+                                          $"IP or Hostname: {proxy}")
                 .ToList().ForEach((ip) => options.KnownProxies.Add(ip)));
     });
     
@@ -423,7 +427,7 @@ try
 
     app.MapControllers();
 
-    app.Run();
+    app.Run(); 
 }
 catch (Exception ex)
 {
