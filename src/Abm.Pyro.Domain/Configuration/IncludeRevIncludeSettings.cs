@@ -19,6 +19,6 @@ public sealed class IncludeRevIncludeSettings
   /// return in a single search query. The initial target resources are not part of this count, only the
   /// resource which are added by the _include or _revinclude search parameters.  
   /// </summary>
-  [Range(1, 200, ErrorMessage = "Can only be between 1 .. 200")]
+  [Range(1, 1000, ErrorMessage = "Can only be between 1 .. 1000")]
   public int MaximumIncludeResources { get; init; } = 100;
 }

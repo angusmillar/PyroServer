@@ -9,8 +9,8 @@ public sealed class PaginationSettings
   /// in a FHIR search call. The default can be over-ridden per API call using the _count search parameter
   /// in the call.
   /// </summary>
-  [Range(1, 200, ErrorMessage = "Can only be between 1 .. 200")]
-  public int DefaultNumberOfRecordsPerPage { get; init; } = 30;
+  [Range(1, 1000, ErrorMessage = "Can only be between 1 .. 1000")]
+  public int DefaultNumberOfRecordsPerPage { get; init; } = 100;
   
   /// <summary>
   /// This setting is the absolute maximum number of Resource that can be requested 
@@ -23,8 +23,8 @@ public sealed class PaginationSettings
   /// 'SystemDefaultMaxNumberOfRecordsPerPage' command which is currently set at 5000 and the command 
   ///  here will default to the 'SystemDefaultMaxNumberOfRecordsPerPage' value if set higher.
   /// </summary>
-  [Range(1, 300, ErrorMessage = "Can only be between 1 .. 300")]
-  public int MaximumNumberOfRecordsPerPage { get; init; } = 100;
+  [Range(1, 5000, ErrorMessage = "Can only be between 1 .. 5000")]
+  public int MaximumNumberOfRecordsPerPage { get; init; } = 500;
   
 }
 
