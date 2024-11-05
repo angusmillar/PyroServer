@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>12</LangVersion>
         <UserSecretsId>946ad5cd-8167-47c7-9917-57804054534d</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,6 +26,12 @@
       <ProjectReference Include="..\Abm.Pyro.Application\Abm.Pyro.Application.csproj" />
       <ProjectReference Include="..\Abm.Pyro.Domain\Abm.Pyro.Domain.csproj" />
       <ProjectReference Include="..\Abm.Pyro.Repository\Abm.Pyro.Repository.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>
