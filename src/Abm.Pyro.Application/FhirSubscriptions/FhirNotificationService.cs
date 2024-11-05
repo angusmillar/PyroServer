@@ -1,8 +1,7 @@
-﻿using System.Net;
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
-using Abm.Pyro.Application.FhirClient;
+using Abm.Pyro.Application.FhirClientFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.Notification;

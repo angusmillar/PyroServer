@@ -1,4 +1,4 @@
-namespace Abm.Pyro.Application.FhirClient;
+namespace Abm.Pyro.Application.FhirClientFactory;
 
 public interface IFhirHttpClientFactory
 {

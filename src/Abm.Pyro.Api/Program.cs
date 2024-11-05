@@ -1,6 +1,4 @@
 using System.IO.Compression;
-using System.Net;
-using System.Linq;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -8,6 +6,7 @@ using Abm.Pyro.Domain.Extensions;
 using Abm.Pyro.Api.ContentFormatters;
 using Abm.Pyro.Api.DependencyInjectionFactory;
 using Abm.Pyro.Api.Extensions;
+using Abm.Pyro.Api.FhirClientFactory;
 using Abm.Pyro.Api.HttpContextAccess;
 using Abm.Pyro.Api.Middleware;
 using Abm.Pyro.Application.AssemblyMarker;
@@ -16,7 +15,7 @@ using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirBundleService;
-using Abm.Pyro.Application.FhirClient;
+using Abm.Pyro.Application.FhirClientFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResolver;
@@ -318,9 +317,10 @@ try
     
     builder.Services.AddTransient<IPyroDbContextFactory, PyroDbContextFactory>();
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
-    
-    
 
+    string connectionString = builder.Configuration.GetConnectionString("PyroDb") ?? "[Not Found]";
+    Log.Information("SQL Connection string: {ConnectionString}", connectionString);
+    
     // Database Setup ----------------------
     builder.Services.AddDbContext<PyroDbContext>((services, optionsBuilder) =>
         {

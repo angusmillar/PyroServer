@@ -1,6 +1,7 @@
-﻿using Hl7.Fhir.Rest;
+﻿using Abm.Pyro.Application.FhirClientFactory;
+using Hl7.Fhir.Rest;
 
-namespace Abm.Pyro.Application.FhirClient;
+namespace Abm.Pyro.Api.FhirClientFactory;
 
 public class FhirHttpClientFactory(IHttpClientFactory httpClientFactory) : IFhirHttpClientFactory
 {
