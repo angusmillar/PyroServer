@@ -21,10 +21,9 @@ namespace Abm.Pyro.Repository.Predicates;
         }
         
         var indexTokenPredicate = LinqKit.PredicateBuilder.New<IndexToken>(true);
-        indexTokenPredicate = indexTokenPredicate.And(IsSearchParameterId(searchQueryToken.SearchParameter.SearchParameterStoreId.Value));
-
         if (!searchQueryToken.Modifier.HasValue)
         {
+          indexTokenPredicate = indexTokenPredicate.And(IsSearchParameterId(searchQueryToken.SearchParameter.SearchParameterStoreId.Value));
           indexTokenPredicate = indexTokenPredicate.And(EqualTo(tokenValue));
           resultList.Add(indexTokenPredicate);
         }
@@ -37,6 +36,16 @@ namespace Abm.Pyro.Repository.Predicates;
             {
               case SearchModifierCodeId.Missing:
                 indexTokenPredicate = indexTokenPredicate.And(IsNotSearchParameterId(searchQueryToken.SearchParameter.SearchParameterStoreId.Value));
+                resultList.Add(indexTokenPredicate);
+                break;
+               case SearchModifierCodeId.Not:
+                //This fails to return resources where the Token is ':not' found at all (e.g. patient.gender is not found at all)!
+                //To fix this I think we need to beginning to add rows in the index for each possible search parameter,
+                //even where there is no matched data in the resource, that is, add a row where the values are null
+                //Then here we can search for those rows where the ':not' Modifier is used, in fact, the NotEqualTo will just find them
+                 indexTokenPredicate = indexTokenPredicate.And(IsSearchParameterId(searchQueryToken.SearchParameter.SearchParameterStoreId.Value));
+                indexTokenPredicate = indexTokenPredicate.And(NotEqualTo(tokenValue));
+                
                 resultList.Add(indexTokenPredicate);
                 break;
               default:
@@ -89,6 +98,34 @@ namespace Abm.Pyro.Repository.Predicates;
           case SearchQueryTokenValue.TokenSearchType.MatchCodeWithNullSystem:
             code = StringSupport.ToLowerFast(tokenValue.Code!);
             return x => x.System == null && x.Code == code;
+          default:
+            throw new System.ComponentModel.InvalidEnumArgumentException(tokenValue.SearchType.Value.ToString(), (int)tokenValue.SearchType.Value, typeof(SearchQueryTokenValue.TokenSearchType));
+        }
+      }
+      throw new ArgumentNullException(nameof(tokenValue.SearchType));
+    }
+    
+    private Expression<Func<IndexToken, bool>> NotEqualTo(SearchQueryTokenValue tokenValue)
+    {
+      if (tokenValue.SearchType.HasValue)
+      {
+        string code;
+        string system;
+        switch (tokenValue.SearchType.Value)
+        {
+          case SearchQueryTokenValue.TokenSearchType.MatchCodeOnly:
+            code = StringSupport.ToLowerFast(tokenValue.Code!);
+            return x => x.Code != code;
+          case SearchQueryTokenValue.TokenSearchType.MatchSystemOnly:
+            system = StringSupport.ToLowerFast(tokenValue.System!);
+            return x => x.System != system;
+          case SearchQueryTokenValue.TokenSearchType.MatchCodeAndSystem:
+            system = StringSupport.ToLowerFast(tokenValue.System!);
+            code = StringSupport.ToLowerFast(tokenValue.Code!);
+            return x => x.System != system | x.Code != code;
+          case SearchQueryTokenValue.TokenSearchType.MatchCodeWithNullSystem:
+            code = StringSupport.ToLowerFast(tokenValue.Code!);
+            return x => x.System == null && x.Code != code;
           default:
             throw new System.ComponentModel.InvalidEnumArgumentException(tokenValue.SearchType.Value.ToString(), (int)tokenValue.SearchType.Value, typeof(SearchQueryTokenValue.TokenSearchType));
         }
