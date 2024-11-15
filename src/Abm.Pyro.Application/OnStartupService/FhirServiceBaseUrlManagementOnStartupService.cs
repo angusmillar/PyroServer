@@ -30,9 +30,11 @@ public class FhirServiceBaseUrlManagementOnStartupService(
 
     private async Task ProcessTenantFhirServiceBaseUrl(Domain.Configuration.Tenant tenant)
     {
+        
+        Uri appSettingsServiceBaseUrl = GetAppSettingsServiceBaseUrlWithTenantUrlCode(tenant);
+        
         ServiceBaseUrl? cachedDatabaseServiceBaseUrl = await serviceBaseUrlOnStartupRepository.Get();
-        Uri appSettingsServiceBaseUrl = new Uri(serviceBaseUrlSettings.Value.Url, tenant.GetUrlCode());
-
+        
         if (cachedDatabaseServiceBaseUrl is not null && SystemsFhirServiceBaseUrlUnchanged())
         {
             //Normal start-up: The appsettings.json and database primary Service Base URL identical  
@@ -73,6 +75,22 @@ public class FhirServiceBaseUrlManagementOnStartupService(
             return appSettingsServiceBaseUrl.FhirServiceBaseUrlsAreEqual(
                 new Uri($"https://{cachedDatabaseServiceBaseUrl.Url}"));
         }
+    }
+
+    private Uri GetAppSettingsServiceBaseUrlWithTenantUrlCode(Tenant tenant)
+    {
+        UriBuilder serviceBaseUrlBuilder = new UriBuilder(serviceBaseUrlSettings.Value.Url);
+
+        if (serviceBaseUrlBuilder.Path.EndsWith('/'))
+        {
+            serviceBaseUrlBuilder.Path += tenant.GetUrlCode();    
+        }
+        else
+        {
+            serviceBaseUrlBuilder.Path += $"/{tenant.GetUrlCode()}";    
+        }
+
+        return serviceBaseUrlBuilder.Uri;
     }
 
     private void InitialisePrimaryServiceBaseUrl(Uri appSettingsServiceBaseUrl)
