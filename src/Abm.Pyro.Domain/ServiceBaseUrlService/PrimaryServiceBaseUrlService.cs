@@ -3,8 +3,8 @@ using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.TenantService;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
 
 namespace Abm.Pyro.Domain.ServiceBaseUrlService;
 
@@ -13,23 +13,18 @@ public class PrimaryServiceBaseUrlService(
     IOptions<ServiceBaseUrlSettings> serviceBaseUrlSettings,
     ITenantService tenantService) : IPrimaryServiceBaseUrlService
 {
-    private Model.ServiceBaseUrl? _serviceBaseUrl;
-    private Uri? _serviceBaseUrlSettingsUri;
+    private Uri? _serviceBaseUriFromAppSettings;
+    private Uri? _serviceBaseUriFromDatabaseCache;
     
-    
-    public async Task<Domain.Model.ServiceBaseUrl> GetServiceBaseUrlAsync()
-    {
-       return await GetCachedServiceBaseUrl();
-    }
-
     public async Task<string> GetUrlAsync()
     {
-        return (await GetCachedServiceBaseUrl()).Url;
+        var serviceBaseUrl = await GetCachedServiceBaseUrl();
+        return serviceBaseUrl.OriginalString;
     }
 
     public async Task<Uri> GetUriAsync()
     {
-        return new Uri((await GetCachedServiceBaseUrl()).Url);
+        return await GetCachedServiceBaseUrl();
     }
     
     public string GetUrlString()
@@ -43,35 +38,33 @@ public class PrimaryServiceBaseUrlService(
     }
 
     
-    //Lazy loading 
-    private async Task<ServiceBaseUrl> GetCachedServiceBaseUrl()
+    //Lazy loading from database cache, and validated against that loaded from appsettings
+    private async Task<Uri> GetCachedServiceBaseUrl()
     {
-        if (_serviceBaseUrl is null)
+        if (_serviceBaseUriFromDatabaseCache is null)
         {
-            _serviceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
-            //That we hard code https here has no ill effect because the FhirServiceBaseUrlsAreEqual method ignores it when comparing
-            //Yet a schema (http or https) must be added for the method to work correctly.
-            if (!GetFromSettings().FhirServiceBaseUrlsAreEqual(new Uri($"https://{_serviceBaseUrl.Url}")))
+            ServiceBaseUrl serviceBaseUrlFromDatabaseCache = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
+            Uri serviceBaseUrlFromSettings = GetFromSettings();
+            _serviceBaseUriFromDatabaseCache = new Uri($"{serviceBaseUrlFromSettings.Scheme}://{serviceBaseUrlFromDatabaseCache.Url}");
+            
+            if (!serviceBaseUrlFromSettings.FhirServiceBaseUrlsAreEqual(_serviceBaseUriFromDatabaseCache))
             {
-                throw new ApplicationException("While loaded the ServiceBaseUrl, the service base url based on appsettings is not equal to the service base url based on the ServiceBaseUrlCache.");
+                throw new ApplicationException("While loaded the Service Base Url, the url provided in appsettings was " +
+                                               "found to not equal the url provided by the application's database cache");
             }
         }
 
-        return _serviceBaseUrl;
+        return _serviceBaseUriFromDatabaseCache;
     }
     
-    //Lazy loading 
+    //Lazy loading from appsettings
     private Uri GetFromSettings()
     {
-        if (_serviceBaseUrlSettingsUri is null)
+        if (_serviceBaseUriFromAppSettings is null)
         {
-            _serviceBaseUrlSettingsUri = new Uri(serviceBaseUrlSettings.Value.Url, tenantService.GetScopedTenant().UrlCode);
-            if (!GetUrlString().Equals(_serviceBaseUrlSettingsUri.OriginalString))
-            {
-                throw new ApplicationException("While loaded the ServiceBaseUrlSettings, The service base url based on appsettings is not equal to the service base url based on the ServiceBaseUrlCache.");
-            }
+            _serviceBaseUriFromAppSettings = new Uri(serviceBaseUrlSettings.Value.Url, tenantService.GetScopedTenant().UrlCode);
         }
 
-        return _serviceBaseUrlSettingsUri;
+        return _serviceBaseUriFromAppSettings;
     }
 }
