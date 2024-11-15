@@ -194,7 +194,7 @@ public class FhirTransactionPostService(
                 break;
             }
             
-            postEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}{postEntry.Resource.TypeName}/{postEntry.Resource.Id}";
+            postEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}/{postEntry.Resource.TypeName}/{postEntry.Resource.Id}";
             postEntry.Resource = postResponse.Resource;
             postEntry.Response = new Bundle.ResponseComponent
             {

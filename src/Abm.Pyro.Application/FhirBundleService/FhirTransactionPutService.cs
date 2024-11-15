@@ -181,7 +181,7 @@ public class FhirTransactionPutService(
                 break;
             }
             
-            putEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}{putEntry.Resource.TypeName}/{putEntry.Resource.Id}";
+            putEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}/{putEntry.Resource.TypeName}/{putEntry.Resource.Id}";
             putEntry.Resource = updateResponse.Resource;
             putEntry.Response = new Bundle.ResponseComponent
             {

@@ -189,7 +189,7 @@ public class FhirTransactionDeleteService(
                 break;
             }
 
-            deleteEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}{deleteEntry.Resource.TypeName}/{deleteEntry.Resource.Id}";
+            deleteEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}/{deleteEntry.Resource.TypeName}/{deleteEntry.Resource.Id}";
             deleteEntry.Resource = deleteResponse.Resource; //It will always be null in this case, but may be in future we may modify the response, so let it flow through here 
             deleteEntry.Response = new Bundle.ResponseComponent
             {

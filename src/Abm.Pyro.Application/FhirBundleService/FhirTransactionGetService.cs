@@ -116,7 +116,7 @@ public class FhirTransactionGetService(
                 return failedReadOperationOutcome;
             }
             
-            getEntry.FullUrl = $"{requestFhirUri.PrimaryServiceRootServers}{requestFhirUri.ResourceName}/{requestFhirUri.ResourceId}";
+            getEntry.FullUrl = $"{requestFhirUri.PrimaryServiceRootServers}/{requestFhirUri.ResourceName}/{requestFhirUri.ResourceId}";
             getEntry.Resource = readResponse.Resource;
             getEntry.Response = new Bundle.ResponseComponent
             {
