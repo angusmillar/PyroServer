@@ -1,0 +1,25 @@
+﻿<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Abm.Pyro.Api/Dockerfile" type="docker-deploy" factoryName="dockerfile" editBeforeRun="true" server-name="Docker">
+    <deployment type="dockerfile">
+      <settings>
+        <option name="imageTag" value="abm.pyro.api" />
+        <option name="containerName" value="abm.pyro.api" />
+        <option name="contextFolderPath" value="." />
+        <option name="portBindings">
+          <list>
+            <DockerPortBindingImpl>
+              <option name="containerPort" value="8080" />
+              <option name="hostIp" value="127.0.0.1" />
+              <option name="hostPort" value="8081" />
+            </DockerPortBindingImpl>
+          </list>
+        </option>
+        <option name="commandLineOptions" value="--network=pyro-network" />
+        <option name="showCommandPreview" value="true" />
+        <option name="sourceFilePath" value="Abm.Pyro.Api/Dockerfile" />
+      </settings>
+    </deployment>
+    <EXTENSION ID="com.jetbrains.rider.docker.debug" isFastModeEnabled="true" isSslEnabled="false" />
+    <method v="2" />
+  </configuration>
+</component>
