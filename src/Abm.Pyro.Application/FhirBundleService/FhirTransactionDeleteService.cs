@@ -15,6 +15,7 @@ using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
 using Task = System.Threading.Tasks.Task;
@@ -22,6 +23,7 @@ using Task = System.Threading.Tasks.Task;
 namespace Abm.Pyro.Application.FhirBundleService;
 
 public class FhirTransactionDeleteService(
+    ITenantService tenantService,
     IFhirBundleCommonSupport fhirBundleCommonSupport,
     IFhirDeleteHandler fhirDeleteHandler,
     IOperationOutcomeSupport operationOutcomeSupport,
@@ -103,7 +105,7 @@ public class FhirTransactionDeleteService(
             
             if (IfConditionalDelete(requestFhirUri))
             {
-                if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowConditionalDelete)
+                if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowConditionalDelete)
                 {
                     bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
                     bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
@@ -121,7 +123,7 @@ public class FhirTransactionDeleteService(
                 }
             }
             
-            if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowDelete)
+            if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowDelete)
             {
                 bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
                 bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]

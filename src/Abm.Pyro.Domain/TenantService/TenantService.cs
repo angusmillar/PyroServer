@@ -34,6 +34,11 @@ public class TenantService(
         _scopedTenant = tenant;
     }
 
+    public string GetScopedTenantCode()
+    {
+        return GetScopedTenant().Code;
+    }
+    
     public Tenant GetScopedTenant()
     {
         if (_scopedTenant is null)

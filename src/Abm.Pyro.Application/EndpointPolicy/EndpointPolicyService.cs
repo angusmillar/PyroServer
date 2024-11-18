@@ -8,131 +8,152 @@ namespace Abm.Pyro.Application.EndpointPolicy;
 
 public class EndpointPolicyService(
     ILogger<EndpointPolicyService> logger,
+    IEndpointPolicyRules endpointPolicyRules,
     IFhirResourceNameSupport fhirResourceNameSupport,
-    IOptions<ResourceEndpointPolicySettings> resourceEndpointPolicySettings
+    IOptions<ResourceEndpointPoliciesSettings> resourceEndpointPolicySettings
 ) : IEndpointPolicyService
 {
-    private EndpointPolicy? DefaultEndpointPolicy;
-    private bool IsEndpointPolicyConfigurationValid;
-    private readonly Dictionary<string, EndpointPolicy> EndpointPolicyDictionary = new();
-
-    public EndpointPolicy GetDefaultEndpointPolicy()
+    
+    public EndpointPolicy GetDefaultEndpointPolicy(string tenantCode)
     {
-        if (!IsEndpointPolicyConfigurationValid)
+        if (!endpointPolicyRules.IsEndpointPolicyConfigurationValid)
         {
-            LogEndpointPolicyConfigurationIsInValid();
+            LogEndpointPolicyConfigurationIsInValid(tenantCode);
             return GetDenyAllEndpointPolicy();
         }
 
-        if (DefaultEndpointPolicy is null)
-        {
-            DefaultEndpointPolicy = LoadDefaultEndpointPolicy();
-            LoadEndpointPolicyDictionary(DefaultEndpointPolicy);
-        }
-
-        return DefaultEndpointPolicy;
+        return endpointPolicyRules.AllTenantEndpointPolicyDictionary[tenantCode].DefaultPolicy;
+        
     }
-    public EndpointPolicy GetEndpointPolicy(string endpointName)
+
+    public EndpointPolicy GetEndpointPolicy(string tenantCode, string endpointName)
     {
-        if (!IsEndpointPolicyConfigurationValid)
+        if (!endpointPolicyRules.IsEndpointPolicyConfigurationValid)
         {
-            LogEndpointPolicyConfigurationIsInValid();
+            LogEndpointPolicyConfigurationIsInValid(tenantCode);
             return GetDenyAllEndpointPolicy();
         }
 
-        if (DefaultEndpointPolicy is null)
-        {
-            DefaultEndpointPolicy = LoadDefaultEndpointPolicy();
-            LoadEndpointPolicyDictionary(DefaultEndpointPolicy);
-        }
-
-        return EndpointPolicyDictionary.GetValueOrDefault(endpointName, DefaultEndpointPolicy);
+        return endpointPolicyRules.AllTenantEndpointPolicyDictionary[tenantCode]
+            .EndpointPolicyDictionary
+            .GetValueOrDefault(endpointName, endpointPolicyRules.AllTenantEndpointPolicyDictionary[tenantCode].DefaultPolicy);
+        
     }
 
-    public bool? ValidateConfiguration(CancellationToken cancellationToken)
+    public bool ValidateConfiguration(
+        string tenantCode,
+        CancellationToken cancellationToken)
     {
-        IsEndpointPolicyConfigurationValid = true;
-        ValidateDefaultPolicy();
+        endpointPolicyRules.IsEndpointPolicyConfigurationValid = true;
+        ValidateTenantDefaultPolicy(tenantCode);
+        ValidateTenant(tenantCode);
+        
+        if (!endpointPolicyRules.IsEndpointPolicyConfigurationValid)
+        {
+            LogEndpointPolicyConfigurationIsInValid(tenantCode);
+        }
+        
+        ResourceEndpointTenant tenantPolicies = resourceEndpointPolicySettings.Value.Tenants.First(x => 
+            x.TenantCode.Equals(tenantCode, StringComparison.OrdinalIgnoreCase));
+        
         int resourceEndpointPolicyCounter = 0;
-        foreach (ResourceEndpointPolicyMap resourceEndpointPolicy in resourceEndpointPolicySettings.Value.Enforce)
+        foreach (ResourceEndpointPolicyMap resourceEndpointPolicy in tenantPolicies.Enforce)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                IsEndpointPolicyConfigurationValid = false;
-                return null;
+                endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
+                return endpointPolicyRules.IsEndpointPolicyConfigurationValid;
             }
-            
+
             resourceEndpointPolicyCounter++;
-            ValidateEndpointNames(resourceEndpointPolicy, resourceEndpointPolicyCounter);
-            ValidatePolicies(resourceEndpointPolicy, resourceEndpointPolicyCounter);
+            ValidateEndpointNames(tenantCode, resourceEndpointPolicy, resourceEndpointPolicyCounter);
+            ValidatePolicies(tenantCode, resourceEndpointPolicy, resourceEndpointPolicyCounter);
         }
 
-        if (!IsEndpointPolicyConfigurationValid)
+        if (!endpointPolicyRules.IsEndpointPolicyConfigurationValid)
         {
-            LogEndpointPolicyConfigurationIsInValid();
+            LogEndpointPolicyConfigurationIsInValid(tenantCode);
         }
-        
-        return IsEndpointPolicyConfigurationValid;
+
+        return endpointPolicyRules.IsEndpointPolicyConfigurationValid;
     }
-    
-    public void PrimeEndpointPolicies()
+
+    public void PrimeEndpointPolicies(string tenantCode)
     {
-        if (!IsEndpointPolicyConfigurationValid)
+        if (!endpointPolicyRules.IsEndpointPolicyConfigurationValid)
         {
-            LogEndpointPolicyConfigurationIsInValid();
+            LogEndpointPolicyConfigurationIsInValid(tenantCode);
             return;
         }
+
+        var defaultEndpointPolicy = LoadTenantDefaultEndpointPolicy(tenantCode);
         
-        DefaultEndpointPolicy = LoadDefaultEndpointPolicy();
-        LoadEndpointPolicyDictionary(DefaultEndpointPolicy);
+        TenantEndpointPolicyRules tenantEndpointPolicyRules = new TenantEndpointPolicyRules(
+            TenantCode: tenantCode,
+            DefaultPolicy: defaultEndpointPolicy, 
+            EndpointPolicyDictionary: LoadTenantEndpointPolicyDictionary(tenantCode, defaultEndpointPolicy));
+        
+        endpointPolicyRules.AllTenantEndpointPolicyDictionary.Add(tenantCode, tenantEndpointPolicyRules);
+        
     }
 
-    private void LogEndpointPolicyConfigurationIsInValid()
+    private void LogEndpointPolicyConfigurationIsInValid(string tenantCode)
     {
-        logger.LogCritical("The appsettings.json {Section1} configuration was found to be invalid. " +
+        logger.LogCritical("The appsettings.json {Section} configuration for Tenant {Tenant} was found to be invalid. " +
                            "A system default {DenyAll} policy has been loaded by the system which will prevent access to all endpoints. " +
                            "Please review the server's startup logs for the specific configuration issues",
-            ResourceEndpointPolicySettings.SectionName,
+            ResourceEndpointPoliciesSettings.SectionName,
+            tenantCode,
             "DenyAll");
     }
 
-    private EndpointPolicy LoadDefaultEndpointPolicy()
+    private EndpointPolicy LoadTenantDefaultEndpointPolicy(string tenantCode)
     {
-        ResourceEndpointPolicy? defaultPolicy =
+        ResourceEndpointPolicy? tenantDefaultPolicy =
             resourceEndpointPolicySettings.Value.Policies.FirstOrDefault(x =>
-                x.PolicyCode.ToLower().Equals(resourceEndpointPolicySettings.Value.DefaultPolicy.ToLower()));
+                x.PolicyCode.Equals(resourceEndpointPolicySettings.Value.Tenants.First(x => 
+                    x.TenantCode.Equals(tenantCode, StringComparison.OrdinalIgnoreCase))
+                    .DefaultPolicy, StringComparison.OrdinalIgnoreCase));
 
-        ArgumentNullException.ThrowIfNull(defaultPolicy);
+        ArgumentNullException.ThrowIfNull(tenantDefaultPolicy);
 
         return new EndpointPolicy(
-            AllowCreate: defaultPolicy.AllowCreate,
-            AllowRead: defaultPolicy.AllowRead,
-            AllowUpdate: defaultPolicy.AllowUpdate,
-            AllowDelete: defaultPolicy.AllowDelete,
-            AllowSearch: defaultPolicy.AllowSearch,
-            AllowVersionRead: defaultPolicy.AllowVersionRead,
-            AllowHistory: defaultPolicy.AllowHistory,
-            AllowConditionalCreate: defaultPolicy.AllowConditionalCreate,
-            AllowConditionalUpdate: defaultPolicy.AllowConditionalUpdate,
-            AllowConditionalDelete: defaultPolicy.AllowConditionalDelete,
-            AllowBaseTransaction: defaultPolicy.AllowBaseTransaction,
-            AllowBaseBatch: defaultPolicy.AllowBaseBatch,
-            AllowBaseMetadata: defaultPolicy.AllowBaseMetadata,
-            AllowBaseHistory: defaultPolicy.AllowBaseHistory);
+            AllowCreate: tenantDefaultPolicy.AllowCreate,
+            AllowRead: tenantDefaultPolicy.AllowRead,
+            AllowUpdate: tenantDefaultPolicy.AllowUpdate,
+            AllowDelete: tenantDefaultPolicy.AllowDelete,
+            AllowSearch: tenantDefaultPolicy.AllowSearch,
+            AllowVersionRead: tenantDefaultPolicy.AllowVersionRead,
+            AllowHistory: tenantDefaultPolicy.AllowHistory,
+            AllowConditionalCreate: tenantDefaultPolicy.AllowConditionalCreate,
+            AllowConditionalUpdate: tenantDefaultPolicy.AllowConditionalUpdate,
+            AllowConditionalDelete: tenantDefaultPolicy.AllowConditionalDelete,
+            AllowBaseTransaction: tenantDefaultPolicy.AllowBaseTransaction,
+            AllowBaseBatch: tenantDefaultPolicy.AllowBaseBatch,
+            AllowBaseMetadata: tenantDefaultPolicy.AllowBaseMetadata,
+            AllowBaseHistory: tenantDefaultPolicy.AllowBaseHistory);
     }
 
-    private void LoadEndpointPolicyDictionary(EndpointPolicy defaultEndpointPolicy)
+    private Dictionary<string, EndpointPolicy> LoadTenantEndpointPolicyDictionary(string tenantCode, EndpointPolicy defaultEndpointPolicy)
     {
+
+        var tenantEndpointPolicyDictionary = new Dictionary<string, EndpointPolicy>();
         foreach (FhirResourceTypeId resourceType in Enum.GetValues(typeof(FhirResourceTypeId)))
         {
             string resourceName = resourceType.GetCode();
-            IEnumerable<ResourceEndpointPolicyMap> resourceTypeEndpointPolicyMap = resourceEndpointPolicySettings.Value.Enforce.Where(x
-                => x.UponEndpoints.Contains(resourceName));
+            
+            var resourceEndpointTenant = resourceEndpointPolicySettings.Value.Tenants.First(x => 
+                x.TenantCode.Equals(tenantCode, StringComparison.OrdinalIgnoreCase));
+            
+            IEnumerable<ResourceEndpointPolicyMap> resourceTypeEndpointPolicyMap =
+                resourceEndpointTenant.Enforce.Where(x
+                    => x.Endpoints.Contains(resourceName)).ToList();
 
             if (resourceTypeEndpointPolicyMap.Any())
             {
-                IEnumerable<ResourceEndpointPolicy> enforceableResourceTypeEndpointPolicyList = resourceEndpointPolicySettings.Value.Policies.Where(x
-                    => resourceTypeEndpointPolicyMap.Any(c => c.Policies.Contains(x.PolicyCode)));
+                IEnumerable<ResourceEndpointPolicy> enforceableResourceTypeEndpointPolicyList =
+                    resourceEndpointPolicySettings.Value.Policies.Where(x
+                        => resourceTypeEndpointPolicyMap.Any(c => c.Policies.Contains(x.PolicyCode)));
 
                 bool allowCreate = defaultEndpointPolicy.AllowCreate;
                 bool allowRead = defaultEndpointPolicy.AllowRead;
@@ -159,37 +180,44 @@ public class EndpointPolicyService(
                     allowSearch = OnlySetIfFalse(enforceableEndpointPolicy.AllowSearch, allowSearch);
                     allowVersionRead = OnlySetIfFalse(enforceableEndpointPolicy.AllowVersionRead, allowVersionRead);
                     allowHistory = OnlySetIfFalse(enforceableEndpointPolicy.AllowHistory, allowHistory);
-                    allowConditionalCreate = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalCreate, allowConditionalCreate);
-                    allowConditionalUpdate = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalUpdate, allowConditionalUpdate);
-                    allowConditionalDelete = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalDelete, allowConditionalDelete);
-                    allowBaseTransaction = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseTransaction);
+                    allowConditionalCreate = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalCreate,
+                        allowConditionalCreate);
+                    allowConditionalUpdate = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalUpdate,
+                        allowConditionalUpdate);
+                    allowConditionalDelete = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalDelete,
+                        allowConditionalDelete);
+                    allowBaseTransaction = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction,
+                        allowBaseTransaction);
                     allowBaseBatch = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseBatch);
-                    allowBaseMetadata = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseMetadata);
+                    allowBaseMetadata =
+                        OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseMetadata);
                     allowBaseHistory = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseHistory, allowBaseHistory);
-                    
                 }
 
-                EndpointPolicyDictionary.Add(resourceName,
-                    new EndpointPolicy(
-                        AllowCreate: allowCreate,
-                        AllowRead: allowRead,
-                        AllowUpdate: allowUpdate,
-                        AllowDelete: allowDelete,
-                        AllowSearch: allowSearch,
-                        AllowVersionRead: allowVersionRead,
-                        AllowHistory: allowHistory,
-                        AllowConditionalCreate: allowConditionalCreate,
-                        AllowConditionalUpdate: allowConditionalUpdate,
-                        AllowConditionalDelete: allowConditionalDelete,
-                        AllowBaseTransaction: allowBaseTransaction,
-                        AllowBaseBatch: allowBaseBatch,
-                        AllowBaseMetadata: allowBaseMetadata,
-                        AllowBaseHistory: allowBaseHistory));
+                tenantEndpointPolicyDictionary.Add(resourceName, new EndpointPolicy(
+                    AllowCreate: allowCreate,
+                    AllowRead: allowRead,
+                    AllowUpdate: allowUpdate,
+                    AllowDelete: allowDelete,
+                    AllowSearch: allowSearch,
+                    AllowVersionRead: allowVersionRead,
+                    AllowHistory: allowHistory,
+                    AllowConditionalCreate: allowConditionalCreate,
+                    AllowConditionalUpdate: allowConditionalUpdate,
+                    AllowConditionalDelete: allowConditionalDelete,
+                    AllowBaseTransaction: allowBaseTransaction,
+                    AllowBaseBatch: allowBaseBatch,
+                    AllowBaseMetadata: allowBaseMetadata,
+                    AllowBaseHistory: allowBaseHistory));
+                
             }
         }
+
+        return tenantEndpointPolicyDictionary;
     }
 
-    private static bool OnlySetIfFalse(bool enforceableValue,
+    private static bool OnlySetIfFalse(
+        bool enforceableValue,
         bool exisingValue)
     {
         if (!enforceableValue)
@@ -200,71 +228,116 @@ public class EndpointPolicyService(
         return exisingValue;
     }
 
-    private void ValidatePolicies(ResourceEndpointPolicyMap resourceEndpointPolicyMap,
+    private void ValidatePolicies(
+        string tenantCode,
+        ResourceEndpointPolicyMap resourceEndpointPolicyMap,
         int resourceEndpointPolicyCounter)
     {
         foreach (var policyCode in resourceEndpointPolicyMap.Policies)
         {
-            var matchedPolicies = resourceEndpointPolicySettings.Value.Policies.Where(x => x.PolicyCode.ToLower().Equals(policyCode.ToLower()));
-            if (!matchedPolicies.Any())
+            var matchedPolicies =
+                resourceEndpointPolicySettings.Value.Policies.Where(x =>
+                    x.PolicyCode.Equals(policyCode, StringComparison.OrdinalIgnoreCase)).ToList();
+            
+            if (matchedPolicies.Count == 0)
             {
-                logger.LogCritical("The appsettings.json configured {Section1}.{Enforce}[{Index}].{Policies1} " +
-                                   "list contains a invalid PolicyCode of {PolicyCode}. This PolicyCode could not be found in the {Section2}.{Policies2} list. ",
-                    ResourceEndpointPolicySettings.SectionName,
-                    nameof(resourceEndpointPolicySettings.Value.Enforce),
+                logger.LogCritical("The appsettings.json configured {Section1} for Tenant {Tenant} Enforce[{Index}].{Policies1} " +
+                                   "lists an invalid PolicyCode of {PolicyCode}. This PolicyCode could not be found in the {Section2}.{Policies2} list. ",
+                    ResourceEndpointPoliciesSettings.SectionName,
+                    tenantCode,
                     resourceEndpointPolicyCounter,
                     nameof(resourceEndpointPolicySettings.Value.Policies),
                     policyCode,
-                    ResourceEndpointPolicySettings.SectionName,
+                    ResourceEndpointPoliciesSettings.SectionName,
                     nameof(resourceEndpointPolicySettings.Value.Policies));
-                IsEndpointPolicyConfigurationValid = false;
+                
+                endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
             }
 
             if (matchedPolicies.Count() > 1)
             {
-                logger.LogCritical("The appsettings.json configured {Section1}.{Policies} list " +
+                logger.LogCritical("The appsettings.json configured {Section1} for Tenant {Tenant} Enforce[{Index}].{Policies1} " +
                                    "contains duplicate PolicyCodes with the code {DuplicatePolicyCode}. " +
                                    "All PolicyCodes must be unique and are case insensitive. " +
                                    "Only the first PolicyCode in the list will be applied",
-                    ResourceEndpointPolicySettings.SectionName,
+                    ResourceEndpointPoliciesSettings.SectionName,
+                    tenantCode,
+                    resourceEndpointPolicyCounter,
                     nameof(resourceEndpointPolicySettings.Value.Policies),
                     policyCode.ToLower());
-                IsEndpointPolicyConfigurationValid = false;
+                
+                endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
             }
         }
     }
 
-    private void ValidateEndpointNames(ResourceEndpointPolicyMap resourceEndpointPolicyMap,
+    private void ValidateEndpointNames(
+        string tenantCode,
+        ResourceEndpointPolicyMap resourceEndpointPolicyMap,
         int resourceEndpointPolicyCounter)
     {
-        foreach (var resourceName in resourceEndpointPolicyMap.UponEndpoints)
+        foreach (var resourceName in resourceEndpointPolicyMap.Endpoints)
         {
             if (!fhirResourceNameSupport.IsResourceTypeString(resourceName))
             {
-                logger.LogCritical("The appsettings.json configured {Section}.{Property}[{Index}].{UponEndpoints} " +
-                                   "list contains a invalid endpoint name of {ResourceName}. Ensure you have the spelling and casing correct",
-                    ResourceEndpointPolicySettings.SectionName,
-                    nameof(resourceEndpointPolicySettings.Value.Enforce),
+                logger.LogCritical("The appsettings.json configured {Section} for Tenant {TenantCode} has an invalid Enforce[{Counter}] " +
+                                   "instance due to an Endpoints named {ResourceName} which is an invalid Endpoint name. " +
+                                   "Ensure you have the spelling and casing correct",
+                    ResourceEndpointPoliciesSettings.SectionName,
+                    tenantCode,
                     resourceEndpointPolicyCounter,
-                    "UponEndpoints",
                     resourceName);
-                IsEndpointPolicyConfigurationValid = false;
+                
+                endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
             }
         }
     }
 
-    private void ValidateDefaultPolicy()
+    private void ValidateTenant(string tenantCode)
     {
-        if (!resourceEndpointPolicySettings.Value.Policies.Any(x => x.PolicyCode.ToLower().Equals(resourceEndpointPolicySettings.Value.DefaultPolicy.ToLower())))
+        if (!resourceEndpointPolicySettings.Value.Tenants.Any(x => 
+                x.TenantCode.Equals(tenantCode, StringComparison.OrdinalIgnoreCase)))
         {
             logger.LogCritical("The appsettings.json configured {Section}.{Property} " +
-                               "PolicyCode can not be found in the list of {Policies)}. " +
+                               "Tenant Code can not be found in the list of {Tenants}" +
                                "The system's default policy which blocks all access to all endpoints has been applied",
-                ResourceEndpointPolicySettings.SectionName,
-                nameof(resourceEndpointPolicySettings.Value.DefaultPolicy),
+                ResourceEndpointPoliciesSettings.SectionName,
+                nameof(resourceEndpointPolicySettings.Value.Tenants),
                 nameof(resourceEndpointPolicySettings.Value.Policies));
 
-            IsEndpointPolicyConfigurationValid = false;
+            endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
+            return;
+        }
+    }
+
+    private void ValidateTenantDefaultPolicy(string tenantCode)
+    {
+        ResourceEndpointTenant? resourceEndpointTenant = resourceEndpointPolicySettings.Value.Tenants.FirstOrDefault(x =>
+            x.TenantCode.Equals(tenantCode, StringComparison.OrdinalIgnoreCase));
+
+        if (resourceEndpointTenant is null)
+        {
+            logger.LogCritical(
+                "The appsettings.json configured {Section} has no configuration for the the Tenant {TenantCode}",
+                ResourceEndpointPoliciesSettings.SectionName,
+                tenantCode);
+            
+            throw new ApplicationException($"The appsettings.json configured {ResourceEndpointPoliciesSettings.SectionName} " +
+                                           $"has no configuration for the the Tenant {tenantCode}");
+            
+        }
+        
+        if (!resourceEndpointPolicySettings.Value.Policies.Any(x =>
+                x.PolicyCode.ToLower().Equals(resourceEndpointTenant.DefaultPolicy.ToLower())))
+        {
+            logger.LogCritical("The appsettings.json configured {Section}.{Property} " +
+                               "DefaultPolicy can not be found in the list of Policies for the tenant code {TenantCode}" +
+                               "The system's default policy which blocks all access to all endpoints has been applied",
+                ResourceEndpointPoliciesSettings.SectionName,
+                nameof(resourceEndpointPolicySettings.Value.Policies),
+                tenantCode);
+
+            endpointPolicyRules.IsEndpointPolicyConfigurationValid = false;
         }
     }
 

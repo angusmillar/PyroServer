@@ -1,18 +1,20 @@
 ﻿using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
 public class HistorySystemLevelRequestValidator(
+    ITenantService tenantService,
     IOperationOutcomeSupport operationOutcomeSupport,
     IEndpointPolicyService endpointPolicyService) 
     : ValidatorBase<FhirHistorySystemLevelRequest>(operationOutcomeSupport)
 {
     public override ValidatorResult Validate(FhirHistorySystemLevelRequest item)
     {
-        if (!endpointPolicyService.GetDefaultEndpointPolicy().AllowBaseHistory)
+        if (!endpointPolicyService.GetDefaultEndpointPolicy(tenantService.GetScopedTenantCode()).AllowBaseHistory)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }

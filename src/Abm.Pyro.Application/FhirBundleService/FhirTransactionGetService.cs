@@ -7,11 +7,13 @@ using Hl7.Fhir.Model;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Support;
+using Abm.Pyro.Domain.TenantService;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
 
 namespace Abm.Pyro.Application.FhirBundleService;
 
 public class FhirTransactionGetService(
+    ITenantService tenantService,
     IFhirBundleCommonSupport fhirBundleCommonSupport,
     IFhirReadHandler fhirReadHandler,
     IFhirSearchHandler fhirSearchHandler,
@@ -58,7 +60,7 @@ public class FhirTransactionGetService(
             
             if (IsSearchRequest(requestFhirUri))
             {
-                if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowSearch)
+                if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowSearch)
                 {
                     return operationOutcomeSupport.GetError(new[]
                     {
@@ -93,7 +95,7 @@ public class FhirTransactionGetService(
                 continue;
             }
             
-            if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowRead)
+            if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowRead)
             {
                 return operationOutcomeSupport.GetError(new[]
                 {

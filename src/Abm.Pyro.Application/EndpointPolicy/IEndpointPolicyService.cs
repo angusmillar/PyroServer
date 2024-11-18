@@ -4,8 +4,8 @@ namespace Abm.Pyro.Application.EndpointPolicy;
 
 public interface IEndpointPolicyService
 {
-    bool? ValidateConfiguration(CancellationToken cancellationToken);
-    void PrimeEndpointPolicies();
-    EndpointPolicy GetEndpointPolicy(string endpointName);
-    EndpointPolicy GetDefaultEndpointPolicy();
+    bool ValidateConfiguration(string tenantCode, CancellationToken cancellationToken);
+    void PrimeEndpointPolicies(string tenantCode);
+    EndpointPolicy GetEndpointPolicy(string tenantCode, string endpointName);
+    EndpointPolicy GetDefaultEndpointPolicy(string tenantCode);
 }

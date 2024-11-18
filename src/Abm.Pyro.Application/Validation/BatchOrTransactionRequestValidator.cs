@@ -3,11 +3,13 @@ using Abm.Pyro.Application.FhirRequest;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
 public class BatchOrTransactionRequestValidator(
+    ITenantService tenantService,
     IEndpointPolicyService endpointPolicyService,
     IOperationOutcomeSupport operationOutcomeSupport) 
     : ValidatorBase<FhirBatchOrTransactionRequest>(operationOutcomeSupport)
@@ -44,12 +46,12 @@ public class BatchOrTransactionRequestValidator(
             return GetValidatorResult();
         }
         
-        if (bundle.Type == Bundle.BundleType.Batch && !endpointPolicyService.GetDefaultEndpointPolicy().AllowBaseBatch)
+        if (bundle.Type == Bundle.BundleType.Batch && !endpointPolicyService.GetDefaultEndpointPolicy(tenantService.GetScopedTenantCode()).AllowBaseBatch)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }
         
-        if (bundle.Type == Bundle.BundleType.Transaction && !endpointPolicyService.GetDefaultEndpointPolicy().AllowBaseTransaction)
+        if (bundle.Type == Bundle.BundleType.Transaction && !endpointPolicyService.GetDefaultEndpointPolicy(tenantService.GetScopedTenantCode()).AllowBaseTransaction)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }

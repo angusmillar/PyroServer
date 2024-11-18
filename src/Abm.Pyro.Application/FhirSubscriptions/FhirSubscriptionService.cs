@@ -8,6 +8,7 @@ using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
@@ -17,6 +18,7 @@ using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
 namespace Abm.Pyro.Application.FhirSubscriptions;
 
 public class FhirSubscriptionService(
+    ITenantService tenantService,
     IDateTimeProvider dateTimeProvider,
     IValidator validator,
     IFhirResourceTypeSupport fhirResourceTypeSupport,
@@ -189,7 +191,7 @@ public class FhirSubscriptionService(
     
     private bool InValidEndpointPolicyDisallowsSearch(string criteriaResourceName)
     {
-        if (endpointPolicyService.GetEndpointPolicy(criteriaResourceName).AllowSearch)
+        if (endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), criteriaResourceName).AllowSearch)
         {
             return false;
         }

@@ -1,11 +1,13 @@
 ﻿using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
 public class VersionReadRequestValidator(
+    ITenantService tenantService,
     ICommonRequestValidation commonRequestValidation,
     IEndpointPolicyService endpointPolicyService,
     IOperationOutcomeSupport operationOutcomeSupport) 
@@ -13,7 +15,7 @@ public class VersionReadRequestValidator(
 {
     public override ValidatorResult Validate(FhirVersionReadRequest item)
     {
-        if (!endpointPolicyService.GetEndpointPolicy(item.ResourceName).AllowVersionRead)
+        if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), item.ResourceName).AllowVersionRead)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }

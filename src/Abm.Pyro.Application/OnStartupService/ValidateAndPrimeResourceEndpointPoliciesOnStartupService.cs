@@ -1,33 +1,42 @@
 ﻿using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.HostedServiceSupport;
+using Abm.Pyro.Domain.Configuration;
+using Abm.Pyro.Domain.TenantService;
 using Microsoft.Extensions.Logging;
 
 namespace Abm.Pyro.Application.OnStartupService;
 
 public class ValidateAndPrimeResourceEndpointPoliciesOnStartupService(
     ILogger<FhirServiceBaseUrlManagementOnStartupService> logger,
+    ITenantService tenantService,
     IEndpointPolicyService endpointPolicyService)
     : IAppStartupService
 {
-    public bool IsValid = true;
-    public Task DoWork(CancellationToken cancellationToken)
+    public async Task DoWork(CancellationToken cancellationToken)
     {
-        bool? isEndpointPolicyConfigurationValid = endpointPolicyService.ValidateConfiguration(cancellationToken);
+        foreach (var tenant in tenantService.GetTenantList())
+        {
+            tenantService.SetScopedTenant(tenant);
+            await ProcessTenant(tenant, cancellationToken);
+        }
+    }
+    
+    private Task ProcessTenant(Tenant tenant, CancellationToken cancellationToken)
+    {
+        bool isEndpointPolicyConfigurationValid = endpointPolicyService.ValidateConfiguration(tenantCode: tenant.Code, cancellationToken);
         if (cancellationToken.IsCancellationRequested)
         {
             return Task.CompletedTask;
         }
         
-        ArgumentNullException.ThrowIfNull(isEndpointPolicyConfigurationValid);
-        
-        if (isEndpointPolicyConfigurationValid.Value)
+        if (isEndpointPolicyConfigurationValid)
         {
-            endpointPolicyService.PrimeEndpointPolicies();
-            logger.LogInformation("Resource Endpoint Policies Configuration is valid and primed");
+            endpointPolicyService.PrimeEndpointPolicies(tenantCode: tenant.Code);
+            logger.LogInformation("Tenant {Tenant} resource endpoint policies configuration is primed and valid", tenant.DisplayName);
         }
         else
         {
-            logger.LogError("Resource Endpoint Policies Configuration is invalid");
+            logger.LogCritical("Tenant {Tenant} resource endpoint policies configuration is invalid", tenant.DisplayName);
         }
         
         return Task.CompletedTask;

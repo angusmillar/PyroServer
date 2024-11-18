@@ -13,6 +13,7 @@ using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Support;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
 using Task = System.Threading.Tasks.Task;
@@ -20,6 +21,7 @@ using Task = System.Threading.Tasks.Task;
 namespace Abm.Pyro.Application.FhirBundleService;
 
 public class FhirTransactionPostService(
+    ITenantService tenantService,
     IFhirBundleCommonSupport fhirBundleCommonSupport,
     IFhirCreateHandler fhirCreateHandler,
     IFhirRequestHttpHeaderSupport fhirRequestHttpHeaderSupport,
@@ -99,7 +101,7 @@ public class FhirTransactionPostService(
             
             if (IfConditionalCreate(postEntry))
             {
-                if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowConditionalCreate)
+                if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowConditionalCreate)
                 {
                     bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[postEntry.FullUrl];
                     bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
@@ -118,7 +120,7 @@ public class FhirTransactionPostService(
                 continue;
             }
                  
-            if (!endpointPolicyService.GetEndpointPolicy(requestFhirUriResult.Value.ResourceName).AllowCreate)
+            if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowCreate)
             {
                 bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[postEntry.FullUrl];
                 bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]

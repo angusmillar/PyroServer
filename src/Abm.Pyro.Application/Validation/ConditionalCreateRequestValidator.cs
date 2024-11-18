@@ -2,11 +2,13 @@
 using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
 public class ConditionalCreateRequestValidator(
+    ITenantService tenantService,
     ICommonRequestValidation commonRequestValidation,
     IEndpointPolicyService endpointPolicyService,
     IOperationOutcomeSupport operationOutcomeSupport) 
@@ -14,7 +16,7 @@ public class ConditionalCreateRequestValidator(
 {
     public override ValidatorResult Validate(FhirConditionalCreateRequest item)
     {
-        if (!endpointPolicyService.GetEndpointPolicy(item.ResourceName).AllowConditionalCreate)
+        if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), item.ResourceName).AllowConditionalCreate)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }

@@ -111,8 +111,8 @@ try
         .ValidateDataAnnotations()
         .ValidateOnStart();
 
-    builder.Services.AddOptions<ResourceEndpointPolicySettings>()
-        .Bind(builder.Configuration.GetSection(ResourceEndpointPolicySettings.SectionName))
+    builder.Services.AddOptions<ResourceEndpointPoliciesSettings>()
+        .Bind(builder.Configuration.GetSection(ResourceEndpointPoliciesSettings.SectionName))
         .ValidateDataAnnotations()
         .ValidateOnStart();
     
@@ -200,7 +200,8 @@ try
     builder.Services.AddScoped<IMetaDataService, MetaDataService>();
 
     // Endpoint Policy Services -------------------------------------
-    builder.Services.AddSingleton<IEndpointPolicyService, EndpointPolicyService>();
+    builder.Services.AddSingleton<IEndpointPolicyRules, EndpointPolicyRules>();
+    builder.Services.AddScoped<IEndpointPolicyService, EndpointPolicyService>();
 
     // Validators ---------------------------------------------------
     builder.Services.AddScoped<IValidator, Validator>();

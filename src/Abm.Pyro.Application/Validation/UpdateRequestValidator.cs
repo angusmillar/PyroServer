@@ -1,11 +1,13 @@
 ﻿using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
 public class UpdateRequestValidator(
+    ITenantService tenantService,
     ICommonRequestValidation commonRequestValidation,
     IEndpointPolicyService endpointPolicyService,
     IOperationOutcomeSupport operationOutcomeSupport) 
@@ -13,7 +15,7 @@ public class UpdateRequestValidator(
 {
     public override ValidatorResult Validate(FhirUpdateRequest item)
     {
-        if (!endpointPolicyService.GetEndpointPolicy(item.ResourceName).AllowUpdate)
+        if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), item.ResourceName).AllowUpdate)
         {
             return GetFailedEndpointPolicyValidatorResult();    
         }
