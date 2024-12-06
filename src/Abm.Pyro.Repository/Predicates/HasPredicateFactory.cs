@@ -69,7 +69,8 @@ public class HasPredicateFactory(PyroDbContext context, ISearchPredicateFactory 
         rIx.SearchParameterStoreId == searchQueryHas.BackReferenceSearchParameter!.SearchParameterStoreId &&
         rIx.ServiceBaseUrlId == primaryServiceBaseUrlId &&
         rIx.ResourceStore!.ResourceType == searchQueryHas.TargetResourceForSearchQuery &&
-        finalIndexNodeQuery.Select(res => res.ResourceType).Contains(searchQueryHas.TargetResourceForSearchQuery);
+        finalIndexNodeQuery.Select(res => res.ResourceId).Contains(rIx.ResourceStore!.ResourceId);
+    //finalIndexNodeQuery.Select(res => res.ResourceType).Contains([This here needs to be a query ??]);
   }
 
 }
