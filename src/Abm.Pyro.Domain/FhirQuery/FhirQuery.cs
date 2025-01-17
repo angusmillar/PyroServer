@@ -191,6 +191,76 @@ public class FhirQuery : IFhirQuery
   {
     //GET [base]/Patient?_has:Observation:patient:code=1234-5
     //or
+    //GET [base]/Patient?_has:Observation:patient:code=1234-5&_has:Observation:patient:code=8888-8
+    //or
+    //GET [base]/Patient?_has:Observation:patient:_has:AuditEvent:entity:user=MyUserId
+    foreach (string? value in item.Value)
+    {
+      if (value is null)
+      {
+        continue;
+      }
+      
+      if (item.Key.StartsWith($"{TermHas}{TermSearchModifierDelimiter}"))
+      {
+        QueryItemProcessed = true;
+        var hasSplit = item.Key.Split(TermHas);
+        HasParameter? rootHasParameter = null;
+        HasParameter? previousHasParameter = null;
+        for (int i = 1; i < hasSplit.Length; i++)
+        {
+          var modifierSplit = hasSplit[i].Split(FhirQuery.TermSearchModifierDelimiter);
+          if (modifierSplit.Length == 4 && rootHasParameter is null)
+          {
+            if (modifierSplit[3] == string.Empty)
+            {
+              rootHasParameter = new HasParameter(modifierSplit[1], modifierSplit[2]);
+              rootHasParameter.RawHasParameter = $"{item.Key}={value}";
+              previousHasParameter = rootHasParameter;
+            }
+            else
+            {
+              rootHasParameter = new HasParameter(modifierSplit[1], modifierSplit[2]);
+              rootHasParameter.SearchQuery = new KeyValuePair<string, StringValues>(modifierSplit[3], value);
+              rootHasParameter.RawHasParameter = $"{item.Key}={value}";
+              previousHasParameter = rootHasParameter;
+            }
+          }
+          else if (modifierSplit.Length == 4 && rootHasParameter is not null)
+          {
+            if (modifierSplit[3] == string.Empty)
+            {
+              previousHasParameter!.ChildHasParameter = new HasParameter(modifierSplit[1], modifierSplit[2]);
+              previousHasParameter = previousHasParameter!.ChildHasParameter;
+            }
+            else
+            {
+              previousHasParameter!.ChildHasParameter = new HasParameter(modifierSplit[1], modifierSplit[2]);
+              previousHasParameter.ChildHasParameter.SearchQuery =
+                new KeyValuePair<string, StringValues>(modifierSplit[3], value);
+              previousHasParameter = previousHasParameter!.ChildHasParameter;
+            }
+          }
+          else
+          {
+            InvalidParameterList.Add(new InvalidQueryParameter(item.Key, value,
+              $"The {TermHas} query must contain a resource name followed by a reference search parameter name followed by another {TermHas} parameter or a search parameter and value where each is separated by a colon {TermSearchModifierDelimiter}. For instance: _has:Observation:patient:code=1234-5 or _has:Observation:patient:_has:AuditEvent:entity:user=MyUserId. The {TermHas} qery found was : {item.Key}={item.Value} "));
+          }
+        }
+
+        if (rootHasParameter is not null)
+        {
+          Has.Add(rootHasParameter);
+        }
+      }
+    }
+  }
+  private void ParseHasParameterOld(KeyValuePair<string, StringValues> item)
+  {
+    //GET [base]/Patient?_has:Observation:patient:code=1234-5
+    //or
+    //GET [base]/Patient?_has:Observation:patient:code=1234-5&_has:Observation:patient:code=8888-8
+    //or
     //GET [base]/Patient?_has:Observation:patient:_has:AuditEvent:entity:user=MyUserId
     if (item.Key.StartsWith($"{TermHas}{TermSearchModifierDelimiter}"))
     {

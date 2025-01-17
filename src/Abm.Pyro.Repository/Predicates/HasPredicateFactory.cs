@@ -22,9 +22,10 @@ public class HasPredicateFactory(PyroDbContext context, ISearchPredicateFactory 
       Expression<Func<ResourceStore, bool>> resourceStoreTargetPredicate = await GetResourceStoreTargetPredicate(searchQueryHas, primaryServiceBaseUrl.ServiceBaseUrlId.Value);
       IQueryable<ResourceStore> resourceStoreTargetQuery = context.Set<ResourceStore>().AsExpandable().Where(resourceStoreTargetPredicate);
       
-      resourceStoreHasPredicate = resourceStoreHasPredicate.And(resHas => 
-                                                                  resourceStoreTargetQuery.Select(resTarget => 
-                                                                                                    resTarget.ResourceStoreId).Contains(resHas.ResourceStoreId));
+      resourceStoreHasPredicate = resourceStoreHasPredicate
+        .Or(resHas => resourceStoreTargetQuery
+          .Select(resTarget => resTarget.ResourceStoreId)
+          .Contains(resHas.ResourceStoreId));
     }
     return resourceStoreHasPredicate;
   }

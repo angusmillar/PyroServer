@@ -20,7 +20,12 @@ public static class HttpSearchQuerySupport
         {
             string[] keyValuePairArray = keyValuePair.Split(ValueDelimiter);
             string key = Uri.UnescapeDataString(keyValuePairArray[0].Trim());
-            string value = Uri.UnescapeDataString(keyValuePairArray[1].Trim());
+            string value = string.Empty;
+            if (keyValuePairArray.Length > 1)
+            {
+                value = Uri.UnescapeDataString(keyValuePairArray[1].Trim());
+            }
+            
             if (searchParameterDictionary.TryGetValue(key, out var valueTarget))
             {
                 searchParameterDictionary[key] = StringValues.Concat(valueTarget, new StringValues(value));
