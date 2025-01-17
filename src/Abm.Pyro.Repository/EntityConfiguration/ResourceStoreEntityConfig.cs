@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Abm.Pyro.Repository.EntityMapping;
+namespace Abm.Pyro.Repository.EntityConfiguration;
 
-public class ResourceStoreMapping : IEntityTypeConfiguration<ResourceStore>
+public class ResourceStoreEntityConfig : IEntityTypeConfiguration<ResourceStore>
 {
     public void Configure(EntityTypeBuilder<ResourceStore> builder)
     {
