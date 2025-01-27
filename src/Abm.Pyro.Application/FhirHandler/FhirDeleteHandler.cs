@@ -6,6 +6,7 @@ using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.Notification;
+using Abm.Pyro.Domain.Cache;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;

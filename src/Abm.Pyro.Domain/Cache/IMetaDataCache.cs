@@ -1,7 +1,7 @@
 ﻿using Hl7.Fhir.Model;
 using Task = System.Threading.Tasks.Task;
 
-namespace Abm.Pyro.Application.Cache;
+namespace Abm.Pyro.Domain.Cache;
 
 public interface IMetaDataCache
 {

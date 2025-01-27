@@ -1,4 +1,4 @@
-namespace Abm.Pyro.Application.Cache;
+namespace Abm.Pyro.Domain.Cache;
 
 public interface IActiveSubscriptionCache
 {

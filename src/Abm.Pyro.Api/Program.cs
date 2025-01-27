@@ -56,7 +56,10 @@ using Serilog.Core;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File(path: "./application-start-.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File(
+        path: "./application-start-.log", 
+        rollingInterval: RollingInterval.Day, 
+        retainedFileCountLimit: 7)
     .CreateBootstrapLogger();
 
 try
@@ -126,7 +129,8 @@ try
     builder.Services.AddAppStartUpService<FhirServiceBaseUrlManagementOnStartupService>();
     builder.Services.AddAppStartUpService<ValidateAndPrimeResourceEndpointPoliciesOnStartupService>();
     
-    //Runs a background services which processes and handles system-wide notification events, for example FHIR Subscriptions & notifications  
+    //Runs a background services which processes and handles system-wide notification events,
+    //for example FHIR Subscriptions & notifications  
     builder.Services.AddTimedHostedService<NotificationManager>(opt =>
     {
         // This service continuously runs, therefore, the 1 sec is only incurred on application start-up,
@@ -151,34 +155,44 @@ try
 
 
     // Services  --------------------------------------------------------------------------------------
+    builder.Services.AddScoped<IPrimaryServiceBaseUrlService, PrimaryServiceBaseUrlService>();
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
+    
     builder.Services.AddSingleton<IFhirJsonSerializersOptions, FhirJsonSerializersOptions>();
     builder.Services.AddSingleton<IFhirSerializationSupport, FhirSerializationSupport>();
     builder.Services.AddSingleton<IFhirDeSerializationSupport, FhirDeSerializationSupport>();
 
     builder.Services.AddSingleton<FhirResourceTypeSupport>();
-    builder.Services.AddSingleton<IFhirResourceTypeSupport>(x => x.GetRequiredService<FhirResourceTypeSupport>());
-    builder.Services.AddSingleton<IFhirResourceNameSupport>(x => x.GetRequiredService<FhirResourceTypeSupport>());
+    builder.Services.AddSingleton<IFhirResourceTypeSupport>(x => 
+        x.GetRequiredService<FhirResourceTypeSupport>());
+    builder.Services.AddSingleton<IFhirResourceNameSupport>(x => 
+        x.GetRequiredService<FhirResourceTypeSupport>());
 
     builder.Services.AddScoped<IFhirBundleServiceFactory, FhirBundleServiceFactory>();
     builder.Services.AddScoped<FhirBatchService>()
-        .AddScoped<IFhirBundleService, FhirBatchService>(s => s.GetRequiredService<FhirBatchService>());
+        .AddScoped<IFhirBundleService, FhirBatchService>(s => 
+            s.GetRequiredService<FhirBatchService>());
     builder.Services.AddScoped<FhirTransactionService>()
-        .AddScoped<IFhirBundleService, FhirTransactionService>(s => s.GetRequiredService<FhirTransactionService>());
+        .AddScoped<IFhirBundleService, FhirTransactionService>(s => 
+            s.GetRequiredService<FhirTransactionService>());
 
     builder.Services.AddScoped<IFhirTransactionDeleteService, FhirTransactionDeleteService>();
     builder.Services.AddScoped<IFhirTransactionPostService, FhirTransactionPostService>();
     builder.Services.AddScoped<IFhirTransactionPutService, FhirTransactionPutService>();
     builder.Services.AddScoped<IFhirTransactionGetService, FhirTransactionGetService>();
+    
     builder.Services.AddScoped<IFhirBundleCommonSupport, FhirBundleCommonSupport>();
     builder.Services.AddScoped<IFhirNarrativeSupport, FhirNarrativeSupport>();
 
     builder.Services.AddScoped<IFhirUriFactory, FhirUriFactory>();
+    
     builder.Services.AddSingleton<IFhirResponseHttpHeaderSupport, FhirResponseHttpHeaderSupport>();
     builder.Services.AddTransient<IFhirRequestHttpHeaderSupport, FhirRequestHttpHeaderSupport>();
+    
     builder.Services.AddSingleton<IFhirDateTimeFactory, FhirDateTimeFactory>();
     builder.Services.AddSingleton<IDateTimeIndexSupport, DateTimeIndexSupport>();
     builder.Services.AddSingleton<IFhirDateTimeSupport, FhirDateTimeSupport>();
+    
     builder.Services.AddSingleton<IQuantityComparatorMap, QuantityComparatorMap>();
     builder.Services.AddSingleton<IPreferredReturnTypeService, PreferredReturnTypeService>();
 
@@ -223,12 +237,16 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
 
     // Caching ---------------------------
-    builder.Services.AddDistributedMemoryCache();
-    builder.Services.AddScoped<ISearchParameterCache, SearchParameterCache>();
-    builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlCache>();
-    builder.Services.AddScoped<IMetaDataCache, MetaDataCache>();
-    builder.Services.AddScoped<IActiveSubscriptionCache, ActiveSubscriptionCache>();
-    builder.Services.AddScoped<IPrimaryServiceBaseUrlService, PrimaryServiceBaseUrlService>();
+    RedisCacheSettings? redisCacheSettings = builder.Configuration
+        .GetRequiredSection(RedisCacheSettings.SectionName)
+        .Get<RedisCacheSettings>();
+    ArgumentNullException.ThrowIfNull(redisCacheSettings);
+    
+    builder.Services.AddFusionCaching(redisCacheSettings);
+    builder.Services.AddScoped<ISearchParameterCache, SearchParameterHybridCache>();
+    builder.Services.AddScoped<IActiveSubscriptionCache, ActiveSubscriptionHybridCache>();
+    builder.Services.AddScoped<IMetaDataCache, MetaDataHybridCache>();
+    builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlHybridCache>();
     
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
@@ -320,7 +338,7 @@ try
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
 
     string connectionString = builder.Configuration.GetConnectionString("PyroDb") ?? "[Not Found]";
-    Log.Information("SQL Connection string: {ConnectionString}", connectionString);
+    //Log.Information("SQL Connection string: {ConnectionString}", connectionString);
     
     // Database Setup ----------------------
     builder.Services.AddDbContext<PyroDbContext>((services, optionsBuilder) =>

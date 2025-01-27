@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Application.MetaDataService;
 using Abm.Pyro.Application.Notification;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Validation;

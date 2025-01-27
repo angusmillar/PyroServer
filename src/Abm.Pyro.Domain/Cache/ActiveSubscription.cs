@@ -1,6 +1,6 @@
 ﻿using Abm.Pyro.Domain.Enums;
 
-namespace Abm.Pyro.Application.Cache;
+namespace Abm.Pyro.Domain.Cache;
 
 public record ActiveSubscription(
     int ResourceStoreId, 

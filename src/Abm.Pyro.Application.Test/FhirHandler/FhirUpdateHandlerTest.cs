@@ -21,6 +21,7 @@ using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Test.Factories;
 using Abm.Pyro.Application.Validation;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirQuery;

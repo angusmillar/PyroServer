@@ -7,6 +7,7 @@ using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
+using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
