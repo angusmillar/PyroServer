@@ -5,12 +5,12 @@ namespace Abm.Pyro.Domain.Configuration;
 public class RedisCacheSettings
 {
     public const string SectionName = "RedisCache";
-    
+
     /// <summary>
     /// If set to false then no Redis instance is required and only the
     /// (Level 1) local service's memory cache is used.
     /// </summary>
-    public required bool UseRedisCache { get; init; }
+    public bool UseRedisCache { get; init; } = false;
     
     /// <summary>
     /// The Redis connection string, required when UseRedisCache is True
