@@ -6,13 +6,13 @@ using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
-public class HistorySystemLevelRequestValidator(
+public class SystemLevelHistoryRequestValidator(
     ITenantService tenantService,
     IOperationOutcomeSupport operationOutcomeSupport,
     IEndpointPolicyService endpointPolicyService) 
-    : ValidatorBase<FhirHistorySystemLevelRequest>(operationOutcomeSupport)
+    : ValidatorBase<FhirSystemLevelHistoryRequest>(operationOutcomeSupport)
 {
-    public override ValidatorResult Validate(FhirHistorySystemLevelRequest item)
+    public override ValidatorResult Validate(FhirSystemLevelHistoryRequest item)
     {
         if (!endpointPolicyService.GetDefaultEndpointPolicy(tenantService.GetScopedTenantCode()).AllowBaseHistory)
         {

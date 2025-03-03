@@ -18,16 +18,17 @@ using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;
 
-public class FhirHistorySystemLevelHandler(
+public class FhirInstanceLevelHistoryHandler(
     IValidator validator,
+    IFhirResourceTypeSupport fhirResourceTypeSupport,
     ISearchQueryService searchQueryService,
-    IResourceStoreGetHistory resourceStoreGetHistory,
+    IResourceStoreGetHistoryByResourceId resourceStoreGetHistoryByResourceId,
     IFhirBundleCreationSupport fhirBundleCreationSupport,
     IPaginationSupport paginationSupport,
     IRepositoryEventCollector repositoryEventCollector)
-    : IRequestHandler<FhirHistorySystemLevelRequest, FhirResourceResponse>
+    : IRequestHandler<FhirInstanceLevelHistoryRequest, FhirResourceResponse>
 {
-    public async Task<FhirResourceResponse> Handle(FhirHistorySystemLevelRequest request,
+    public async Task<FhirResourceResponse> Handle(FhirInstanceLevelHistoryRequest request,
         CancellationToken cancellationToken)
     {
         ValidatorResult requestValidatorResult = validator.Validate(request);
@@ -36,7 +37,9 @@ public class FhirHistorySystemLevelHandler(
             return InvalidValidatorResultResponse(requestValidatorResult);
         }
         
-        SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(FhirResourceTypeId.Resource, request.QueryString);
+        FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.ResourceName);
+
+        SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, request.QueryString);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
             SearchQueryServiceOutcome: searchQueryServiceOutcome, 
             Headers: request.Headers));
@@ -45,10 +48,10 @@ public class FhirHistorySystemLevelHandler(
             return InvalidValidatorResultResponse(searchQueryValidatorResult);
         }
 
-        ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistory.Get(searchQueryServiceOutcome);
+        ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistoryByResourceId.Get(fhirResourceType, request.ResourceId, searchQueryServiceOutcome);
 
         AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
-        
+
         Bundle bundle = await fhirBundleCreationSupport.CreateBundle(resourceStoreSearchOutcome, Bundle.BundleType.History, request.RequestSchema);
 
         await paginationSupport.SetBundlePagination(bundle: bundle,
@@ -57,7 +60,7 @@ public class FhirHistorySystemLevelHandler(
             requestPath: request.RequestPath,
             pagesTotal: resourceStoreSearchOutcome.PagesTotal,
             pageCurrentlyRequired: resourceStoreSearchOutcome.PageRequested);
-
+        
         return new FhirResourceResponse(
             Resource: bundle,
             HttpStatusCode: HttpStatusCode.OK,
@@ -65,17 +68,7 @@ public class FhirHistorySystemLevelHandler(
             ResourceOutcomeInfo: null,
             RepositoryEventCollector: repositoryEventCollector);
     }
-    
-    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
-    {
-        repositoryEventCollector.Clear();
-        return new FhirResourceResponse(
-            Resource: validatorResult.GetOperationOutcome(), 
-            HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>(),
-            RepositoryEventCollector: repositoryEventCollector);
-    }
-    
+
     private void AddRepositoryEvents(ResourceStoreSearchOutcome resourceStoreSearchOutcome, string requestId)
     {
         AddRepositoryEvent(resourceStoreSearchOutcome.ResourceStoreList, requestId);
@@ -92,5 +85,15 @@ public class FhirHistorySystemLevelHandler(
                 repositoryEventType: RepositoryEventType.Read, 
                 resourceId: resourceStore.ResourceId);
         }
+    }
+    
+    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
+    {
+        repositoryEventCollector.Clear();
+        return new FhirResourceResponse(
+            Resource: validatorResult.GetOperationOutcome(), 
+            HttpStatusCode: validatorResult.GetHttpStatusCode(),
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
 }

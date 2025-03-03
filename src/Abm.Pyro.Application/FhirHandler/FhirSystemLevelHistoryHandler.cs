@@ -18,17 +18,16 @@ using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;
 
-public class FhirHistoryTypeLevelHandler(
+public class FhirSystemLevelHistoryHandler(
     IValidator validator,
-    IFhirResourceTypeSupport fhirResourceTypeSupport,
     ISearchQueryService searchQueryService,
-    IResourceStoreGetHistoryByResourceType resourceStoreGetHistoryByResourceType,
+    IResourceStoreGetHistory resourceStoreGetHistory,
     IFhirBundleCreationSupport fhirBundleCreationSupport,
     IPaginationSupport paginationSupport,
     IRepositoryEventCollector repositoryEventCollector)
-    : IRequestHandler<FhirHistoryTypeLevelRequest, FhirResourceResponse>
+    : IRequestHandler<FhirSystemLevelHistoryRequest, FhirResourceResponse>
 {
-    public async Task<FhirResourceResponse> Handle(FhirHistoryTypeLevelRequest request,
+    public async Task<FhirResourceResponse> Handle(FhirSystemLevelHistoryRequest request,
         CancellationToken cancellationToken)
     {
         ValidatorResult requestValidatorResult = validator.Validate(request);
@@ -37,9 +36,7 @@ public class FhirHistoryTypeLevelHandler(
             return InvalidValidatorResultResponse(requestValidatorResult);
         }
         
-        FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.ResourceName);
-
-        SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, request.QueryString);
+        SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(FhirResourceTypeId.Resource, request.QueryString);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
             SearchQueryServiceOutcome: searchQueryServiceOutcome, 
             Headers: request.Headers));
@@ -48,7 +45,7 @@ public class FhirHistoryTypeLevelHandler(
             return InvalidValidatorResultResponse(searchQueryValidatorResult);
         }
 
-        ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistoryByResourceType.Get(fhirResourceType, searchQueryServiceOutcome);
+        ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistory.Get(searchQueryServiceOutcome);
 
         AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
         

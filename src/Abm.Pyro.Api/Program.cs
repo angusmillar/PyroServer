@@ -229,9 +229,9 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirConditionalCreateRequest>, ConditionalCreateRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirConditionalDeleteRequest>, ConditionalDeleteRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirConditionalUpdateRequest>, ConditionalUpdateRequestValidator>();
-    builder.Services.AddScoped<IValidatorBase<FhirHistoryInstanceLevelRequest>, HistoryInstanceLevelRequestValidator>();
-    builder.Services.AddScoped<IValidatorBase<FhirHistorySystemLevelRequest>, HistorySystemLevelRequestValidator>();
-    builder.Services.AddScoped<IValidatorBase<FhirHistoryTypeLevelRequest>, HistoryTypeLevelRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirInstanceLevelHistoryRequest>, InstanceLevelHistoryRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirSystemLevelHistoryRequest>, SystemLevelHistoryRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirTypeLevelHistoryRequest>, TypeLevelHistoryRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirVersionReadRequest>, VersionReadRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<SearchQueryServiceOutcomeAndHeaders>, SearchQueryValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();

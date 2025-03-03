@@ -6,7 +6,7 @@ using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirRequest;
 
-public record FhirHistoryTypeLevelRequest(
+public record FhirTypeLevelHistoryRequest(
         string RequestSchema,
         string Tenant,
         string RequestId,

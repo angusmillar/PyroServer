@@ -6,14 +6,14 @@ using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.Validation;
 
-public class HistoryInstanceLevelRequestValidator(
+public class InstanceLevelHistoryRequestValidator(
     ITenantService tenantService,
     ICommonRequestValidation commonRequestValidation,
     IEndpointPolicyService endpointPolicyService,
     IOperationOutcomeSupport operationOutcomeSupport) 
-    : ValidatorBase<FhirHistoryInstanceLevelRequest>(operationOutcomeSupport)
+    : ValidatorBase<FhirInstanceLevelHistoryRequest>(operationOutcomeSupport)
 {
-    public override ValidatorResult Validate(FhirHistoryInstanceLevelRequest item)
+    public override ValidatorResult Validate(FhirInstanceLevelHistoryRequest item)
     {
         if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), item.ResourceName).AllowHistory)
         {
@@ -28,13 +28,13 @@ public class HistoryInstanceLevelRequestValidator(
     }
 
     
-    private void IsValidRequestEndpointResourceType(FhirHistoryInstanceLevelRequest item)
+    private void IsValidRequestEndpointResourceType(FhirInstanceLevelHistoryRequest item)
     {
         FailureMessageList.AddRange(commonRequestValidation.IsValidRequestEndpointResourceType(
             item.ResourceName));
     }
     
-    private void IsRequestResourceIdPopulated(FhirHistoryInstanceLevelRequest item)
+    private void IsRequestResourceIdPopulated(FhirInstanceLevelHistoryRequest item)
     {
         FailureMessageList.AddRange(commonRequestValidation.IsRequestResourceIdPopulated(
             requestResourceId: item.ResourceId));
