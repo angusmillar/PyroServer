@@ -14,5 +14,8 @@ public record EndpointPolicy(
     bool AllowBaseTransaction,
     bool AllowBaseBatch,
     bool AllowBaseMetadata,
-    bool AllowBaseHistory
+    bool AllowBaseHistory,
+    List<string> AllowBaseOperations,
+    List<string> AllowResourceTypeOperations,
+    List<string> AllowResourceInstanceOperations
 );

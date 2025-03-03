@@ -231,11 +231,13 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirConditionalUpdateRequest>, ConditionalUpdateRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirInstanceLevelHistoryRequest>, InstanceLevelHistoryRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirSystemLevelHistoryRequest>, SystemLevelHistoryRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirSystemLevelOperationRequest>, SystemLevelOperationRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirTypeLevelHistoryRequest>, TypeLevelHistoryRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirVersionReadRequest>, VersionReadRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<SearchQueryServiceOutcomeAndHeaders>, SearchQueryValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
-
+    
+    
     // Caching ---------------------------
     RedisCacheSettings? redisCacheSettings = builder.Configuration
         .GetRequiredSection(RedisCacheSettings.SectionName)

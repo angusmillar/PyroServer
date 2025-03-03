@@ -15,6 +15,7 @@ public class FhirController(
   IMediator mediator,
   IDateTimeProvider dateTimeProvider) : ControllerBase
 {
+  
   [HttpPost]
   public async Task<ActionResult<Resource>> Base(string tenant, [FromBody]Resource resource, CancellationToken cancellationToken)
   {
@@ -29,6 +30,29 @@ public class FhirController(
       TimeStamp: dateTimeProvider.Now);
 
     FhirResourceResponse fhirResponse = await mediator.Send(fhirResourceConditionalCreateRequest, cancellationToken);
+    
+    Response.Headers.AppendRange(fhirResponse.Headers);
+    
+    resource.AddAnnotation(Hl7.Fhir.Rest.SummaryType.False); 
+    
+    return  StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);
+        
+  }
+  
+  [HttpPost("${operationName}")]
+  public async Task<ActionResult<Resource>> Base(string tenant, string operationName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  {
+    var fhirSystemLevelOperationRequest = new FhirSystemLevelOperationRequest(
+      RequestSchema: Request.Scheme,
+      Tenant: tenant,
+      OperationName: operationName,
+      RequestId: GuidSupport.NewFhirGuid(),
+      RequestPath: Request.Path,
+      QueryString: Request.QueryString.Value,
+      Headers: Request.Headers.GetDictionary(), 
+      TimeStamp: dateTimeProvider.Now);
+
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -177,7 +201,7 @@ public class FhirController(
   [HttpGet("_history")]
   public async Task<ActionResult<Resource>> GetHistorySystemLevel(string tenant, CancellationToken cancellationToken)
   {
-    var fhirHistorySystemLevelQuery = new FhirHistorySystemLevelRequest(
+    var fhirSystemLevelHistoryQuery = new FhirSystemLevelHistoryRequest(
       RequestSchema: Request.Scheme,
       Tenant: tenant,
       RequestId: GuidSupport.NewFhirGuid(),
@@ -186,7 +210,7 @@ public class FhirController(
       Headers: Request.Headers.GetDictionary(), 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirHistorySystemLevelQuery, cancellationToken);
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelHistoryQuery, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -217,7 +241,7 @@ public class FhirController(
   [HttpGet("{resourceName}/_history")]
   public async Task<ActionResult<Resource>> GetHistoryTypeLevel(string tenant, string resourceName, CancellationToken cancellationToken)
   {
-    var fhirHistoryResourceQuery = new FhirHistoryTypeLevelRequest(
+    var fhirTypeLevelHistoryRequest = new FhirTypeLevelHistoryRequest(
       RequestSchema: Request.Scheme,
       Tenant: tenant,
       RequestId: GuidSupport.NewFhirGuid(),
@@ -227,7 +251,7 @@ public class FhirController(
       ResourceName: resourceName, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirHistoryResourceQuery, cancellationToken);
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirTypeLevelHistoryRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -238,7 +262,7 @@ public class FhirController(
   [HttpGet("{resourceName}/{resourceId}/_history")]
   public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken)
   {
-    var fhirHistoryResourceIdQuery = new FhirHistoryInstanceLevelRequest(
+    var fhirInstanceLevelHistoryRequest = new FhirInstanceLevelHistoryRequest(
       RequestSchema: Request.Scheme,
       Tenant: tenant,
       RequestId: GuidSupport.NewFhirGuid(),
@@ -249,7 +273,7 @@ public class FhirController(
       ResourceId: resourceId, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirHistoryResourceIdQuery, cancellationToken);
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirInstanceLevelHistoryRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -258,7 +282,7 @@ public class FhirController(
   }
   
   [HttpGet("{resourceName}/{resourceId}/_history/{historyId}")]
-  public async Task<ActionResult<Resource>> GetHistoryInstanceLevel(string tenant, string resourceName, string resourceId, string historyId, CancellationToken cancellationToken)
+  public async Task<ActionResult<Resource>> GetHistoryInstance(string tenant, string resourceName, string resourceId, string historyId, CancellationToken cancellationToken)
   {
     var fhirVersionReadRequest = new FhirVersionReadRequest(
       RequestSchema: Request.Scheme,

@@ -131,7 +131,10 @@ public class EndpointPolicyService(
             AllowBaseTransaction: tenantDefaultPolicy.AllowBaseTransaction,
             AllowBaseBatch: tenantDefaultPolicy.AllowBaseBatch,
             AllowBaseMetadata: tenantDefaultPolicy.AllowBaseMetadata,
-            AllowBaseHistory: tenantDefaultPolicy.AllowBaseHistory);
+            AllowBaseHistory: tenantDefaultPolicy.AllowBaseHistory,
+            AllowBaseOperations: tenantDefaultPolicy.AllowBaseOperations ?? new(),
+            AllowResourceTypeOperations:  tenantDefaultPolicy.AllowResourceTypeOperations ?? new(),
+            AllowResourceInstanceOperations: tenantDefaultPolicy.AllowResourceInstanceOperations ?? new());
     }
 
     private Dictionary<string, EndpointPolicy> LoadTenantEndpointPolicyDictionary(string tenantCode, EndpointPolicy defaultEndpointPolicy)
@@ -169,6 +172,13 @@ public class EndpointPolicyService(
                 bool allowBaseBatch = defaultEndpointPolicy.AllowBaseBatch;
                 bool allowBaseMetadata = defaultEndpointPolicy.AllowBaseMetadata;
                 bool allowBaseHistory = defaultEndpointPolicy.AllowBaseHistory;
+                
+                //Base $Operations can't be overridden by resource endpoint enforced policies, as it would make no logical sense 
+                List<string> allowBaseOperations = defaultEndpointPolicy.AllowBaseOperations;
+                //Yet, resource endpoint enforced policies do override the default ResourceType Operations
+                List<string> allowResourceTypeOperations = new();
+                //Yet, resource endpoint enforced policies do override the default Resource Instance Operations
+                List<string> allowResourceInstanceOperations = new();
 
                 foreach (var enforceableEndpointPolicy in enforceableResourceTypeEndpointPolicyList)
                 {
@@ -192,8 +202,33 @@ public class EndpointPolicyService(
                     allowBaseMetadata =
                         OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseMetadata);
                     allowBaseHistory = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseHistory, allowBaseHistory);
+                    
+                    //For $Operations against resource endpoints, the resource endpoint enforced policies are combined and override the default policy
+                    if (enforceableEndpointPolicy.AllowResourceTypeOperations is not null)
+                    {
+                        allowResourceTypeOperations.AddRange(enforceableEndpointPolicy.AllowResourceTypeOperations);    
+                    }
+                    
+                    //For $Operations against resource endpoints, the resource endpoint enforced policies are combined and override the default policy
+                    if (enforceableEndpointPolicy.AllowResourceInstanceOperations is not null)
+                    {
+                        allowResourceInstanceOperations.AddRange(enforceableEndpointPolicy.AllowResourceInstanceOperations);    
+                    }
+                    
                 }
-
+                
+                //For $Operations against resource endpoints, if none are enforced in the resource endpoint policies use the default policy
+                if (allowResourceTypeOperations.Count == 0)
+                {
+                    allowResourceTypeOperations = defaultEndpointPolicy.AllowResourceTypeOperations;
+                }
+                
+                //For $Operations against resource endpoints, if none are enforced in the resource endpoint policies use the default policy
+                if (allowResourceInstanceOperations.Count == 0)
+                {
+                    allowResourceInstanceOperations = defaultEndpointPolicy.AllowResourceInstanceOperations;
+                }
+                
                 tenantEndpointPolicyDictionary.Add(resourceName, new EndpointPolicy(
                     AllowCreate: allowCreate,
                     AllowRead: allowRead,
@@ -208,12 +243,24 @@ public class EndpointPolicyService(
                     AllowBaseTransaction: allowBaseTransaction,
                     AllowBaseBatch: allowBaseBatch,
                     AllowBaseMetadata: allowBaseMetadata,
-                    AllowBaseHistory: allowBaseHistory));
-                
+                    AllowBaseHistory: allowBaseHistory,
+                    AllowBaseOperations: allowBaseOperations.Distinct().ToList(),
+                    AllowResourceTypeOperations: allowResourceTypeOperations.Distinct().ToList(),
+                    AllowResourceInstanceOperations: allowResourceInstanceOperations.Distinct().ToList()));
             }
         }
 
         return tenantEndpointPolicyDictionary;
+    }
+
+    private static List<string> GetAllowBaseOperationDefault(
+        EndpointPolicy defaultEndpointPolicy,
+        IEnumerable<ResourceEndpointPolicy> enforceableResourceTypeEndpointPolicyList)
+    {
+        return enforceableResourceTypeEndpointPolicyList.Any(x => 
+            x.AllowBaseOperations is not null && 
+            x.AllowBaseOperations.Count > 0) == false ? 
+            new List<string>() : defaultEndpointPolicy.AllowBaseOperations;
     }
 
     private static bool OnlySetIfFalse(
@@ -357,6 +404,9 @@ public class EndpointPolicyService(
             AllowBaseTransaction: false,
             AllowBaseBatch: false,
             AllowBaseMetadata: false,
-            AllowBaseHistory: false);
+            AllowBaseHistory: false,
+            AllowBaseOperations: new (),
+            AllowResourceTypeOperations: new(),
+            AllowResourceInstanceOperations: new());
     }
 }
