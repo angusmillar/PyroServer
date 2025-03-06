@@ -1,7 +1,7 @@
 ﻿using Abm.Pyro.Application.MetaDataService;
+using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.Cache;
 using Hl7.Fhir.Model;
-using Abm.Pyro.Domain.TenantService;
 using Microsoft.Extensions.Caching.Hybrid;
 using Task = System.Threading.Tasks.Task;
 

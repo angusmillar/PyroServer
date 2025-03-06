@@ -1,8 +1,9 @@
 ﻿using System.Threading.Channels;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.TenantService;
+using Abm.Pyro.Domain.Notification;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

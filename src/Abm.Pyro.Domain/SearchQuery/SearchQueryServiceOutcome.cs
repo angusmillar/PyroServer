@@ -2,9 +2,7 @@
 using Abm.Pyro.Domain.FhirQuery;
 using Abm.Pyro.Domain.SearchQueryEntity;
 using Abm.Pyro.Domain.Validation;
-using Hl7.Fhir.Model;
 using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Domain.FhirSupport;
 
 namespace Abm.Pyro.Domain.SearchQuery
 {

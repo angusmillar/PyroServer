@@ -1,5 +1,4 @@
-﻿using System.Data;
-using Abm.Pyro.Domain.Enums;
+﻿using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Support;
 using Microsoft.Extensions.Primitives;
 using Hl7.Fhir.Rest;

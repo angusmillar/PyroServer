@@ -11,6 +11,7 @@ using Abm.Pyro.Domain.Test.Factories;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.Indexing;
 using Abm.Pyro.Domain.IndexSetters;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;

@@ -1,22 +1,18 @@
-﻿using System.Collections.Concurrent;
-using System.Net;
-using Abm.Pyro.Application.Cache;
+﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
-using Abm.Pyro.Application.FhirRequest;
-using Abm.Pyro.Application.FhirResponse;
-using Abm.Pyro.Application.FhirSubscriptions;
-using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Domain.Cache;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
+using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.Query;
-using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;

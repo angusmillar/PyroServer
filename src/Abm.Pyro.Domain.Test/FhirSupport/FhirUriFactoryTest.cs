@@ -1,7 +1,4 @@
 ﻿using System;
-using Microsoft.Extensions.Options;
-using Moq;
-using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Test.Factories;

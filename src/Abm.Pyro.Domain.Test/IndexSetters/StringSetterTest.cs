@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
 using Hl7.FhirPath;
-using Microsoft.Extensions.Options;
 using Moq;
 using Abm.Pyro.Application.FhirResolver;
-using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.IndexSetters;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Test.Factories;

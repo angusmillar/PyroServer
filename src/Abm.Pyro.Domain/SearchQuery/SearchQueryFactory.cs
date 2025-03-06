@@ -5,7 +5,6 @@ using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.SearchQueryEntity;
 using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Domain.FhirQuery;
 using SearchParamType = Abm.Pyro.Domain.Enums.SearchParamType;
 using Task = System.Threading.Tasks.Task;
 

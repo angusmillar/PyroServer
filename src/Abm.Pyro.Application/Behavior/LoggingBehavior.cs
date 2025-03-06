@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
-using Abm.Pyro.Application.FhirRequest;
-using Abm.Pyro.Application.FhirResponse;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Support;
 
@@ -60,7 +60,7 @@ public class LoggingBehavior<TRequest, TResponse>(
   {
     if (logger.IsEnabled(LogLevel.Debug))
     {
-      if (response is FhirResponse.FhirResponse fhirResponse)
+      if (response is FhirResponse fhirResponse)
       {
         logger.LogDebug("---------- Response -----------------------------------------------------------");
         logger.LogDebug("  Status: {HttpStatus} ({HttpStatusCode})", (int)fhirResponse.HttpStatusCode, fhirResponse.HttpStatusCode.ToString());

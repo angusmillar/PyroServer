@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Abm.Pyro.Domain.SearchQueryEntity;
+﻿namespace Abm.Pyro.Domain.SearchQueryEntity;
 
 public class SearchQueryTokenValue(bool IsMissing, SearchQueryTokenValue.TokenSearchType? searchType, string? code, string? system)
   : SearchQueryValueBase(IsMissing)

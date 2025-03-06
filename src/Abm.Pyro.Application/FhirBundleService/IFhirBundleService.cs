@@ -1,4 +1,5 @@
-﻿using Abm.Pyro.Application.FhirResponse;
+﻿using Abm.Pyro.Domain.FhirBundleService;
+using Abm.Pyro.Domain.FhirResponse;
 
 namespace Abm.Pyro.Application.FhirBundleService;
 

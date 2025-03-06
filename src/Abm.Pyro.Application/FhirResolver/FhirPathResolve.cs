@@ -1,6 +1,4 @@
-﻿using System.Net;
-using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.Exceptions;
+﻿using Abm.Pyro.Domain.Enums;
 using Hl7.Fhir.ElementModel;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;

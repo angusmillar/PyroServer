@@ -1,7 +1,6 @@
 ﻿using System;
-using Microsoft.Extensions.Options;
+using Abm.Pyro.Application.ServiceBaseUrlService;
 using Moq;
-using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
 

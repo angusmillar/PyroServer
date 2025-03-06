@@ -1,5 +1,4 @@
-﻿using Abm.Pyro.Application.Cache;
-using Abm.Pyro.Application.Notification;
+﻿using Abm.Pyro.Domain.Notification;
 
 namespace Abm.Pyro.Application.FhirSubscriptions;
 

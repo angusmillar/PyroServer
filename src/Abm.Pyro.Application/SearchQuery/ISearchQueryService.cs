@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Domain.Enums;
+﻿using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.SearchQuery;
 
 namespace Abm.Pyro.Application.SearchQuery

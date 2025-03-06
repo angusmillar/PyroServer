@@ -1,9 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using Hl7.Fhir.Model;
-using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.Exceptions;
 using Abm.Pyro.Domain.FhirSupport;
 using Xunit;
 

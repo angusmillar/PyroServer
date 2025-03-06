@@ -1,6 +1,4 @@
-﻿using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Abm.Pyro.Domain.Support;
+﻿using Microsoft.AspNetCore.Mvc;
 using Abm.Pyro.Repository;
 
 namespace Abm.Pyro.Api.Controllers;

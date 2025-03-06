@@ -1,4 +1,4 @@
-﻿using Abm.Pyro.Application.FhirResponse;
+﻿using Abm.Pyro.Domain.FhirResponse;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Primitives;
 

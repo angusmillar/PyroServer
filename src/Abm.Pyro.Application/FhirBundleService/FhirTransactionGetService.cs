@@ -1,13 +1,13 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirHandler;
-using Abm.Pyro.Application.FhirResponse;
+using Abm.Pyro.Application.TenantService;
+using Abm.Pyro.Domain.FhirResponse;
 using FluentResults;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Support;
-using Abm.Pyro.Domain.TenantService;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;
 
 namespace Abm.Pyro.Application.FhirBundleService;

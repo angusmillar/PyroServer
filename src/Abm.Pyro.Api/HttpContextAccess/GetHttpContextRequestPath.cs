@@ -1,4 +1,4 @@
-﻿using Abm.Pyro.Domain.TenantService;
+﻿using Abm.Pyro.Application.TenantService;
 
 namespace Abm.Pyro.Api.HttpContextAccess;
 

@@ -1,8 +1,6 @@
-﻿using System.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using Abm.Pyro.Domain.Configuration;
 
 namespace Abm.Pyro.Repository;
 

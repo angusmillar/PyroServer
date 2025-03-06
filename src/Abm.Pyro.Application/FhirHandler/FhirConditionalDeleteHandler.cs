@@ -1,14 +1,14 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
-using Abm.Pyro.Application.FhirRequest;
-using Abm.Pyro.Application.FhirResponse;
-using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
 using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
 using Abm.Pyro.Domain.Validation;
@@ -143,7 +143,7 @@ public class FhirConditionalDeleteHandler(
 
     private async Task<FhirOptionalResourceResponse> PerformNormalDelete(FhirConditionalDeleteRequest request, string resourceId, CancellationToken cancellationToken)
     {
-        FhirResponse.FhirResponse fhirResponse = await fhirDeleteHandler.Handle(
+        FhirResponse fhirResponse = await fhirDeleteHandler.Handle(
             new FhirDeleteRequest(
                 RequestSchema: request.RequestSchema,
                 Tenant: request.Tenant,

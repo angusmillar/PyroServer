@@ -2,7 +2,6 @@ using System.IO.Compression;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Abm.Pyro.Domain.Extensions;
 using Abm.Pyro.Api.ContentFormatters;
 using Abm.Pyro.Api.DependencyInjectionFactory;
 using Abm.Pyro.Api.Extensions;
@@ -14,13 +13,13 @@ using Abm.Pyro.Application.Behavior;
 using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.EndpointPolicy;
+using Abm.Pyro.Application.Extensions;
 using Abm.Pyro.Application.FhirBundleService;
 using Abm.Pyro.Application.FhirClientFactory;
 using Abm.Pyro.Application.FhirHandler;
-using Abm.Pyro.Application.FhirRequest;
 using Abm.Pyro.Application.FhirResolver;
-using Abm.Pyro.Application.FhirResponse;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Application.Indexing;
@@ -44,8 +43,13 @@ using Abm.Pyro.Application.Manager;
 using Abm.Pyro.Application.MetaDataService;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.OnStartupService;
+using Abm.Pyro.Application.ServiceBaseUrlService;
+using Abm.Pyro.Application.TenantService;
+using Abm.Pyro.Domain.FhirOperation;
+using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
+using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
-using Abm.Pyro.Domain.TenantService;
 using Abm.Pyro.Domain.Validation;
 using Abm.Pyro.Repository.DependencyFactory;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -217,6 +221,12 @@ try
     builder.Services.AddSingleton<IEndpointPolicyRules, EndpointPolicyRules>();
     builder.Services.AddScoped<IEndpointPolicyService, EndpointPolicyService>();
 
+    // Fhir Operation Services --------------------------------------
+    builder.Services.AddSingleton<IFhirOperationFactory, FhirOperationFactory>();
+    builder.Services.AddScoped<IFhirSystemOperationService, FhirValidateOperationService>();
+    builder.Services.AddScoped<IFhirTypeOperationService, FhirValidateOperationService>();
+    builder.Services.AddScoped<IFhirInstanceOperationService, FhirValidateOperationService>();
+    
     // Validators ---------------------------------------------------
     builder.Services.AddScoped<IValidator, Validator>();
     builder.Services.AddSingleton<ICommonRequestValidation, CommonRequestValidation>();

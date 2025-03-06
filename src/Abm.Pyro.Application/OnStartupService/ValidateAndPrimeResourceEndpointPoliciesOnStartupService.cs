@@ -1,7 +1,7 @@
 ﻿using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.HostedServiceSupport;
+using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.Configuration;
-using Abm.Pyro.Domain.TenantService;
 using Microsoft.Extensions.Logging;
 
 namespace Abm.Pyro.Application.OnStartupService;

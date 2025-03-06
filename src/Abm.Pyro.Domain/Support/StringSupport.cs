@@ -1,7 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Net;
 using System.Text;
-using Hl7.Fhir.Rest;
 
 namespace Abm.Pyro.Domain.Support;
 

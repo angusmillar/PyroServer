@@ -7,6 +7,7 @@ using Hl7.FhirPath;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Exceptions;
+using Abm.Pyro.Domain.Indexing;
 using Abm.Pyro.Domain.IndexSetters;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using Abm.Pyro.Application.Extensions;
 using Hl7.Fhir.Model;
-using Abm.Pyro.Domain.Extensions;
 using Xunit;
 
 namespace Abm.Pyro.Domain.Test.Extensions;

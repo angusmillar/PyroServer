@@ -1,17 +1,15 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
-using Abm.Pyro.Application.FhirRequest;
-using Abm.Pyro.Application.FhirResponse;
-using Abm.Pyro.Application.Notification;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
+using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
-using Abm.Pyro.Domain.Support;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;

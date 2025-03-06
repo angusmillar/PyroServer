@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Hl7.Fhir.Model;
-using Abm.Pyro.Domain.Extensions;
+using Abm.Pyro.Application.Extensions;
 
 namespace Abm.Pyro.Domain.Benchmark.Extensions;
 

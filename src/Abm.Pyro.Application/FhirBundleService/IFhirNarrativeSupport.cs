@@ -1,4 +1,5 @@
-﻿using Hl7.Fhir.Model;
+﻿using Abm.Pyro.Domain.FhirBundleService;
+using Hl7.Fhir.Model;
 
 namespace Abm.Pyro.Application.FhirBundleService;
 

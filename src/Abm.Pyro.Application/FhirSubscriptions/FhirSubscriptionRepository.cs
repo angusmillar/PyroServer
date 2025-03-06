@@ -1,13 +1,9 @@
-﻿using Abm.Pyro.Application.Cache;
-using Abm.Pyro.Application.DependencyFactory;
-using Abm.Pyro.Application.FhirHandler;
-using Abm.Pyro.Application.SearchQuery;
+﻿using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
-using Abm.Pyro.Domain.Support;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Logging;
 using FhirUri = Abm.Pyro.Domain.FhirSupport.FhirUri;

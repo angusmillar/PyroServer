@@ -1,5 +1,4 @@
-﻿using Abm.Pyro.Domain.Enums;
-namespace Abm.Pyro.Domain.Enums;
+﻿namespace Abm.Pyro.Domain.Enums;
 
 public static class StringToEnumMap<TEnumType> where TEnumType : Enum
 {

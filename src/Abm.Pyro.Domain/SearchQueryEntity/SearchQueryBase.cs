@@ -3,7 +3,6 @@ using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.Support;
-using Abm.Pyro.Domain.FhirQuery;
 
 namespace Abm.Pyro.Domain.SearchQueryEntity;
 

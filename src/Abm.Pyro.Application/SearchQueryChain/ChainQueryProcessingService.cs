@@ -6,6 +6,7 @@ using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.SearchQuery;
+using Abm.Pyro.Domain.SearchQueryChain;
 using Abm.Pyro.Domain.SearchQueryEntity;
 
 namespace Abm.Pyro.Application.SearchQueryChain;

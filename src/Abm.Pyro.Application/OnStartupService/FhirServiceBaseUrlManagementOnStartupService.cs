@@ -1,11 +1,11 @@
 ﻿using Abm.Pyro.Application.HostedServiceSupport;
+using Abm.Pyro.Application.TenantService;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Support;
-using Abm.Pyro.Domain.TenantService;
 
 namespace Abm.Pyro.Application.OnStartupService;
 

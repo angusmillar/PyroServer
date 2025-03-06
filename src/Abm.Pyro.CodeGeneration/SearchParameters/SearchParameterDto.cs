@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-namespace Abm.Pyro.CodeGeneration.SearchParameters
+﻿namespace Abm.Pyro.CodeGeneration.SearchParameters
 {
 
   public class SearchParameterDto

@@ -1,6 +1,7 @@
-﻿using Abm.Pyro.Domain.Enums;
+﻿using Abm.Pyro.Application.TenantService;
+using Abm.Pyro.Domain.Enums;
+using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Support;
-using Abm.Pyro.Domain.TenantService;
 
 namespace Abm.Pyro.Application.Notification;
 

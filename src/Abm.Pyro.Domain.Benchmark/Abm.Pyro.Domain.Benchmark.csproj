@@ -14,6 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Abm.Pyro.Application\Abm.Pyro.Application.csproj" />
       <ProjectReference Include="..\Abm.Pyro.Domain\Abm.Pyro.Domain.csproj" />
     </ItemGroup>
 

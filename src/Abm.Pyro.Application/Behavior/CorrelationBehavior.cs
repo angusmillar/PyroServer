@@ -1,4 +1,5 @@
-﻿using Abm.Pyro.Application.FhirRequest;
+﻿using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
 using MediatR;
 using Abm.Pyro.Domain.FhirSupport;
 
@@ -25,7 +26,7 @@ public class CorrelationBehavior<TRequest, TResponse>(
     
     var response = await next();
     
-    if (response is FhirResponse.FhirResponse fhirResponse)
+    if (response is FhirResponse fhirResponse)
     {
       fhirResponseHttpHeaderSupport.AddXRequestId(fhirResponse.Headers, xRequestId);
       if (xCorrelationId is not null)

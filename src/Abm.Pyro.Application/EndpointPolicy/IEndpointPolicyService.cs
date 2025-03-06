@@ -1,6 +1,4 @@
-﻿using Abm.Pyro.Domain.Enums;
-
-namespace Abm.Pyro.Application.EndpointPolicy;
+﻿namespace Abm.Pyro.Application.EndpointPolicy;
 
 public interface IEndpointPolicyService
 {

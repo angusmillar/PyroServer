@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Primitives;
-using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.SearchQuery;

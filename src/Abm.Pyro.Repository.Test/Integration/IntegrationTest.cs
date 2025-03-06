@@ -2,7 +2,6 @@ using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Repository.Query;
-using Hl7.Fhir.Model;
 using Microsoft.EntityFrameworkCore;
 using Task = System.Threading.Tasks.Task;
 

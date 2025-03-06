@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Abm.Pyro.Domain.Configuration;
+﻿namespace Abm.Pyro.Domain.Configuration;
 
 public sealed class ResourceEndpointPoliciesSettings
 {

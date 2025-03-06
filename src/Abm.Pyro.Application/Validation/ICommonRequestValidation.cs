@@ -1,6 +1,4 @@
-﻿using Abm.Pyro.Domain.Validation;
-
-namespace Abm.Pyro.Application.Validation;
+﻿namespace Abm.Pyro.Application.Validation;
 
 public interface ICommonRequestValidation
 {

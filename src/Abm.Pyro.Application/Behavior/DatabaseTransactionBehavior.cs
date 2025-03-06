@@ -1,6 +1,5 @@
-﻿using System.Globalization;
-using Abm.Pyro.Application.FhirResponse;
-using Abm.Pyro.Application.Notification;
+﻿using Abm.Pyro.Application.Notification;
+using Abm.Pyro.Domain.FhirResponse;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Abm.Pyro.Domain.Query;

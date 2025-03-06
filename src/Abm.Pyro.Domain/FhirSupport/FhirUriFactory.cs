@@ -1,12 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Abm.Pyro.Domain.Cache;
-using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.Support;
 using Hl7.Fhir.Model;
-using Microsoft.Extensions.Options;
 
 namespace Abm.Pyro.Domain.FhirSupport;
 

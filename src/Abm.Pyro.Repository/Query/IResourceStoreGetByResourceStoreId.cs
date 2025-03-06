@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Query;
 

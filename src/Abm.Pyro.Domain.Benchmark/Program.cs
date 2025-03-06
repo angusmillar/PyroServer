@@ -2,7 +2,6 @@
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Toolchains.InProcess.NoEmit;
-using Abm.Pyro.Domain.Benchmark.Extensions;
 using Abm.Pyro.Domain.Benchmark.FhirSupport;
 
 // var config = DefaultConfig.Instance

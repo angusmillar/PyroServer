@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Abm.Pyro.Domain.SearchQueryEntity;
+﻿namespace Abm.Pyro.Domain.SearchQueryEntity;
 
 public abstract class SearchQueryValueBase(bool isMissing)
 {

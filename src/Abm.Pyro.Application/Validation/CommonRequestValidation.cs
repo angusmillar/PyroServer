@@ -1,6 +1,4 @@
-﻿using System.Net;
-using Abm.Pyro.Domain.FhirSupport;
-using Abm.Pyro.Domain.Validation;
+﻿using Abm.Pyro.Domain.FhirSupport;
 
 namespace Abm.Pyro.Application.Validation;
 

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Abm.Pyro.Application.Validation;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.DependencyFactory;
