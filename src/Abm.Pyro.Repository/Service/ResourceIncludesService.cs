@@ -17,11 +17,11 @@ public class ResourceIncludesService(
     IServiceBaseUrlCache serviceBaseUrlCache)
     : IResourceIncludesService
 {
-    private List<ResourceStore> FinalIncludedResourceStoreList = new();
-    private HashSet<ResourceKeys> TargetResourceKeysHashSet = new();
-    private readonly HashSet<ResourceKeys> ObtainedResourceKeyHashSet = new();
-    private int IterationCount = 1;
-    private int PrimaryServiceBaseUrlId;
+    private List<ResourceStore> _finalIncludedResourceStoreList = new();
+    private HashSet<ResourceKeys> _targetResourceKeysHashSet = new();
+    private readonly HashSet<ResourceKeys> _obtainedResourceKeyHashSet = new();
+    private int _iterationCount = 1;
+    private int _primaryServiceBaseUrlId;
 
     public async Task<List<ResourceStore>> GetResourceIncludeList(List<ResourceStore> targetResourceStoreList,
         IList<SearchQueryInclude> searchQueryIncludeList)
@@ -31,10 +31,10 @@ public class ResourceIncludesService(
             return Enumerable.Empty<ResourceStore>().ToList();
         }
 
-        PrimaryServiceBaseUrlId = await GetPrimaryServiceBaseUrlId();
+        _primaryServiceBaseUrlId = await GetPrimaryServiceBaseUrlId();
         GetTargetResourceKeys(targetResourceStoreList);
         List<ResourceStore> currentIncludedResourceStoreList = await GetIncludeList(searchQueryIncludeList);
-        FinalIncludedResourceStoreList = new List<ResourceStore>(currentIncludedResourceStoreList);
+        _finalIncludedResourceStoreList = new List<ResourceStore>(currentIncludedResourceStoreList);
         ManageTargetResourceKeys(currentIncludedResourceStoreList);
         while (ContinueToIterate(currentIncludedResourceStoreList, searchQueryIncludeList))
         {
@@ -42,13 +42,13 @@ public class ResourceIncludesService(
             if (currentIncludedResourceStoreList.Any())
             {
                 ManageTargetResourceKeys(currentIncludedResourceStoreList);
-                FinalIncludedResourceStoreList.AddRange(currentIncludedResourceStoreList);
+                _finalIncludedResourceStoreList.AddRange(currentIncludedResourceStoreList);
             }
 
-            IterationCount++;
+            _iterationCount++;
         }
 
-        return FinalIncludedResourceStoreList;
+        return _finalIncludedResourceStoreList;
     }
 
     private async Task<int> GetPrimaryServiceBaseUrlId()
@@ -64,18 +64,18 @@ public class ResourceIncludesService(
 
     private void ManageTargetResourceKeys(List<ResourceStore> currentIncludedResourceStoreList)
     {
-        ObtainedResourceKeyHashSet.UnionWith(TargetResourceKeysHashSet);
+        _obtainedResourceKeyHashSet.UnionWith(_targetResourceKeysHashSet);
         GetTargetResourceKeys(currentIncludedResourceStoreList);
     }
 
     private void GetTargetResourceKeys(List<ResourceStore> currentIncludedResourceStoreList)
     {
         //Get the next set of Target Resource Key excluding the ones already obtained
-        TargetResourceKeysHashSet = currentIncludedResourceStoreList.Where(x =>
-                !ObtainedResourceKeyHashSet.Any(c =>
+        _targetResourceKeysHashSet = currentIncludedResourceStoreList.Where(x =>
+                !_obtainedResourceKeyHashSet.Any(c =>
                     c.ResourceType.Equals(x.ResourceType) &&
                     c.ResourceId.Equals(x.ResourceId, StringComparison.Ordinal) &&
-                    c.versionId.Equals(x.VersionId)))
+                    c.VersionId.Equals(x.VersionId)))
             .Select(x => new ResourceKeys(x.ResourceStoreId!.Value, x.ResourceType, x.ResourceId, x.VersionId)).ToHashSet();
     }
 
@@ -89,7 +89,7 @@ public class ResourceIncludesService(
 
     private void ThrowIfMaximumNumberOfIncludeResourcesReached()
     {
-        if (FinalIncludedResourceStoreList.Count > includeRevIncludeSettings.Value.MaximumIncludeResources)
+        if (_finalIncludedResourceStoreList.Count > includeRevIncludeSettings.Value.MaximumIncludeResources)
         {
             throw new FhirErrorException(
                 httpStatusCode: HttpStatusCode.PreconditionFailed,
@@ -101,7 +101,7 @@ public class ResourceIncludesService(
 
     private void ThrowIfMaximumIterationsReached()
     {
-        if (IterationCount > includeRevIncludeSettings.Value.MaximumIterations)
+        if (_iterationCount > includeRevIncludeSettings.Value.MaximumIterations)
         {
             throw new FhirErrorException(
                 httpStatusCode: HttpStatusCode.PreconditionFailed,
@@ -176,7 +176,7 @@ public class ResourceIncludesService(
 
     private Expression<Func<IndexReference, bool>> GetIndexReferenceWhereQuery(SearchQueryInclude searchQueryInclude)
     {
-        IEnumerable<int> targetResourceStoreIdList = TargetResourceKeysHashSet
+        IEnumerable<int> targetResourceStoreIdList = _targetResourceKeysHashSet
             .Select(x => x.ResourceStoreId);
         
         return x =>
@@ -184,14 +184,14 @@ public class ResourceIncludesService(
             searchQueryInclude.SearchParameterList.Select(m => m.SearchParameterStoreId).Contains(x.SearchParameterStoreId) &&
             x.ResourceStoreId.HasValue &&
             x.ServiceBaseUrlId.HasValue &&
-            x.ServiceBaseUrlId.Value == PrimaryServiceBaseUrlId &&
+            x.ServiceBaseUrlId.Value == _primaryServiceBaseUrlId &&
             targetResourceStoreIdList.Contains(x.ResourceStoreId.Value) &&
             x.ResourceStore!.ResourceType == searchQueryInclude.SourceResourceType;
     }
 
     private Expression<Func<IndexReference, bool>> GetRevIncludeIndexReferenceWhereQuery(SearchQueryInclude searchQueryInclude)
     {
-        IEnumerable<string> targetResourceIdList = TargetResourceKeysHashSet
+        IEnumerable<string> targetResourceIdList = _targetResourceKeysHashSet
             .Where(x => x.ResourceType.Equals(searchQueryInclude.SearchParameterTargetResourceType))
             .Select(s => s.ResourceId);
         
@@ -199,7 +199,7 @@ public class ResourceIncludesService(
             (!searchQueryInclude.SearchParameterTargetResourceType.HasValue || x.ResourceType == searchQueryInclude.SearchParameterTargetResourceType) &&
             searchQueryInclude.SearchParameterList.Select(m => m.SearchParameterStoreId).Contains(x.SearchParameterStoreId) &&
             x.ServiceBaseUrlId.HasValue &&
-            x.ServiceBaseUrlId.Value == PrimaryServiceBaseUrlId &&
+            x.ServiceBaseUrlId.Value == _primaryServiceBaseUrlId &&
             targetResourceIdList.Contains(x.ResourceId) &&
             x.ResourceStore!.ResourceType == searchQueryInclude.SourceResourceType &&
             x.ResourceStore!.IsCurrent == true;
@@ -214,7 +214,7 @@ public class ResourceIncludesService(
         public int ResourceStoreId { get; } = resourceStoreId;
         public FhirResourceTypeId ResourceType { get; } = resourceType;
         public string ResourceId { get; } = resourceId;
-        public int? versionId { get; } = versionId;
+        public int? VersionId { get; } = versionId;
     }
 }
 
