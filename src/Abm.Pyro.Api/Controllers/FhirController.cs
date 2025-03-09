@@ -45,11 +45,12 @@ public class FhirController(
     var fhirSystemLevelOperationRequest = new FhirSystemLevelOperationRequest(
       RequestSchema: Request.Scheme,
       Tenant: tenant,
-      OperationName: operationName,
       RequestId: GuidSupport.NewFhirGuid(),
       RequestPath: Request.Path,
       QueryString: Request.QueryString.Value,
-      Headers: Request.Headers.GetDictionary(), 
+      Headers: Request.Headers.GetDictionary(),
+      OperationName: operationName,
+      Resource: resource,
       TimeStamp: dateTimeProvider.Now);
 
     FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);

@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Hl7.Fhir.R4" Version="5.11.2" />
+      <PackageReference Include="Hl7.Fhir.R4" Version="5.11.4" />
       <PackageReference Include="MediatR" Version="12.4.1" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
       <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.1" />

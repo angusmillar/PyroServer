@@ -2,5 +2,5 @@
 
 public interface IFhirTypeOperationService : IFhirOperationService
 {
-    public string Handle(string test);
+    string Handle(string test);
 }

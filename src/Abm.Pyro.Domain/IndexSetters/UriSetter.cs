@@ -97,7 +97,7 @@ public class UriSetter : IUriSetter
     {
       return Array.Empty<IndexUri>();
     }
-    if (Uri.IsWellFormedUriString(uriString, UriKind.RelativeOrAbsolute))
+    if (!Uri.IsWellFormedUriString(uriString, UriKind.RelativeOrAbsolute))
     {
       return Array.Empty<IndexUri>();
     }
@@ -107,7 +107,7 @@ public class UriSetter : IUriSetter
                                     indexUriId: null,
                                     resourceStoreId: null,
                                     resourceStore: null,
-                                    searchParameterStoreId: null,
+                                    searchParameterStoreId: SearchParameterId,
                                     searchParameterStore: null,
                                     uri: uriString)
                                 };

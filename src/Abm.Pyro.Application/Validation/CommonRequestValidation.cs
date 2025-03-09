@@ -11,7 +11,7 @@ public class CommonRequestValidation(
     {
         if (requestEndpointResourceName.Equals(requestBodyResourceResourceName, StringComparison.Ordinal))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
         
         return new[]
@@ -26,7 +26,7 @@ public class CommonRequestValidation(
     {
         if (!String.IsNullOrWhiteSpace(requestResourceId))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
     
         return new[]
@@ -40,13 +40,13 @@ public class CommonRequestValidation(
     {
         if (requestEndpointResourceId.Equals(requestBodyResourceResourceId, StringComparison.Ordinal))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
     
-        return new[]
-        {
-            "The resource's id in the body must match the resource id in the URL" 
-        };
+        return
+        [
+            "The resource's id in the body must match the resource id in the URL"
+        ];
 
     }
     
@@ -54,13 +54,13 @@ public class CommonRequestValidation(
     {
         if (fhirResourceNameSupport.IsResourceTypeString(requestEndpointResourceName))
         {
-            return Enumerable.Empty<string>();
+            return [];
         }
    
-        return new[]
-        {
-            $"The endpoint's resource type of '{requestEndpointResourceName}' is not a known resource type. " 
-        };
+        return
+        [
+            $"The endpoint's resource type of '{requestEndpointResourceName}' is not a known resource type. "
+        ];
        
     }
 }

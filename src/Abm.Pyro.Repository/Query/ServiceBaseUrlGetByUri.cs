@@ -5,8 +5,8 @@ namespace Abm.Pyro.Repository.Query;
 
 public class ServiceBaseUrlGetByUri(PyroDbContext context) : IServiceBaseUrlGetByUri
 {
-  public Task<ServiceBaseUrl?> Get(string url)
+  public async Task<ServiceBaseUrl?> Get(string url)
   {
-    return context.Set<ServiceBaseUrl>().SingleOrDefaultAsync(x => x.Url == url);
+    return await context.Set<ServiceBaseUrl>().SingleOrDefaultAsync(x => x.Url == url);
   }
 }

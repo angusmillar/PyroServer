@@ -41,18 +41,8 @@ public class FhirSystemLevelOperationHandler(
             throw new InvalidCastException(nameof(fhirOperationService));
         }
 
-
-        await Task.Delay(5000, cancellationToken);
-        fhirSystemOperationService.Handle(request: request.OperationName);
+        return await fhirSystemOperationService.Handle(request: request);
         
-        
-        
-        return new FhirResourceResponse(
-            Resource: new Patient(), //ToDo Only a dummy set 
-            HttpStatusCode: HttpStatusCode.OK,
-            Headers: new Dictionary<string, StringValues>(), 
-            ResourceOutcomeInfo: null,
-            RepositoryEventCollector: repositoryEventCollector);
     }
     
     private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
@@ -70,7 +60,7 @@ public class FhirSystemLevelOperationHandler(
         repositoryEventCollector.Clear();
         return new FhirResourceResponse(
             Resource: operationOutcomeSupport.GetError(messageList: 
-                [$"The FHIR operation named: {fhirOperationName} is not supported by this server at the systems level."]), 
+                [$"The systems level FHIR operation named: {fhirOperationName} is not supported by this server."]), 
             HttpStatusCode: HttpStatusCode.BadRequest,
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);

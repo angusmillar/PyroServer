@@ -12,14 +12,15 @@ public class ServiceBaseUrlHybridCache(
   HybridCache hybridCache,
   ITenantService tenantService,
   IServiceBaseUrlGetByUri serviceBaseUrlGetByUri,
-  IServiceBaseUrlGetPrimary serviceBaseUrlGetPrimary)
+  IServiceBaseUrlGetPrimary serviceBaseUrlGetPrimary,
+  IServiceBaseUrlGetOrAddByUri serviceBaseUrlGetOrAddByUri)
   : IServiceBaseUrlCache
 {
   
   const string CacheKeyForPrimary = "PrimaryBaseUrl";
   const string CacheKeyPrefixForUrl = "BaseUrl";
-  
   const string CacheTag = "ServiceBaseUrls";
+  private Dictionary<string, ServiceBaseUrl> ScopedServiceBaseUrlCacheDictionary { get; set; } = new();
     
   public async Task<ServiceBaseUrl?> GetPrimaryAsync()
   {
@@ -47,12 +48,25 @@ public class ServiceBaseUrlHybridCache(
 
   public async Task<ServiceBaseUrl?> GetByUrlAsync(string url)
   {
-    return await hybridCache.GetOrCreateAsync<ServiceBaseUrl?>(
+      // if (ScopedServiceBaseUrlCacheDictionary.ContainsKey(GetUrlKey(url)))
+      // {
+      //   return ScopedServiceBaseUrlCacheDictionary[GetUrlKey(url)];
+      // }
+      
+      ServiceBaseUrl serviceBaseUrl =  await hybridCache.GetOrCreateAsync<ServiceBaseUrl>(
       key: GetUrlKey(url), 
-      factory: async _ => await serviceBaseUrlGetByUri.Get(url), 
+      factory: async _ => await serviceBaseUrlGetOrAddByUri.Get(url), 
       options: new HybridCacheEntryOptions(),
       tags: GetCacheTags(), 
       cancellationToken: CancellationToken.None);
+
+      // if (serviceBaseUrl is not null)
+      // {
+      //   ScopedServiceBaseUrlCacheDictionary.Add(GetUrlKey(url), serviceBaseUrl);
+      // }
+
+      return serviceBaseUrl;
+
   }
 
   public async Task Remove(string url)

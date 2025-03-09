@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
@@ -25,6 +26,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<PyroDbCont
     var configuration = new ConfigurationBuilder()
                         .SetBasePath(Path.Combine(Directory.GetCurrentDirectory()))
                         .AddJsonFile("appsettings.json", optional: false)
+                        .AddUserSecrets(Assembly.GetExecutingAssembly(), true)
                         .Build();
     
     // Create DB context with connection from your AppSettings 

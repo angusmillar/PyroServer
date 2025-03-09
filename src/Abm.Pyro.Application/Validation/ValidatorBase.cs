@@ -10,6 +10,8 @@ public abstract class ValidatorBase<T>(IOperationOutcomeSupport operationOutcome
 
     public abstract ValidatorResult Validate(T item);
 
+    protected bool HasFailures => FailureMessageList.Count != 0;
+    
     protected ValidatorResult GetValidatorResult()
     {
         if (FailureMessageList.Count != 0)

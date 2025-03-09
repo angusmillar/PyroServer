@@ -35,14 +35,14 @@
         <Reference Include="Fhir.Metrics, Version=1.3.0.0, Culture=neutral, PublicKeyToken=43e377ac229b6873, processorArchitecture=MSIL">
           <HintPath>..\packages\Fhir.Metrics.1.3.0\lib\netstandard2.0\Fhir.Metrics.dll</HintPath>
         </Reference>
-        <Reference Include="Hl7.Fhir.Base, Version=5.11.2.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
-          <HintPath>..\packages\Hl7.Fhir.Base.5.11.2\lib\netstandard2.0\Hl7.Fhir.Base.dll</HintPath>
+        <Reference Include="Hl7.Fhir.Base, Version=5.11.4.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
+          <HintPath>..\packages\Hl7.Fhir.Base.5.11.4\lib\netstandard2.0\Hl7.Fhir.Base.dll</HintPath>
         </Reference>
-        <Reference Include="Hl7.Fhir.Conformance, Version=5.11.2.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
-          <HintPath>..\packages\Hl7.Fhir.Conformance.5.11.2\lib\netstandard2.0\Hl7.Fhir.Conformance.dll</HintPath>
+        <Reference Include="Hl7.Fhir.Conformance, Version=5.11.4.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
+          <HintPath>..\packages\Hl7.Fhir.Conformance.5.11.4\lib\netstandard2.0\Hl7.Fhir.Conformance.dll</HintPath>
         </Reference>
-        <Reference Include="Hl7.Fhir.R4, Version=5.11.2.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
-          <HintPath>..\packages\Hl7.Fhir.R4.5.11.2\lib\netstandard2.0\Hl7.Fhir.R4.dll</HintPath>
+        <Reference Include="Hl7.Fhir.R4, Version=5.11.4.0, Culture=neutral, PublicKeyToken=d706911480550fc3, processorArchitecture=MSIL">
+          <HintPath>..\packages\Hl7.Fhir.R4.5.11.4\lib\netstandard2.0\Hl7.Fhir.R4.dll</HintPath>
         </Reference>
         <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
           <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.1\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>

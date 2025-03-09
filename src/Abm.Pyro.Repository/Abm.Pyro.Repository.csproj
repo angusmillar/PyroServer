@@ -23,6 +23,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -33,10 +34,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Abm.Pyro.Domain\Abm.Pyro.Domain.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Migrations\" />
     </ItemGroup>
 
 

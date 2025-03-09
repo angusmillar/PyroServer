@@ -52,6 +52,7 @@ using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.Validation;
 using Abm.Pyro.Repository.DependencyFactory;
+using Hl7.Fhir.Specification.Source;
 using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
@@ -222,10 +223,19 @@ try
     builder.Services.AddScoped<IEndpointPolicyService, EndpointPolicyService>();
 
     // Fhir Operation Services --------------------------------------
-    builder.Services.AddSingleton<IFhirOperationFactory, FhirOperationFactory>();
-    builder.Services.AddScoped<IFhirSystemOperationService, FhirValidateOperationService>();
-    builder.Services.AddScoped<IFhirTypeOperationService, FhirValidateOperationService>();
-    builder.Services.AddScoped<IFhirInstanceOperationService, FhirValidateOperationService>();
+    builder.Services.AddScoped<IFhirOperationFactory, FhirOperationFactory>();
+    
+    // Fhir Validate Operation --------------------------------------
+    builder.Services.AddScoped<IFhirValidateOperationService, FhirValidateOperationService>();
+    //builder.Services.AddScoped<IFhirTypeOperationService, FhirValidateOperationService>();
+    //builder.Services.AddScoped<IFhirInstanceOperationService, FhirValidateOperationService>();
+    //builder.Services.AddSingleton<CachedResolver>();
+    
+    
+    builder.Services.AddScoped<IAsyncResourceResolver, LocalResourceResolver>();
+    
+    
+    
     
     // Validators ---------------------------------------------------
     builder.Services.AddScoped<IValidator, Validator>();
@@ -246,6 +256,10 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirVersionReadRequest>, VersionReadRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<SearchQueryServiceOutcomeAndHeaders>, SearchQueryValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
+    
+    
+    builder.Services.AddKeyedScoped<IValidatorBase<FhirSystemLevelOperationRequest>, FhirValidateOperationRequestValidator>(FhirOperationLevel.System);
     
     
     // Caching ---------------------------
@@ -319,7 +333,8 @@ try
     builder.Services.AddScoped<ISearchParameterGetByBaseResourceType, SearchParameterGetByBaseResourceType>();
     builder.Services
         .AddScoped<ISearchParameterMetaDataGetByBaseResourceType, SearchParameterMetaDataGetByBaseResourceType>();
-
+    builder.Services.AddScoped<IServiceBaseUrlGetOrAddByUri, ServiceBaseUrlGetOrAddByUri>();
+    
     // ServiceBaseUrl ----------------------
     builder.Services.AddScoped<IServiceBaseUrlAddByUri, ServiceBaseUrlAddByUri>();
     builder.Services.AddScoped<IServiceBaseUrlUpdate, ServiceBaseUrlUpdate>();
@@ -350,7 +365,7 @@ try
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
 
     string connectionString = builder.Configuration.GetConnectionString("PyroDb") ?? "[Not Found]";
-    //Log.Information("SQL Connection string: {ConnectionString}", connectionString);
+    Log.Information("SQL Connection string: {ConnectionString}", connectionString);
     
     // Database Setup ----------------------
     builder.Services.AddDbContext<PyroDbContext>((services, optionsBuilder) =>
