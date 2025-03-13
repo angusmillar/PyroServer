@@ -7,7 +7,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Abm.Pyro.Domain.FhirRequest;
 
-public record FhirSystemLevelOperationRequest(
+public record FhirInstanceLevelOperationRequest(
         string RequestSchema,
         string Tenant,
         string RequestId,
@@ -15,15 +15,17 @@ public record FhirSystemLevelOperationRequest(
         string? QueryString,
         Dictionary<string, StringValues> Headers,
         string OperationName,
+        string ResourceName, 
         Resource Resource, 
         DateTimeOffset TimeStamp)
-    :FhirResourceRequestBase(
+    :FhirResourceNameResourceRequestBase(
             RequestSchema, 
             Tenant,
             RequestId,
             RequestPath,
             QueryString,
             Headers,
+            ResourceName, 
             Resource,
             HttpVerbId.Post,
             TimeStamp), 

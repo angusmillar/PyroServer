@@ -1,6 +1,9 @@
-﻿namespace Abm.Pyro.Domain.FhirOperation;
+﻿using Abm.Pyro.Domain.FhirRequest;
+using Abm.Pyro.Domain.FhirResponse;
+
+namespace Abm.Pyro.Domain.FhirOperation;
 
 public interface IFhirInstanceOperationService : IFhirOperationService
 {
-     string Handle(string test);
+    FhirResourceResponse Handle(FhirInstanceLevelOperationRequest request);
 }

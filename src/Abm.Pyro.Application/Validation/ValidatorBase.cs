@@ -1,10 +1,10 @@
 ﻿using System.Net;
 using Abm.Pyro.Domain.FhirSupport;
+using Abm.Pyro.Domain.Validation;
 
-namespace Abm.Pyro.Domain.Validation;
+namespace Abm.Pyro.Application.Validation;
 
-public abstract class ValidatorBase<T>(IOperationOutcomeSupport operationOutcomeSupport) 
-    : IValidatorBase<T> where T : IValidatable
+public abstract class ValidatorBase<T>(IOperationOutcomeSupport operationOutcomeSupport) : IValidatorBase<T> where T : IValidatable
 {
     protected readonly List<string> FailureMessageList = [];
 
@@ -31,9 +31,9 @@ public abstract class ValidatorBase<T>(IOperationOutcomeSupport operationOutcome
         return new ValidatorResult(
             isValid: false, 
             httpStatusCode: HttpStatusCode.Forbidden,
-            operationOutcome: operationOutcomeSupport.GetError(messageList: new[]
-            {
+            operationOutcome: operationOutcomeSupport.GetError(messageList:
+            [
                 "The server's endpoint policy controls have refused to authorize this request"
-            }));
+            ]));
     }
 }

@@ -11,7 +11,6 @@ namespace Abm.Pyro.Application.Cache;
 public class ServiceBaseUrlHybridCache(
   HybridCache hybridCache,
   ITenantService tenantService,
-  IServiceBaseUrlGetByUri serviceBaseUrlGetByUri,
   IServiceBaseUrlGetPrimary serviceBaseUrlGetPrimary,
   IServiceBaseUrlGetOrAddByUri serviceBaseUrlGetOrAddByUri)
   : IServiceBaseUrlCache
@@ -48,25 +47,14 @@ public class ServiceBaseUrlHybridCache(
 
   public async Task<ServiceBaseUrl?> GetByUrlAsync(string url)
   {
-      // if (ScopedServiceBaseUrlCacheDictionary.ContainsKey(GetUrlKey(url)))
-      // {
-      //   return ScopedServiceBaseUrlCacheDictionary[GetUrlKey(url)];
-      // }
-      
       ServiceBaseUrl serviceBaseUrl =  await hybridCache.GetOrCreateAsync<ServiceBaseUrl>(
       key: GetUrlKey(url), 
       factory: async _ => await serviceBaseUrlGetOrAddByUri.Get(url), 
       options: new HybridCacheEntryOptions(),
       tags: GetCacheTags(), 
       cancellationToken: CancellationToken.None);
-
-      // if (serviceBaseUrl is not null)
-      // {
-      //   ScopedServiceBaseUrlCacheDictionary.Add(GetUrlKey(url), serviceBaseUrl);
-      // }
-
+      
       return serviceBaseUrl;
-
   }
 
   public async Task Remove(string url)

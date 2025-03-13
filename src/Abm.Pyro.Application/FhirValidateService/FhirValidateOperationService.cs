@@ -1,113 +1,178 @@
 ﻿using System.Net;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.Exceptions;
-using Abm.Pyro.Domain.FhirOperation;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
+using Abm.Pyro.Domain.FhirValidate;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Validation;
-using Firely.Fhir.Packages;
-using Firely.Fhir.Validation;
 using Hl7.Fhir.Model;
-using Hl7.Fhir.Rest;
-using Hl7.Fhir.Specification;
-using Hl7.Fhir.Specification.Source;
-using Hl7.Fhir.Specification.Terminology;
-using Hl7.Fhir.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
-using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.FhirValidateService;
 
 public class FhirValidateOperationService(
-    IAsyncResourceResolver asyncResourceResolver,
+    IFhirValidateEngine fhirValidateEngine,
     IRepositoryEventCollector repositoryEventCollector,
-    [FromKeyedServices(FhirOperationLevel.System)] IValidatorBase<FhirSystemLevelOperationRequest> requestValidator) : IFhirValidateOperationService
+    [FromKeyedServices(FhirOperationLevel.Type)] IValidatorBase<FhirTypeLevelOperationRequest> typeLevelRequestValidator,
+    [FromKeyedServices(FhirOperationLevel.Instance)] IValidatorBase<FhirInstanceLevelOperationRequest> instanceLevelRequestValidator) 
+    : IFhirValidateOperationService
 {
     public const string OperationName = "validate";
-    
-    public async Task<FhirResourceResponse> Handle(FhirSystemLevelOperationRequest request)
+
+    public FhirResourceResponse Handle(FhirInstanceLevelOperationRequest request)
     {
-        
-        ValidatorResult validatorResult = requestValidator.Validate(request);
+        ValidatorResult validatorResult = instanceLevelRequestValidator.Validate(request);
         if (!validatorResult.IsValid)
         {
             return InvalidValidatorResultResponse(validatorResult);
         }
         
-        if (request.Resource is not Parameters requestParameters)
+        Resource? resourceToValidate = null;
+        FhirValidateMode? mode = null;
+        Uri? profile = null;
+        
+        if (EndpointResourceTypeEqualsBodyResourceType(request.ResourceName, request.Resource.TypeName))
         {
-            throw new FhirFatalException(
-                httpStatusCode: HttpStatusCode.ServiceUnavailable, 
-                message: $"The FHIR ${OperationName} operation must be provided a resource type of: " +
-                         $"{ResourceType.Parameters.GetLiteral()}, encountered type of: {request.Resource.TypeName}. ");
+            FhirValidateRequest fhirValidateRequest = FhirValidateSupport.GetRequestFromQuery(request.QueryString);
+            resourceToValidate = request.Resource;
+            mode = fhirValidateRequest.Mode;
+            profile = GetProfileAsUri(fhirValidateRequest.Profile);
         }
 
-        ValidateRequestParameters validateRequestParameters = GetValidateRequestParameters(requestParameters);
-        
-        
-        var packageServerUrl = "https://packages.simplifier.net";
-        var fhirRelease = FhirRelease.R4;
-        
-        var packageResolver = FhirPackageSource.CreateCorePackageSource(ModelInfo.ModelInspector, fhirRelease, packageServerUrl);
-        
-        
-        
-        
-        // Finally, we combine both sources, so we will find profiles both from the core zip as well as from the directory.
-        // By mentioning the directory source first, anything in the user directory will override what is in the core zip.
-        MultiResolver multiResolver = new MultiResolver(packageResolver, asyncResourceResolver);
-        
-        var resourceResolver = new CachedResolver(multiResolver);
-        string ontoServer = "https://tx.dev.hl7.org.au/fhir";
-        ITerminologyService terminologyService = new ExternalTerminologyService(new FhirClient(ontoServer));
-        //LocalTerminologyService terminologyService = new LocalTerminologyService(resourceResolver);
-        try
+        if (request.Resource is Parameters parameters)
         {
-            var validator = new Validator(resourceResolver, terminologyService);
-            Resource testResource = validateRequestParameters.Resource!;
-            
-            string profile = validateRequestParameters.Profile!;
-            var result = validator.Validate(testResource, profile);
+            FhirValidateRequest fhirValidateRequest = FhirValidateSupport.GetRequestFromParameterResource(parameters);
+            resourceToValidate = fhirValidateRequest.Resource;
+            mode = fhirValidateRequest.Mode;
+            profile = GetProfileAsUri(fhirValidateRequest.Profile);
+        }
+        
+        if (mode.Equals(FhirValidateMode.Update))
+        {
+            //Nothing to do here?
+            //See: https://hl7.org/fhir/R4/valueset-resource-validation-mode.html
+            //The server checks the content, and then checks that it would accept it as an update against the nominated
+            //specific resource (e.g. that there are no changes to immutable fields the server does not allow to change
+            //and checking version integrity if appropriate).
+        }
+        
+        if (mode.Equals(FhirValidateMode.Delete))
+        {
+            //Nothing to do here?
+            //See: https://hl7.org/fhir/R4/valueset-resource-validation-mode.html
+            //The server ignores the content and checks that the nominated resource is allowed to be deleted
+            //(e.g. checking referential integrity rules).
+        }
+        
+        ArgumentNullException.ThrowIfNull(resourceToValidate);
+        
+        OperationOutcome operationOutcome = fhirValidateEngine.Validate(
+            resource: resourceToValidate, 
+            profileUriList: GetListOfProfiles(profile, resourceToValidate));
 
-            if (result.Success)
+        return SuccessfulResultResponse(operationOutcome: operationOutcome);
+        
+    }
+
+    public FhirResourceResponse Handle(FhirTypeLevelOperationRequest request)
+    {
+        ValidatorResult validatorResult = typeLevelRequestValidator.Validate(request);
+        if (!validatorResult.IsValid)
+        {
+            return InvalidValidatorResultResponse(validatorResult);
+        }
+
+        Resource? resourceToValidate = null;
+        FhirValidateMode? mode = null;
+        Uri? profile = null;
+        
+        if (EndpointResourceTypeEqualsBodyResourceType(request.ResourceName, request.Resource.TypeName))
+        {
+            FhirValidateRequest fhirValidateRequest = FhirValidateSupport.GetRequestFromQuery(request.QueryString);
+            resourceToValidate = request.Resource;
+            mode = fhirValidateRequest.Mode;
+            profile = GetProfileAsUri(fhirValidateRequest.Profile);
+        }
+
+        if (request.Resource is Parameters parameters)
+        {
+            FhirValidateRequest fhirValidateRequest = FhirValidateSupport.GetRequestFromParameterResource(parameters);
+            resourceToValidate = fhirValidateRequest.Resource;
+            mode = fhirValidateRequest.Mode;
+            profile = GetProfileAsUri(fhirValidateRequest.Profile);
+        }
+        
+        if (mode.Equals(FhirValidateMode.Create))
+        {
+            //Nothing to do here?
+            //The server checks the content, and then checks that the content would be acceptable as a Create
+            //(e.g. that the content would not violate any uniqueness constraints).
+        }
+        
+        ArgumentNullException.ThrowIfNull(resourceToValidate);
+        
+        OperationOutcome operationOutcome = fhirValidateEngine.Validate(
+            resource: resourceToValidate, 
+            profileUriList: GetListOfProfiles(profile, resourceToValidate));
+
+        return SuccessfulResultResponse(operationOutcome: operationOutcome);
+        
+    }
+
+    private List<Uri> GetListOfProfiles(
+        Uri? profile,
+        Resource resourceToValidate)
+    {
+        if (profile is not null)
+        {
+            return new List<Uri>() { profile }; 
+        }
+
+        return GetProfileListFromResource(resourceToValidate);
+    }
+
+    private List<Uri> GetProfileListFromResource(Resource resource)
+    {
+        if (resource.Meta?.Profile == null)
+        {
+            return [];
+        }
+        
+        var profileUriList = new List<Uri>();
+        foreach (var profile in resource.Meta.Profile)
+        {
+            if (Uri.TryCreate(profile, UriKind.Absolute, out Uri? profileUri)) 
             {
-                result.Id = "allok";
-                result.Issue = new List<OperationOutcome.IssueComponent>()
-                {
-                    new OperationOutcome.IssueComponent()
-                    {
-                        Severity = OperationOutcome.IssueSeverity.Information,
-                        Code = OperationOutcome.IssueType.Informational,
-                        Details = new CodeableConcept() { Text = "All OK" }
-                    }
-                };
+                profileUriList.Add(profileUri);
             }
-            return new FhirResourceResponse(
-                Resource: result,
-                HttpStatusCode: HttpStatusCode.OK,
-                Headers: new Dictionary<string, StringValues>(),
-                ResourceOutcomeInfo: null,
-                RepositoryEventCollector: repositoryEventCollector);
-
-            
         }
-        catch (SchemaResolutionFailedException e)
+
+        return profileUriList;
+    }
+    
+    
+    private static Uri? GetProfileAsUri(string? profile)
+    {
+        if (string.IsNullOrWhiteSpace(profile))
         {
-            Console.WriteLine(e);
-            throw;
+            return null;
+        }
+
+        if (Uri.TryCreate(profile, UriKind.Absolute, out Uri? profileUri)) 
+        {
+            return profileUri; 
         }
         
+        throw new InvalidCastException(nameof(profile));
         
-        //var profile = Canonical.ForCoreType("Organization").ToString();
-        
-        
-        //Terminology Server for Sparked 
-        //https://tx.dev.hl7.org.au/fhir
-        await Task.Delay(1000);
-        throw new NotImplementedException();
+    }
 
+    private static bool EndpointResourceTypeEqualsBodyResourceType(
+        string requestEndpointResourceName, 
+        string requestBodyResourceName)
+    {
+        return requestEndpointResourceName.Equals(requestBodyResourceName);
     }
 
     private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
@@ -119,41 +184,14 @@ public class FhirValidateOperationService(
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
     }
-
-    private record ValidateRequestParameters(
-        string? Mode,
-        string? Profile,
-        Resource? Resource);
-
-    private ValidateRequestParameters GetValidateRequestParameters(
-        Parameters parameters)
-    {
-        Parameters.ParameterComponent? modeParameter =
-            parameters.Parameter.FirstOrDefault(x => x.Name.Equals("mode", StringComparison.OrdinalIgnoreCase));
-        string? mode = null;
-        if (modeParameter?.Value is Code code)
-        {
-            mode = code.Value.Trim();
-        }
-
-        Parameters.ParameterComponent? profileParameter =
-            parameters.Parameter.FirstOrDefault(x => x.Name.Equals("profile", StringComparison.OrdinalIgnoreCase));
-        string? profile = null;
-        if (profileParameter?.Value is FhirUri fhirUri)
-        {
-            profile = fhirUri.Value.Trim();
-        }
-
-        Parameters.ParameterComponent? resourceParameter =
-            parameters.Parameter.FirstOrDefault(x => x.Name.Equals("resource", StringComparison.OrdinalIgnoreCase));
-        Resource? resource = resourceParameter?.Resource;
-
-        return new ValidateRequestParameters(Mode: mode, Profile: profile, Resource: resource);
-    }
     
-    public string Handle(string test)
+    private FhirResourceResponse SuccessfulResultResponse(OperationOutcome operationOutcome)
     {
-        throw new NotImplementedException();
+        repositoryEventCollector.Clear();
+        return new FhirResourceResponse(
+            Resource: operationOutcome, 
+            HttpStatusCode: HttpStatusCode.OK,
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
     }
-
 }

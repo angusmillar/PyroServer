@@ -25,8 +25,6 @@ public class FhirOperationFactory(IServiceProvider serviceProvider) : IFhirOpera
     {
         switch (operationName)
         {
-            case FhirValidateOperationService.OperationName:
-                return serviceProvider.GetService<IFhirValidateOperationService>();
             default:
                 return null;
         }

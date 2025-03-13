@@ -6,11 +6,8 @@ using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Notification;
-using Hl7.Fhir.Model;
 using MediatR;
-using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Validation;
-using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.FhirHandler;
 
@@ -19,8 +16,11 @@ public class FhirSystemLevelOperationHandler(
     IFhirOperationFactory fhirOperationFactory,
     IRepositoryEventCollector repositoryEventCollector,
     IOperationOutcomeSupport operationOutcomeSupport)
-    : IRequestHandler<FhirSystemLevelOperationRequest, FhirResourceResponse>
+    : FhirOperationBaseHandler(repositoryEventCollector: repositoryEventCollector, operationOutcomeSupport: operationOutcomeSupport), 
+        IRequestHandler<FhirSystemLevelOperationRequest, FhirResourceResponse>
 {
+    private const FhirOperationLevel OperationSystemLevel = FhirOperationLevel.Instance;
+    
     public async Task<FhirResourceResponse> Handle(FhirSystemLevelOperationRequest request,
         CancellationToken cancellationToken)
     {
@@ -30,10 +30,10 @@ public class FhirSystemLevelOperationHandler(
             return InvalidValidatorResultResponse(requestValidatorResult);
         }
         
-        IFhirOperationService? fhirOperationService = fhirOperationFactory.Get(fhirOperationLevel: FhirOperationLevel.System, request.OperationName);
+        IFhirOperationService? fhirOperationService = fhirOperationFactory.Get(fhirOperationLevel: OperationSystemLevel, request.OperationName);
         if (fhirOperationService is null)
         {
-            return InvalidFhirOperationNameResultResponse(fhirOperationName: request.OperationName);
+            return InvalidFhirOperationNameResultResponse(fhirOperationLevel: OperationSystemLevel, fhirOperationName: request.OperationName);
         }
 
         if (fhirOperationService is not IFhirSystemOperationService fhirSystemOperationService)
@@ -43,27 +43,6 @@ public class FhirSystemLevelOperationHandler(
 
         return await fhirSystemOperationService.Handle(request: request);
         
-    }
-    
-    private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
-    {
-        repositoryEventCollector.Clear();
-        return new FhirResourceResponse(
-            Resource: validatorResult.GetOperationOutcome(), 
-            HttpStatusCode: validatorResult.GetHttpStatusCode(),
-            Headers: new Dictionary<string, StringValues>(),
-            RepositoryEventCollector: repositoryEventCollector);
-    }
-    
-    private FhirResourceResponse InvalidFhirOperationNameResultResponse(string fhirOperationName)
-    {
-        repositoryEventCollector.Clear();
-        return new FhirResourceResponse(
-            Resource: operationOutcomeSupport.GetError(messageList: 
-                [$"The systems level FHIR operation named: {fhirOperationName} is not supported by this server."]), 
-            HttpStatusCode: HttpStatusCode.BadRequest,
-            Headers: new Dictionary<string, StringValues>(),
-            RepositoryEventCollector: repositoryEventCollector);
     }
     
 }

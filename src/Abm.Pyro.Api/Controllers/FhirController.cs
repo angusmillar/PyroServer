@@ -63,6 +63,57 @@ public class FhirController(
         
   }
   
+  [HttpPost("{resourceName}/${operationName}")]
+  public async Task<ActionResult<Resource>> Base(string tenant, string resourceName, string operationName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  {
+    var fhirSystemLevelOperationRequest = new FhirTypeLevelOperationRequest(
+      RequestSchema: Request.Scheme,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
+      RequestPath: Request.Path,
+      QueryString: Request.QueryString.Value,
+      Headers: Request.Headers.GetDictionary(),
+      OperationName: operationName,
+      ResourceName: resourceName,
+      Resource: resource,
+      TimeStamp: dateTimeProvider.Now);
+
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
+    
+    Response.Headers.AppendRange(fhirResponse.Headers);
+    
+    resource.AddAnnotation(Hl7.Fhir.Rest.SummaryType.False); 
+    
+    return  StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);
+        
+  }
+  
+  [HttpPost("{resourceName}/{resourceId}/${operationName}")]
+  public async Task<ActionResult<Resource>> Base(string tenant, string resourceName, string resourceId, string operationName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  {
+    var fhirSystemLevelOperationRequest = new FhirInstanceLevelOperationRequest(
+      RequestSchema: Request.Scheme,
+      Tenant: tenant,
+      RequestId: resourceId,
+      RequestPath: Request.Path,
+      QueryString: Request.QueryString.Value,
+      Headers: Request.Headers.GetDictionary(),
+      OperationName: operationName,
+      ResourceName: resourceName,
+      Resource: resource,
+      TimeStamp: dateTimeProvider.Now);
+
+    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
+    
+    Response.Headers.AppendRange(fhirResponse.Headers);
+    
+    resource.AddAnnotation(Hl7.Fhir.Rest.SummaryType.False); 
+    
+    return  StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);
+        
+  }
+  
+  
   [HttpPost("{resourceName}")]
   public async Task<ActionResult<Resource>> Post(string tenant, string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
   {

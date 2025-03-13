@@ -124,6 +124,11 @@ try
         .ValidateDataAnnotations()
         .ValidateOnStart();
     
+    builder.Services.AddOptions<FhirValidationSettings>()
+        .Bind(builder.Configuration.GetSection(FhirValidationSettings.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
     builder.Services.AddOptions<TenantSettings>()
         .Bind(builder.Configuration.GetSection(TenantSettings.SectionName))
         .ValidateDataAnnotations()
@@ -232,6 +237,7 @@ try
     //builder.Services.AddSingleton<CachedResolver>();
     
     
+    builder.Services.AddScoped<IFhirValidateEngine, FhirValidateEngine>();
     builder.Services.AddScoped<IAsyncResourceResolver, LocalResourceResolver>();
     
     
@@ -250,8 +256,10 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirConditionalDeleteRequest>, ConditionalDeleteRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirConditionalUpdateRequest>, ConditionalUpdateRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirInstanceLevelHistoryRequest>, InstanceLevelHistoryRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirInstanceLevelOperationRequest>, InstanceLevelOperationRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirSystemLevelHistoryRequest>, SystemLevelHistoryRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirSystemLevelOperationRequest>, SystemLevelOperationRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirTypeLevelOperationRequest>, TypeLevelOperationRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirTypeLevelHistoryRequest>, TypeLevelHistoryRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirVersionReadRequest>, VersionReadRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<SearchQueryServiceOutcomeAndHeaders>, SearchQueryValidator>();
@@ -259,7 +267,8 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
     
     
-    builder.Services.AddKeyedScoped<IValidatorBase<FhirSystemLevelOperationRequest>, FhirValidateOperationRequestValidator>(FhirOperationLevel.System);
+    builder.Services.AddKeyedScoped<IValidatorBase<FhirTypeLevelOperationRequest>, FhirTypeLevelValidateOperationRequestValidator>(FhirOperationLevel.Type);
+    builder.Services.AddKeyedScoped<IValidatorBase<FhirInstanceLevelOperationRequest>, FhirInstanceLevelValidateOperationRequestValidator>(FhirOperationLevel.Instance);
     
     
     // Caching ---------------------------
