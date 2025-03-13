@@ -33,8 +33,10 @@ public class FhirValidateEngine : IFhirValidateEngine
         MultiResolver multiResolver = new MultiResolver(packageResolver, asyncResourceResolver);
 
         var resourceResolver = new CachedResolver(multiResolver);
-        Uri? ontoServer = fhirValidationSettingsOptions.Value.TerminologyServiceUrl;
-        ITerminologyService terminologyService = new ExternalTerminologyService(new FhirClient(ontoServer));
+        
+        Uri? terminologyServiceUrl = fhirValidationSettingsOptions.Value.TerminologyServiceUrl;
+        ITerminologyService terminologyService = new ExternalTerminologyService(new FhirClient(terminologyServiceUrl));
+        
         _validator = new Validator(resourceResolver, terminologyService);
     }
 

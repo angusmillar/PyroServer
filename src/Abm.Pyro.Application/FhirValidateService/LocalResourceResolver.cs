@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.FhirResponse;
@@ -15,7 +16,8 @@ public class LocalResourceResolver(
     IFhirSearchHandler fhirSearchHandler,
     IFhirUriFactory fhirUriFactory) : IAsyncResourceResolver
 {
-    public async Task<Resource> ResolveByUriAsync(string uri)
+    public async Task<Resource> ResolveByUriAsync(
+        string uri)
     {
         FhirResourceResponse searchResponse = await fhirSearchHandler.Handle(
             tenant: tenantService.GetScopedTenantCode(),
@@ -24,32 +26,31 @@ public class LocalResourceResolver(
             query: $"url={uri}",
             headers: new Dictionary<string, StringValues>(),
             cancellationToken: CancellationToken.None);
-        
+
         return searchResponse.Resource;
     }
 
-    public async Task<Resource> ResolveByCanonicalUriAsync(string uri)
+    public async Task<Resource> ResolveByCanonicalUriAsync(
+        string uri)
     {
-        var result = await fhirUriFactory.TryParse2(requestUri: uri);
+        var fhirUriFactoryResult = await fhirUriFactory.TryParse2(requestUri: uri);
 
-        if (!result.Success)
+        if (!fhirUriFactoryResult.Success)
         {
-            throw new ArgumentException("Why would this fail");
+            return new Bundle();
         }
-        
-        ArgumentNullException.ThrowIfNull(result.fhirUri);
 
-        if (string.IsNullOrWhiteSpace(result.fhirUri.ResourceName))
+        ArgumentNullException.ThrowIfNull(fhirUriFactoryResult.fhirUri);
+        if (string.IsNullOrWhiteSpace(fhirUriFactoryResult.fhirUri.ResourceName))
         {
             return new Bundle();
         }
         
-        
         FhirResourceResponse searchResponse = await fhirSearchHandler.Handle(
             tenant: tenantService.GetScopedTenantCode(),
             requestId: GuidSupport.NewFhirGuid(),
-            resourceName: result.fhirUri.ResourceName,
-            query: $"url={result.fhirUri.OriginalString}",
+            resourceName: fhirUriFactoryResult.fhirUri.ResourceName,
+            query: GetQuery(fhirUriFactoryResult.fhirUri.OriginalString, fhirUriFactoryResult.fhirUri.CanonicalVersionId),
             headers: new Dictionary<string, StringValues>(),
             cancellationToken: CancellationToken.None);
 
@@ -58,7 +59,24 @@ public class LocalResourceResolver(
         {
             return bundle.Entry[0].Resource;
         }
-        
+
         return searchResponse.Resource;
+    }
+
+    private static string GetQuery(string urlOriginalString, string canonicalVersionId)
+    {
+        var queryBuilder = new StringBuilder("url=");
+        if (string.IsNullOrWhiteSpace(canonicalVersionId))
+        {
+            queryBuilder.Append(urlOriginalString);
+            return queryBuilder.ToString();
+        }
+
+        string urlWithoutCanonicalVersionId = urlOriginalString.TrimEnd($"|{canonicalVersionId}".ToCharArray());
+        queryBuilder.Append(urlWithoutCanonicalVersionId);
+        queryBuilder.Append('&');
+        queryBuilder.Append($"version={canonicalVersionId}");
+
+        return queryBuilder.ToString();
     }
 }

@@ -20,6 +20,17 @@ public static class FhirValidateSupport
             Resource: GetResource(parameter.Parameter));
     }
     
+    
+    public static bool IsValidAbsoluteUri(string uri)
+    {
+        if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? _)) 
+        {
+            return true; 
+        }
+
+        return false;
+    }
+    
     public static FhirValidateRequest GetRequestFromQuery(string? queryString)
     {
         var parseHttpQuery = queryString.ParseHttpQuery();

@@ -22,7 +22,7 @@ public class FhirTypeLevelValidateOperationRequestValidator(IOperationOutcomeSup
             FhirValidateRequest fhirValidateRequestFromQuery = FhirValidateSupport.GetRequestFromQuery(request.QueryString);
             if (!string.IsNullOrWhiteSpace(fhirValidateRequestFromQuery.Profile))
             {
-                if (!Uri.IsWellFormedUriString(fhirValidateRequestFromQuery.Profile, UriKind.Absolute))
+                if (!FhirValidateSupport.IsValidAbsoluteUri(fhirValidateRequestFromQuery.Profile))
                 {
                     FailureMessageList.Add(
                         $"The FHIR ${FhirValidateOperationService.OperationName} operation performed at the {FhirOperationLevel} level was " +
@@ -69,4 +69,5 @@ public class FhirTypeLevelValidateOperationRequestValidator(IOperationOutcomeSup
         
         return GetValidatorResult();
     }
+    
 }
