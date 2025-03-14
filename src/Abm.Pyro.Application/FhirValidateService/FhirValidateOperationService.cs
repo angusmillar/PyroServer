@@ -129,27 +129,10 @@ public class FhirValidateOperationService(
             return new List<Uri>() { profile }; 
         }
 
-        return GetProfileListFromResource(resourceToValidate);
+        return FhirValidateSupport.GetProfileListFromResource(resourceToValidate);
     }
 
-    private List<Uri> GetProfileListFromResource(Resource resource)
-    {
-        if (resource.Meta?.Profile == null)
-        {
-            return [];
-        }
-        
-        var profileUriList = new List<Uri>();
-        foreach (var profile in resource.Meta.Profile)
-        {
-            if (Uri.TryCreate(profile, UriKind.Absolute, out Uri? profileUri)) 
-            {
-                profileUriList.Add(profileUri);
-            }
-        }
-
-        return profileUriList;
-    }
+    
     
     
     private static Uri? GetProfileAsUri(string? profile)

@@ -1,11 +1,13 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Application.Indexing;
 using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Cache;
+using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
@@ -17,6 +19,7 @@ using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Validation;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SummaryType = Hl7.Fhir.Rest.SummaryType;
 using Task = System.Threading.Tasks.Task;
 
@@ -34,7 +37,9 @@ public class FhirCreateHandler(
     IServiceBaseUrlCache serviceBaseUrlCache,
     IRepositoryEventCollector repositoryEventCollector,
     IActiveSubscriptionCache activeSubscriptionCache,
-    IFhirSubscriptionService fhirSubscriptionService)
+    IFhirSubscriptionService fhirSubscriptionService,
+    IOptions<FhirValidationSettings> fhirValidationSettingsOptions,
+    IFhirValidateEngine fhirValidateEngine)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
 
@@ -70,6 +75,16 @@ public class FhirCreateHandler(
         }
 
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.Resource.TypeName);
+        
+        //FHIR profile validation if enabled
+        if (fhirValidationSettingsOptions.Value.ValidateOnCreate)
+        {
+            OperationOutcome operationOutcome = fhirValidateEngine.Validate(request.Resource);
+            if (!operationOutcome.Success)
+            {
+                return InvalidFhirProfileValidationResultResponse(operationOutcome);
+            }
+        }
 
         //Manage the acceptance or rejection of requests to create new active Subscriptions
         if (request.Resource is Subscription subscription)
@@ -80,7 +95,7 @@ public class FhirCreateHandler(
                 return InvalidSubscriptionRegistrationResponse(_acceptSubscriptionOutcome);
             }
         }
-        
+
         SetResourceMeta(request.Resource, request.TimeStamp);
 
         IndexerOutcome indexerOutcome = await indexer.Process(request.Resource, fhirResourceType);
@@ -103,7 +118,7 @@ public class FhirCreateHandler(
             indexUriList: indexerOutcome.UriIndexList,
             rowVersion: 0
         );
-  
+        
         resourceStore = await resourceStoreAdd.Add(resourceStore);
 
         AddRepositoryCreateEvent(
@@ -156,6 +171,16 @@ public class FhirCreateHandler(
             resourceId: resourceId);
     }
 
+    private FhirOptionalResourceResponse InvalidFhirProfileValidationResultResponse(OperationOutcome operationOutcome)
+    {
+        repositoryEventCollector.Clear();
+        return new FhirOptionalResourceResponse(
+            Resource: operationOutcome, 
+            HttpStatusCode: HttpStatusCode.BadRequest,
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+    
     private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
     {
         repositoryEventCollector.Clear();

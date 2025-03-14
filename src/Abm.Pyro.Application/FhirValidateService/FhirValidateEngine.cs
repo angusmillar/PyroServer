@@ -40,6 +40,12 @@ public class FhirValidateEngine : IFhirValidateEngine
         _validator = new Validator(resourceResolver, terminologyService);
     }
 
+    public OperationOutcome Validate(Resource resourceToValidate)
+    {
+        List<Uri> profileUrlList = FhirValidateSupport.GetProfileListFromResource(resourceToValidate);
+        return Validate(resource: resourceToValidate, profileUriList: profileUrlList);
+    }
+
     public OperationOutcome Validate(
         Resource resource,
         List<Uri> profileUriList)

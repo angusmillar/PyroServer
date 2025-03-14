@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Domain.Cache;
 using Hl7.Fhir.Model;
@@ -45,7 +46,9 @@ public class FhirUpdateHandler(
     IRepositoryEventCollector repositoryEventCollector,
     IActiveSubscriptionCache activeSubscriptionCache,
     IFhirSubscriptionService fhirSubscriptionService,
-    IFhirDeSerializationSupport fhirDeSerializationSupport)
+    IFhirDeSerializationSupport fhirDeSerializationSupport,
+    IOptions<FhirValidationSettings> fhirValidationSettingsOptions,
+    IFhirValidateEngine fhirValidateEngine)
     : IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse>, IFhirUpdateHandler
 {
     private ResourceStoreUpdateProjection? _previousResourceStore;
@@ -124,6 +127,16 @@ public class FhirUpdateHandler(
                    throw new NullReferenceException(nameof(ifMatchPreconditionFailureFhirResourceResponse));
         }
 
+        //FHIR profile validation if enabled
+        if (fhirValidationSettingsOptions.Value.ValidateOnUpdate)
+        {
+            OperationOutcome operationOutcome = fhirValidateEngine.Validate(request.Resource);
+            if (!operationOutcome.Success)
+            {
+                return InvalidFhirProfileValidationResultResponse(operationOutcome);
+            }
+        }
+        
         if (request.Resource is Subscription subscription)
         {
             FhirOptionalResourceResponse? invalidSubscriptionUpdateResponse  = await ValidateSubscriptionUpdate(request, subscription);
@@ -336,6 +349,17 @@ public class FhirUpdateHandler(
         return true;
     }
 
+    private FhirOptionalResourceResponse InvalidFhirProfileValidationResultResponse(
+        OperationOutcome operationOutcome)
+    {
+        repositoryEventCollector.Clear();
+        return new FhirOptionalResourceResponse(
+            Resource: operationOutcome,
+            HttpStatusCode: HttpStatusCode.BadRequest,
+            Headers: new Dictionary<string, StringValues>(),
+            RepositoryEventCollector: repositoryEventCollector);
+    }
+    
     private FhirOptionalResourceResponse InvalidSubscriptionRegistrationResponse(
         AcceptSubscriptionOutcome acceptSubscriptionOutcome)
     {
