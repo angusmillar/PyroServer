@@ -1,4 +1,4 @@
-﻿using Abm.Pyro.Domain.Configuration;
+﻿using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.FhirSupport;
 using Firely.Fhir.Packages;
 using Hl7.Fhir.Model;
@@ -6,23 +6,23 @@ using Hl7.Fhir.Rest;
 using Hl7.Fhir.Specification;
 using Hl7.Fhir.Specification.Source;
 using Hl7.Fhir.Specification.Terminology;
-using Microsoft.Extensions.Options;
 using Firely.Fhir.Validation;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Application.FhirValidateService;
 
-public class FhirValidateEngine : IFhirValidateEngine
+public class FhirValidateEngine(
+    IAsyncResourceResolver asyncResourceResolver,
+    IServiceSettingsCache serviceSettingsCache,
+    IOperationOutcomeSupport operationOutcomeSupport)
+    : IFhirValidateEngine
 {
-    private readonly Validator _validator;
-    private readonly IOperationOutcomeSupport OperationOutcomeSupport;
+    private Validator? _validator;
 
-    public FhirValidateEngine(
-        IAsyncResourceResolver asyncResourceResolver,
-        IOptions<FhirValidationSettings> fhirValidationSettingsOptions,
-        IOperationOutcomeSupport operationOutcomeSupport)
+    private async Task InitialiseValidator()
     {
-        OperationOutcomeSupport = operationOutcomeSupport;
-        Uri? packageServerUrl = fhirValidationSettingsOptions.Value.ProfilePackageServiceUrl;
+        var fhirValidationSettings = await serviceSettingsCache.GetFhirValidationSettings();
+        Uri? packageServerUrl = fhirValidationSettings.ProfilePackageServiceUrl;
         var fhirRelease = FhirRelease.R4;
 
         var packageResolver = FhirPackageSource.CreateCorePackageSource(ModelInfo.ModelInspector, fhirRelease,
@@ -34,22 +34,34 @@ public class FhirValidateEngine : IFhirValidateEngine
 
         var resourceResolver = new CachedResolver(multiResolver);
         
-        Uri? terminologyServiceUrl = fhirValidationSettingsOptions.Value.TerminologyServiceUrl;
+        Uri? terminologyServiceUrl = fhirValidationSettings.TerminologyServiceUrl;
         ITerminologyService terminologyService = new ExternalTerminologyService(new FhirClient(terminologyServiceUrl));
         
         _validator = new Validator(resourceResolver, terminologyService);
     }
-
-    public OperationOutcome Validate(Resource resourceToValidate)
+    
+    public async Task<OperationOutcome> Validate(Resource resourceToValidate)
     {
+        if (_validator is null)
+        {
+            await InitialiseValidator();
+        }
+        
         List<Uri> profileUrlList = FhirValidateSupport.GetProfileListFromResource(resourceToValidate);
-        return Validate(resource: resourceToValidate, profileUriList: profileUrlList);
+        return await Validate(resource: resourceToValidate, profileUriList: profileUrlList);
     }
 
-    public OperationOutcome Validate(
+    public async Task<OperationOutcome> Validate(
         Resource resource,
         List<Uri> profileUriList)
     {
+        if (_validator is null)
+        {
+            await InitialiseValidator();
+        }
+        
+        ArgumentNullException.ThrowIfNull(_validator);
+        
         try
         {
             var validationResultOperationOutcomeList = new List<OperationOutcome>();
@@ -63,12 +75,12 @@ public class FhirValidateEngine : IFhirValidateEngine
                 return GetSuccessOperationOutcome();
             }
 
-            return OperationOutcomeSupport.MergeOperationOutcomeList(validationResultOperationOutcomeList);
+            return operationOutcomeSupport.MergeOperationOutcomeList(validationResultOperationOutcomeList);
             
         }
         catch (SchemaResolutionFailedException sfe)
         {
-            return OperationOutcomeSupport.GetError([$"Failed to load the profile: {sfe.SchemaUri}"]);
+            return operationOutcomeSupport.GetError([$"Failed to load the profile: {sfe.SchemaUri}"]);
         }
     }
 

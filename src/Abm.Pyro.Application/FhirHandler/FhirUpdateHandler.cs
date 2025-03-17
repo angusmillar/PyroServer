@@ -47,7 +47,7 @@ public class FhirUpdateHandler(
     IActiveSubscriptionCache activeSubscriptionCache,
     IFhirSubscriptionService fhirSubscriptionService,
     IFhirDeSerializationSupport fhirDeSerializationSupport,
-    IOptions<FhirValidationSettings> fhirValidationSettingsOptions,
+    IServiceSettingsCache serviceSettingsCache,
     IFhirValidateEngine fhirValidateEngine)
     : IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse>, IFhirUpdateHandler
 {
@@ -128,9 +128,9 @@ public class FhirUpdateHandler(
         }
 
         //FHIR profile validation if enabled
-        if (fhirValidationSettingsOptions.Value.ValidateOnUpdate)
+        if ((await serviceSettingsCache.GetFhirValidationSettings()).ValidateOnCreate)
         {
-            OperationOutcome operationOutcome = fhirValidateEngine.Validate(request.Resource);
+            OperationOutcome operationOutcome = await fhirValidateEngine.Validate(request.Resource);
             if (!operationOutcome.Success)
             {
                 return InvalidFhirProfileValidationResultResponse(operationOutcome);

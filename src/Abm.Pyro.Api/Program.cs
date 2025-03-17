@@ -123,11 +123,6 @@ try
         .Bind(builder.Configuration.GetSection(ResourceEndpointPoliciesSettings.SectionName))
         .ValidateDataAnnotations()
         .ValidateOnStart();
-    
-    builder.Services.AddOptions<FhirValidationSettings>()
-        .Bind(builder.Configuration.GetSection(FhirValidationSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
 
     builder.Services.AddOptions<TenantSettings>()
         .Bind(builder.Configuration.GetSection(TenantSettings.SectionName))
@@ -167,6 +162,7 @@ try
     // Services  --------------------------------------------------------------------------------------
     builder.Services.AddScoped<IPrimaryServiceBaseUrlService, PrimaryServiceBaseUrlService>();
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
+    builder.Services.AddSingleton<IFhirParameterSupport, FhirParameterSupport>();
     
     builder.Services.AddSingleton<IFhirJsonSerializersOptions, FhirJsonSerializersOptions>();
     builder.Services.AddSingleton<IFhirSerializationSupport, FhirSerializationSupport>();
@@ -282,6 +278,7 @@ try
     builder.Services.AddScoped<IActiveSubscriptionCache, ActiveSubscriptionHybridCache>();
     builder.Services.AddScoped<IMetaDataCache, MetaDataHybridCache>();
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlHybridCache>();
+    builder.Services.AddScoped<IServiceSettingsCache, ServiceSettingsCache>();
     
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
@@ -324,6 +321,12 @@ try
 
     // Database Queries --------------------------------------------------------------------------------------
 
+    // ServiceConfiguration ---------------
+    builder.Services.AddScoped<IServiceConfigurationAdd, ServiceConfigurationAdd>();
+    builder.Services.AddScoped<IServiceConfigurationGetCurrentByType, ServiceConfigurationGetCurrentByType>();
+    builder.Services.AddScoped<IServiceConfigurationGetHistory, ServiceConfigurationGetHistory>();
+    builder.Services.AddScoped<IServiceConfigurationUpdate, ServiceConfigurationUpdate>();
+    
     // ResourceStore ----------------------
     builder.Services.AddScoped<IResourceStoreAdd, ResourceStoreAdd>();
     builder.Services.AddScoped<IResourceStoreHistoryAdd, ResourceStoreHistoryAdd>();
@@ -446,8 +449,7 @@ try
         config.OutputFormatters.Clear();
         //config.OutputFormatters.Add(new XmlFhirOutputFormatter());
         config.OutputFormatters.Add(new JsonFhirOutputFormatter());
-
-
+        
         // And include our custom content negotiator filter to handle the _format parameter
         // (from the FHIR spec:  http://hl7.org/fhir/http.html#mime-type )
         // https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/filters

@@ -12,6 +12,7 @@ public class PyroDbContext : DbContext
     public DbSet<IndexReference> IndexReference => Set<IndexReference>();
     public DbSet<SearchParameterStore> SearchParameterStore => Set<SearchParameterStore>();
     public DbSet<ServiceBaseUrl> ServiceBaseUrl => Set<ServiceBaseUrl>();
+    public DbSet<ServiceSetting> ServiceSetting => Set<ServiceSetting>();
     
     public PyroDbContext(
         DbContextOptions<PyroDbContext> options)
@@ -28,6 +29,9 @@ public class PyroDbContext : DbContext
         modelBuilder.ApplyConfiguration(new SearchParameterStoreJsonCompressionConversion());
 
         //Entity Configurations ----------------------------------------------------------------------------------------
+        
+        modelBuilder.ApplyConfiguration(new ServiceSettingEntityConfig());
+        modelBuilder.ApplyConfiguration(new ServiceSettingTypeEntityConfig());
         
         modelBuilder.ApplyConfiguration(new ResourceStoreEntityConfig());
         

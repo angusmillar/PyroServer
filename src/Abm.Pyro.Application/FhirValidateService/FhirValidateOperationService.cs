@@ -20,7 +20,7 @@ public class FhirValidateOperationService(
 {
     public const string OperationName = "validate";
 
-    public FhirResourceResponse Handle(FhirInstanceLevelOperationRequest request)
+    public async Task<FhirResourceResponse> Handle(FhirInstanceLevelOperationRequest request)
     {
         ValidatorResult validatorResult = instanceLevelRequestValidator.Validate(request);
         if (!validatorResult.IsValid)
@@ -67,7 +67,7 @@ public class FhirValidateOperationService(
         
         ArgumentNullException.ThrowIfNull(resourceToValidate);
         
-        OperationOutcome operationOutcome = fhirValidateEngine.Validate(
+        OperationOutcome operationOutcome = await fhirValidateEngine.Validate(
             resource: resourceToValidate, 
             profileUriList: GetListOfProfiles(profile, resourceToValidate));
 
@@ -75,7 +75,7 @@ public class FhirValidateOperationService(
         
     }
 
-    public FhirResourceResponse Handle(FhirTypeLevelOperationRequest request)
+    public async Task<FhirResourceResponse> Handle(FhirTypeLevelOperationRequest request)
     {
         ValidatorResult validatorResult = typeLevelRequestValidator.Validate(request);
         if (!validatorResult.IsValid)
@@ -112,7 +112,7 @@ public class FhirValidateOperationService(
         
         ArgumentNullException.ThrowIfNull(resourceToValidate);
         
-        OperationOutcome operationOutcome = fhirValidateEngine.Validate(
+        OperationOutcome operationOutcome = await fhirValidateEngine.Validate(
             resource: resourceToValidate, 
             profileUriList: GetListOfProfiles(profile, resourceToValidate));
 

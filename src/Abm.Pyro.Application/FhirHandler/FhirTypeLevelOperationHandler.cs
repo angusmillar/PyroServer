@@ -50,7 +50,7 @@ public class FhirTypeLevelOperationHandler(
         
         await Task.Delay(0, cancellationToken);
         
-        return fhirTypeOperationService.Handle(request: request);
+        return await fhirTypeOperationService.Handle(request: request);
       
     }
 }

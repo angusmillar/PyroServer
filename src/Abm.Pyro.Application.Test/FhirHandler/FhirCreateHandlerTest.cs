@@ -9,8 +9,10 @@ using Moq;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Domain.Cache;
+using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
@@ -22,6 +24,7 @@ using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Validation;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Xunit;
 using Task = System.Threading.Tasks.Task;
 
@@ -30,6 +33,7 @@ namespace Abm.Pyro.Application.Test.FhirHandler;
 public class FhirCreateHandlerTest
 {
     private readonly Mock<ILogger<FhirCreateHandler>> _loggerMock;
+    
     private readonly Mock<IValidator> _validatorMock;
     private readonly Mock<IResourceStoreAdd> _resourceStoreAddMock;
     private readonly Mock<IFhirSerializationSupport> _fhirSerializationSupportMock;
@@ -41,15 +45,13 @@ public class FhirCreateHandlerTest
     private readonly Mock<IRepositoryEventCollector> _repositoryEventCollectorMock;
     private readonly Mock<IActiveSubscriptionCache> _activeSubscriptionCacheMock;
     private readonly Mock<IFhirSubscriptionService> _fhirSubscriptionService;
+    private readonly Mock<IServiceSettingsCache> _serviceSettingsCacheMock;
+    private readonly Mock<IFhirValidateEngine> _fhirValidateEngineMock;
     
-    
-
     //Setup
     protected FhirCreateHandlerTest()
     {
         var now = DateTime.Now;
-        
-        _loggerMock = Mock.Of<Mock<ILogger<FhirCreateHandler>>>();
         
         Observation observationResourceFromDbAdd = GetObservationResource();
         
@@ -151,6 +153,21 @@ public class FhirCreateHandlerTest
             .Setup(x =>
                 x.CanSubscriptionBeAccepted(It.IsAny<Subscription>()))
             .ReturnsAsync(new AcceptSubscriptionOutcome(Success: true, OperationOutcome: null));
+        
+        _loggerMock = Mock.Of<Mock<ILogger<FhirCreateHandler>>>();
+
+        Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings fhirValidationSettings = new Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings(
+            versionId: "1",
+            profilePackageServiceUrl: null,
+            terminologyServiceUrl: null,
+            validateOnCreate: false,
+            validateOnUpdate: false,
+            lastUpdated: DateTime.Now);
+            
+        _serviceSettingsCacheMock = new Mock<IServiceSettingsCache>();
+        _serviceSettingsCacheMock.Setup(x => x.GetFhirValidationSettings()).ReturnsAsync(fhirValidationSettings);
+
+        _fhirValidateEngineMock = new Mock<IFhirValidateEngine>();
     }
 
 
@@ -189,7 +206,9 @@ public class FhirCreateHandlerTest
                 _serviceBaseUrlCacheMock.Object,
                 _repositoryEventCollectorMock.Object,
                 _activeSubscriptionCacheMock.Object,
-                _fhirSubscriptionService.Object
+                _fhirSubscriptionService.Object,
+                _serviceSettingsCacheMock.Object,
+                _fhirValidateEngineMock.Object
             );
 
             var cancellationTokenSource = new CancellationTokenSource();

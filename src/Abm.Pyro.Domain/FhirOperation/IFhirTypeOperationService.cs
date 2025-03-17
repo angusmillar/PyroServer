@@ -5,5 +5,5 @@ namespace Abm.Pyro.Domain.FhirOperation;
 
 public interface IFhirTypeOperationService : IFhirOperationService
 {
-    FhirResourceResponse Handle(FhirTypeLevelOperationRequest request);
+    Task<FhirResourceResponse> Handle(FhirTypeLevelOperationRequest request);
 }

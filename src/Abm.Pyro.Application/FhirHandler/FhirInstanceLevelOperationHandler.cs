@@ -50,6 +50,6 @@ public class FhirInstanceLevelOperationHandler(
 
         await Task.Delay(0, cancellationToken);
         
-        return fhirInstanceOperationService.Handle(request: request);
+        return await fhirInstanceOperationService.Handle(request: request);
     }
 }

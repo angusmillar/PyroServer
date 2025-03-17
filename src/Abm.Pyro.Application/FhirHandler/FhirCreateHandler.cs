@@ -38,7 +38,7 @@ public class FhirCreateHandler(
     IRepositoryEventCollector repositoryEventCollector,
     IActiveSubscriptionCache activeSubscriptionCache,
     IFhirSubscriptionService fhirSubscriptionService,
-    IOptions<FhirValidationSettings> fhirValidationSettingsOptions,
+    IServiceSettingsCache serviceSettingsCache,
     IFhirValidateEngine fhirValidateEngine)
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
@@ -77,9 +77,9 @@ public class FhirCreateHandler(
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(request.Resource.TypeName);
         
         //FHIR profile validation if enabled
-        if (fhirValidationSettingsOptions.Value.ValidateOnCreate)
+        if ((await serviceSettingsCache.GetFhirValidationSettings()).ValidateOnCreate)
         {
-            OperationOutcome operationOutcome = fhirValidateEngine.Validate(request.Resource);
+            OperationOutcome operationOutcome = await fhirValidateEngine.Validate(request.Resource);
             if (!operationOutcome.Success)
             {
                 return InvalidFhirProfileValidationResultResponse(operationOutcome);

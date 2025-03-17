@@ -12,6 +12,7 @@ using Moq;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.FhirSubscriptions;
+using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.Test.Factories;
@@ -60,7 +61,8 @@ public class FhirUpdateHandlerTest
     private readonly Mock<IActiveSubscriptionCache> _activeSubscriptionCacheMock;
     private readonly Mock<IFhirSubscriptionService> _fhirSubscriptionService;
     private readonly Mock<IFhirDeSerializationSupport> _fhirDeSerializationSupportMock;
-    
+    private readonly Mock<IServiceSettingsCache> _serviceSettingsCacheMock;
+    private readonly Mock<IFhirValidateEngine> _fhirValidateEngineMock;
    
     //Setup
     protected FhirUpdateHandlerTest()
@@ -308,7 +310,19 @@ public class FhirUpdateHandlerTest
                 Id = "subscription1",
                 Status = Subscription.SubscriptionStatus.Active  
             });
+            
+        Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings fhirValidationSettings = new Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings(
+            versionId: "1",
+            profilePackageServiceUrl: null,
+            terminologyServiceUrl: null,
+            validateOnCreate: false,
+            validateOnUpdate: false,
+            lastUpdated: DateTime.Now);
+            
+        _serviceSettingsCacheMock = new Mock<IServiceSettingsCache>();
+        _serviceSettingsCacheMock.Setup(x => x.GetFhirValidationSettings()).ReturnsAsync(fhirValidationSettings);
 
+        _fhirValidateEngineMock = new Mock<IFhirValidateEngine>();
 
     }
     
@@ -355,7 +369,9 @@ public class FhirUpdateHandlerTest
                 _repositoryEventCollectorMock.Object, 
                 _activeSubscriptionCacheMock.Object, 
                 _fhirSubscriptionService.Object,
-                _fhirDeSerializationSupportMock.Object);
+                _fhirDeSerializationSupportMock.Object,
+                _serviceSettingsCacheMock.Object,
+                _fhirValidateEngineMock.Object);
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -440,7 +456,9 @@ public class FhirUpdateHandlerTest
                 _repositoryEventCollectorMock.Object, 
                 _activeSubscriptionCacheMock.Object, 
                 _fhirSubscriptionService.Object,
-                _fhirDeSerializationSupportMock.Object); 
+                _fhirDeSerializationSupportMock.Object,
+                _serviceSettingsCacheMock.Object,
+                _fhirValidateEngineMock.Object); 
             
             var cancellationTokenSource = new CancellationTokenSource();
 
@@ -511,7 +529,9 @@ public class FhirUpdateHandlerTest
                 _repositoryEventCollectorMock.Object, 
                 _activeSubscriptionCacheMock.Object, 
                 _fhirSubscriptionService.Object,
-                _fhirDeSerializationSupportMock.Object);
+                _fhirDeSerializationSupportMock.Object,
+                _serviceSettingsCacheMock.Object,
+                _fhirValidateEngineMock.Object);
             
             //Arrange
             var cancellationTokenSource = new CancellationTokenSource();
