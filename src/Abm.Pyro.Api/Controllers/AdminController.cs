@@ -1,7 +1,6 @@
-﻿using Abm.Pyro.Domain.FhirSupport;
+﻿using Abm.Pyro.Application.ServiceSettingHandler;
 using Abm.Pyro.Domain.ServiceSettingRequest;
 using Abm.Pyro.Domain.ServiceSettings;
-using Abm.Pyro.Domain.Support;
 using Microsoft.AspNetCore.Mvc;
 using Hl7.Fhir.Model;
 using MediatR;
@@ -12,8 +11,7 @@ namespace Abm.Pyro.Api.Controllers;
 [Route("admin/{tenant}")]
 [ApiController]
 public class AdminController(
-    IFhirParameterSupport fhirParameterSupport,
-    IDateTimeProvider dateTimeProvider,
+    IFhirValidationSettingsParser fhirValidationSettingsParser,
     IMediator mediator) : ControllerBase
 {
     // [HttpGet("SearchParameter/{resourceId}/{history}/{historyId}")]
@@ -55,81 +53,28 @@ public class AdminController(
     {
         FhirValidationSettingsGetResponse fhirValidationSettingsGetResponse =  await mediator.Send(new FhirValidationSettingsGetRequest());
         
-        return GetParametersResource(fhirValidationSettingsGetResponse.FhirValidationSettings);
+        return fhirValidationSettingsParser.GetParametersResource(fhirValidationSettingsGetResponse.FhirValidationSettings);
         
     }
-
-
+    
     // PUT: admin/{tenant}/settings/FhirValidation
-
     [HttpPut("settings/FhirValidation")]
-    public async Task<ActionResult<Parameters>> UpdateFhirValidationServiceSetting(Parameters parameters)
+    public async Task<ActionResult<Resource>> UpdateFhirValidationServiceSetting(Parameters parameters)
     {
-        Uri? profilePackageServiceUrl = fhirParameterSupport.GetParameterFhirUrlValue("ProfilePackageServiceUrl", parameters.Parameter);
-        Uri? terminologyServiceUrl = fhirParameterSupport.GetParameterFhirUrlValue("TerminologyServiceUrl", parameters.Parameter);
-        bool? validateOnCreate = fhirParameterSupport.GetParameterFhirBoolValue("ValidateOnCreate", parameters.Parameter);
-        bool? validateOnUpdate = fhirParameterSupport.GetParameterFhirBoolValue("ValidateOnUpdate", parameters.Parameter);
+        ServiceSettingsParserOutcome<FhirValidationSettings> fhirValidationSettingsOutcome = fhirValidationSettingsParser.GetSettings(parameters);
 
-        var fhirValidationSettingsUpdateRequest = new FhirValidationSettingsUpdateRequest(
-            FhirValidationSettings: new FhirValidationSettings(
-                versionId: parameters.Meta.VersionId,
-                profilePackageServiceUrl: profilePackageServiceUrl,
-                terminologyServiceUrl: terminologyServiceUrl,
-                validateOnCreate: validateOnCreate ?? false, //defaults to false if null
-                validateOnUpdate: validateOnUpdate ?? false, //defaults to false if null
-                lastUpdated: dateTimeProvider.Now.DateTime));
-        
-        //return BadRequest();
-        FhirValidationSettingsUpdateResponse fhirValidationSettingsUpdateResponse =  await mediator.Send(fhirValidationSettingsUpdateRequest);
-
-        return GetParametersResource(fhirValidationSettingsUpdateResponse.FhirValidationSettings);
-
-    }
-
-    private static Parameters GetParametersResource(FhirValidationSettings fhirValidationSettings)
-    {
-
-        var parameterList = new List<Parameters.ParameterComponent>();
-
-        if (!string.IsNullOrWhiteSpace(fhirValidationSettings.ProfilePackageServiceUrl?.OriginalString))
+        if (!fhirValidationSettingsOutcome.Success)
         {
-            parameterList.Add(new Parameters.ParameterComponent()
-            {
-                Name = "ProfilePackageServiceUrl",
-                Value = new FhirUrl(value: fhirValidationSettings.ProfilePackageServiceUrl.OriginalString),
-            });
+            ArgumentNullException.ThrowIfNull(fhirValidationSettingsOutcome.OperationOutcome);
+            return BadRequest(fhirValidationSettingsOutcome.OperationOutcome);
         }
         
-        if (!string.IsNullOrWhiteSpace(fhirValidationSettings.TerminologyServiceUrl?.OriginalString))
-        {
-            parameterList.Add(new Parameters.ParameterComponent()
-            {
-                Name = "TerminologyServiceUrl",
-                Value = new FhirUrl(value: fhirValidationSettings.TerminologyServiceUrl.OriginalString),
-            });
-        }
+        ArgumentNullException.ThrowIfNull(fhirValidationSettingsOutcome.ServiceSettings);
         
-        parameterList.Add(new Parameters.ParameterComponent()
-        {
-            Name = "ValidateOnUpdate",
-            Value = new FhirBoolean(value: fhirValidationSettings.ValidateOnUpdate),
-        });
-        
-        parameterList.Add(new Parameters.ParameterComponent()
-        {
-            Name = "ValidateOnCreate",
-            Value = new FhirBoolean(value: fhirValidationSettings.ValidateOnCreate),
-        });
-        
-        return new Parameters()
-        {
-            Meta = new Meta()
-            {
-                LastUpdated = fhirValidationSettings.LastUpdated,
-                VersionId = fhirValidationSettings.VersionId
-            },
-            Parameter = parameterList
-        };
-        
+        FhirValidationSettingsUpdateResponse fhirValidationSettingsUpdateResponse =  await mediator.Send(
+            new FhirValidationSettingsUpdateRequest(FhirValidationSettings: fhirValidationSettingsOutcome.ServiceSettings));
+
+        return fhirValidationSettingsParser.GetParametersResource(fhirValidationSettingsUpdateResponse.FhirValidationSettings);
+
     }
 }

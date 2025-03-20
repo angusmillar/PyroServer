@@ -4,12 +4,8 @@ namespace Abm.Pyro.Domain.FhirSupport;
 
 public class FhirParameterSupport : IFhirParameterSupport
 {
-    public bool? GetParameterFhirBoolValue(
-        string parameterName,
-        List<Parameters.ParameterComponent> parameterComponentList)
+    public bool? GetParameterFhirBoolValue(Parameters.ParameterComponent parameterComponent)
     {
-        Parameters.ParameterComponent? parameterComponent = GetFirstParameterComponentByName(parameterName, parameterComponentList);
-
         if (parameterComponent?.Value is FhirBoolean fhirBoolean)
         {
             return fhirBoolean.Value;
@@ -17,13 +13,8 @@ public class FhirParameterSupport : IFhirParameterSupport
 
         return null;
     }
-
-    public Uri? GetParameterFhirUrlValue(
-        string parameterName,
-        List<Parameters.ParameterComponent> parameterComponentList)
+    public Uri? GetParameterFhirUrlValue(Parameters.ParameterComponent parameterComponent)
     {
-        Parameters.ParameterComponent? parameterComponent = GetFirstParameterComponentByName(parameterName, parameterComponentList);
-
         if (parameterComponent?.Value is FhirUrl fhirUrl)
         {
             if (Uri.TryCreate(fhirUrl.Value, UriKind.Absolute, out Uri? uri))
@@ -35,10 +26,10 @@ public class FhirParameterSupport : IFhirParameterSupport
         return null;
     }
 
-    private static Parameters.ParameterComponent? GetFirstParameterComponentByName(
+    public Parameters.ParameterComponent? GetFirstParameterComponentByName(
         string parameterName,
-        List<Parameters.ParameterComponent> parameterComponentList)
+        List<Parameters.ParameterComponent> parameterComponent)
     {
-        return parameterComponentList.FirstOrDefault(x => x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
+        return parameterComponent.FirstOrDefault(x => x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
     }
 }

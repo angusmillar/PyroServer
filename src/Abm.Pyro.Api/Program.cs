@@ -207,6 +207,9 @@ try
     builder.Services.AddScoped<IFhirPathResolve, FhirPathResolve>();
     builder.Services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
+    // Service Settings
+    builder.Services.AddScoped<IFhirValidationSettingsParser, FhirValidationSettingsParser>();
+
     // RepositoryEvent Services-----------------------
     builder.Services.AddScoped<IRepositoryEventCollector, RepositoryEventCollector>();
     builder.Services.AddSingleton<IRepositoryEventChannel, RepositoryEventChannel>();
@@ -228,16 +231,8 @@ try
     
     // Fhir Validate Operation --------------------------------------
     builder.Services.AddScoped<IFhirValidateOperationService, FhirValidateOperationService>();
-    //builder.Services.AddScoped<IFhirTypeOperationService, FhirValidateOperationService>();
-    //builder.Services.AddScoped<IFhirInstanceOperationService, FhirValidateOperationService>();
-    //builder.Services.AddSingleton<CachedResolver>();
-    
-    
     builder.Services.AddScoped<IFhirValidateEngine, FhirValidateEngine>();
     builder.Services.AddScoped<IAsyncResourceResolver, LocalResourceResolver>();
-    
-    
-    
     
     // Validators ---------------------------------------------------
     builder.Services.AddScoped<IValidator, Validator>();
@@ -261,11 +256,8 @@ try
     builder.Services.AddScoped<IValidatorBase<SearchQueryServiceOutcomeAndHeaders>, SearchQueryValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
-    
-    
     builder.Services.AddKeyedScoped<IValidatorBase<FhirTypeLevelOperationRequest>, FhirTypeLevelValidateOperationRequestValidator>(FhirOperationLevel.Type);
     builder.Services.AddKeyedScoped<IValidatorBase<FhirInstanceLevelOperationRequest>, FhirInstanceLevelValidateOperationRequestValidator>(FhirOperationLevel.Instance);
-    
     
     // Caching ---------------------------
     RedisCacheSettings? redisCacheSettings = builder.Configuration
@@ -279,6 +271,7 @@ try
     builder.Services.AddScoped<IMetaDataCache, MetaDataHybridCache>();
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlHybridCache>();
     builder.Services.AddScoped<IServiceSettingsCache, ServiceSettingsCache>();
+    
     
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();

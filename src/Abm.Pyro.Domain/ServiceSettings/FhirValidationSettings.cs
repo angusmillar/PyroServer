@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
+using Abm.Pyro.Domain.FhirSupport;
 using Hl7.Fhir.Model;
 
 namespace Abm.Pyro.Domain.ServiceSettings;
@@ -12,8 +13,8 @@ public class FhirValidationSettings : ServiceSettingsBase
 {
     public FhirValidationSettings(
         string versionId,
-        Uri? profilePackageServiceUrl,
-        Uri? terminologyServiceUrl,
+        Uri profilePackageServiceUrl,
+        Uri terminologyServiceUrl,
         bool validateOnCreate,
         bool validateOnUpdate,
         DateTime lastUpdated) 
@@ -27,12 +28,11 @@ public class FhirValidationSettings : ServiceSettingsBase
         LastUpdated = lastUpdated;
     }
     
-    public Uri? ProfilePackageServiceUrl { get; set; } 
-    public Uri? TerminologyServiceUrl { get; set; } 
+    public Uri ProfilePackageServiceUrl { get; set; } 
+    public Uri TerminologyServiceUrl { get; set; } 
     public bool ValidateOnCreate { get; set; } 
     public bool ValidateOnUpdate { get; set; }
-
-
+    
     public static List<ServiceSetting> SeedDefaultSettings()
     {
         var dateTime = new DateTime(2025, 03, 01, 0, 0, 0, DateTimeKind.Utc);

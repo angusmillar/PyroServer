@@ -313,8 +313,8 @@ public class FhirUpdateHandlerTest
             
         Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings fhirValidationSettings = new Abm.Pyro.Domain.ServiceSettings.FhirValidationSettings(
             versionId: "1",
-            profilePackageServiceUrl: null,
-            terminologyServiceUrl: null,
+            profilePackageServiceUrl: new Uri("https://some-profile-package-service-url.com"),
+            terminologyServiceUrl: new Uri("https://some-terminology-service-service-url.com"),
             validateOnCreate: false,
             validateOnUpdate: false,
             lastUpdated: DateTime.Now);

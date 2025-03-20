@@ -4,12 +4,12 @@ namespace Abm.Pyro.Domain.FhirSupport;
 
 public interface IFhirParameterSupport
 {
-    public bool? GetParameterFhirBoolValue(
-        string parameterName,
-        List<Parameters.ParameterComponent> parameterComponentList);
+    public bool? GetParameterFhirBoolValue(Parameters.ParameterComponent parameterComponent);
     
-    public Uri? GetParameterFhirUrlValue(
+    public Uri? GetParameterFhirUrlValue(Parameters.ParameterComponent parameterComponent);
+    
+    public Parameters.ParameterComponent? GetFirstParameterComponentByName(
         string parameterName,
-        List<Parameters.ParameterComponent> parameterComponentList);
+        List<Parameters.ParameterComponent> parameterComponent);
     
 }
