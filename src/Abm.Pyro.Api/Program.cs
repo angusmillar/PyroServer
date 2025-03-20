@@ -44,6 +44,7 @@ using Abm.Pyro.Application.MetaDataService;
 using Abm.Pyro.Application.Notification;
 using Abm.Pyro.Application.OnStartupService;
 using Abm.Pyro.Application.ServiceBaseUrlService;
+using Abm.Pyro.Application.ServiceSettingHandler;
 using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.FhirOperation;
 using Abm.Pyro.Domain.FhirRequest;
@@ -157,8 +158,7 @@ try
     
     builder.Services.AddHttpClient(FhirHttpClientFactory.HttpClientName)
         .AddPolicyHandler(retryPolicy);
-
-
+    
     // Services  --------------------------------------------------------------------------------------
     builder.Services.AddScoped<IPrimaryServiceBaseUrlService, PrimaryServiceBaseUrlService>();
     builder.Services.AddSingleton<IOperationOutcomeSupport, OperationOutcomeSupport>();
@@ -386,12 +386,23 @@ try
     );
     
     // CORS
-    builder.Services.AddCors(options =>
-    {
-        options.AddDefaultPolicy(
-            policy => { policy.AllowAnyOrigin(); });
-    });
+    // builder.Services.AddCors(options =>
+    // {
+    //     options.AddDefaultPolicy(
+    //         policy => { policy.AllowAnyOrigin(); });
+    // });
 
+    builder.Services.AddCors(o => o.AddDefaultPolicy(builder =>
+    {
+        //ToDo: Get Origins from appsettings
+        //builder.WithOrigins(settings.AllowedOrigins);
+        builder.AllowAnyOrigin();
+        builder.AllowAnyHeader();
+        builder.AllowAnyMethod();
+        builder.AllowCredentials();
+        builder.WithExposedHeaders("Content-Location", "Location", "ETag");
+    }));
+    
     // Request Decompression
     builder.Services.AddRequestDecompression();
 
