@@ -380,7 +380,6 @@ public class FhirUpdateHandler(
 
         repositoryEventCollector.Add(
             resourceType: resourceType,
-            requestId: requestId,
             repositoryEventType: RepositoryEventType.Update,
             resourceId: resourceId);
     }

@@ -152,7 +152,6 @@ public class FhirUpdateHandlerTest
         var repositoryEventCollector = new RepositoryEventCollector(TenantServiceFactory.GetTest(), dateTimeProviderMock.Object);
         repositoryEventCollector.Add(new RepositoryEvent(
             ResourceType: FhirResourceTypeId.Observation,
-            RequestId: "requestId",
             RepositoryEventType: RepositoryEventType.Create,
             ResourceId: observationResource.Id,
             Tenant: TenantServiceFactory.GetTest().GetScopedTenant(),

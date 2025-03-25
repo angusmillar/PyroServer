@@ -9,7 +9,6 @@ using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
-using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
@@ -49,9 +48,7 @@ public class FhirInstanceLevelHistoryHandler(
         }
 
         ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistoryByResourceId.Get(fhirResourceType, request.ResourceId, searchQueryServiceOutcome);
-
-        AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
-
+        
         Bundle bundle = await fhirBundleCreationSupport.CreateBundle(resourceStoreSearchOutcome, Bundle.BundleType.History, request.RequestSchema);
 
         await paginationSupport.SetBundlePagination(bundle: bundle,
@@ -67,24 +64,6 @@ public class FhirInstanceLevelHistoryHandler(
             Headers: new Dictionary<string, StringValues>(), 
             ResourceOutcomeInfo: null,
             RepositoryEventCollector: repositoryEventCollector);
-    }
-
-    private void AddRepositoryEvents(ResourceStoreSearchOutcome resourceStoreSearchOutcome, string requestId)
-    {
-        AddRepositoryEvent(resourceStoreSearchOutcome.ResourceStoreList, requestId);
-        AddRepositoryEvent(resourceStoreSearchOutcome.IncludedResourceStoreList, requestId);
-    }
-
-    private void AddRepositoryEvent(List<ResourceStore> resourceStoreList, string requestId)
-    {
-        foreach (var resourceStore in resourceStoreList)
-        {
-            repositoryEventCollector.Add(
-                resourceType: resourceStore.ResourceType,
-                requestId: requestId,
-                repositoryEventType: RepositoryEventType.Read, 
-                resourceId: resourceStore.ResourceId);
-        }
     }
     
     private FhirResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)

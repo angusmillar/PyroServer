@@ -4,6 +4,6 @@ namespace Abm.Pyro.Application.Notification;
 
 public interface IRepositoryEventChannel
 {
-    Task AddAsync(ICollection<RepositoryEvent> repositoryEventList);
+    Task AddAsync(RepositoryEventSet repositoryEventSet);
     Task ProcessAsync(CancellationToken cancellationToken);
 }

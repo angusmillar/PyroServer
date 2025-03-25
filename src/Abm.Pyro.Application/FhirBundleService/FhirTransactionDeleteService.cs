@@ -169,8 +169,7 @@ public class FhirTransactionDeleteService(
                     tenant: tenant,
                     requestId: requestId,
                     resourceName: transactionResourceActionOutcome.RequestUrl.ResourceName,
-                    resourceId: transactionResourceActionOutcome.ResourceUpdateInfo
-                        .NewResourceId, //Note that in this 'Conditional Delete' use case we set the found resource id in to the NewResourceId  
+                    resourceId: transactionResourceActionOutcome.ResourceUpdateInfo.NewResourceId, //Note that in this 'Conditional Delete' use case we set the found resource id in to the NewResourceId
                     cancellationToken: cancellationToken,
                     previousResourceStore: transactionResourceActionOutcome.ResourceUpdateInfo.ResourceStoreUpdateProjection);
             }

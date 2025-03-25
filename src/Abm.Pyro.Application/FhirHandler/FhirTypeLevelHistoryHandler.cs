@@ -49,8 +49,6 @@ public class FhirTypeLevelHistoryHandler(
         }
 
         ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreGetHistoryByResourceType.Get(fhirResourceType, searchQueryServiceOutcome);
-
-        AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
         
         Bundle bundle = await fhirBundleCreationSupport.CreateBundle(resourceStoreSearchOutcome, Bundle.BundleType.History, request.RequestSchema);
 
@@ -78,22 +76,5 @@ public class FhirTypeLevelHistoryHandler(
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
     }
-    
-    private void AddRepositoryEvents(ResourceStoreSearchOutcome resourceStoreSearchOutcome, string requestId)
-    {
-        AddRepositoryEvent(resourceStoreSearchOutcome.ResourceStoreList, requestId);
-        AddRepositoryEvent(resourceStoreSearchOutcome.IncludedResourceStoreList, requestId);
-    }
 
-    private void AddRepositoryEvent(List<ResourceStore> resourceStoreList, string requestId)
-    {
-        foreach (var resourceStore in resourceStoreList)
-        {
-            repositoryEventCollector.Add(
-                resourceType: resourceStore.ResourceType,
-                requestId: requestId,
-                repositoryEventType: RepositoryEventType.Read, 
-                resourceId: resourceStore.ResourceId);
-        }
-    }
 }

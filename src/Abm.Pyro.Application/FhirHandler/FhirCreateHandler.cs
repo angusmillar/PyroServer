@@ -7,7 +7,6 @@ using Hl7.Fhir.Model;
 using MediatR;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Cache;
-using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
@@ -19,7 +18,6 @@ using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.Validation;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using SummaryType = Hl7.Fhir.Rest.SummaryType;
 using Task = System.Threading.Tasks.Task;
 
@@ -43,8 +41,15 @@ public class FhirCreateHandler(
     : IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, IFhirCreateHandler
 {
 
-    private AcceptSubscriptionOutcome? _acceptSubscriptionOutcome = null;
-    public Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceId, Resource resource, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+    private AcceptSubscriptionOutcome? _acceptSubscriptionOutcome;
+    
+    public Task<FhirOptionalResourceResponse> Handle(
+        string tenant, 
+        string requestId, 
+        string resourceId, 
+        Resource resource, 
+        Dictionary<string, StringValues> headers, 
+        CancellationToken cancellationToken)
     {
         return Handle(new FhirCreateRequest(
             RequestSchema: "http",
@@ -123,8 +128,7 @@ public class FhirCreateHandler(
 
         AddRepositoryCreateEvent(
             resourceType:resourceStore.ResourceType, 
-            resourceId: resourceStore.ResourceId, 
-            requestId: request.RequestId);
+            resourceId: resourceStore.ResourceId);
 
 
         //Refreshes the Subscription Cache if this was a successful Subscription registration 
@@ -162,11 +166,10 @@ public class FhirCreateHandler(
         }
     }
 
-    private void AddRepositoryCreateEvent(FhirResourceTypeId resourceType,  string resourceId, string requestId)
+    private void AddRepositoryCreateEvent(FhirResourceTypeId resourceType,  string resourceId)
     {
         repositoryEventCollector.Add(
             resourceType: resourceType,
-            requestId: requestId,
             repositoryEventType: RepositoryEventType.Create,
             resourceId: resourceId);
     }

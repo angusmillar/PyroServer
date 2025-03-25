@@ -31,11 +31,16 @@ public class FhirDeleteHandler(
 {
     private ResourceStoreUpdateProjection? _previousResourceStore;
 
-    public async Task<FhirOptionalResourceResponse> Handle(string tenant, string requestId, string resourceName, string resourceId,
-        CancellationToken cancellationToken, ResourceStoreUpdateProjection? previousResourceStore = null)
+    public async Task<FhirOptionalResourceResponse> Handle(
+        string tenant, 
+        string requestId, 
+        string resourceName, 
+        string resourceId,
+        CancellationToken cancellationToken, 
+        ResourceStoreUpdateProjection? previousResourceStore = null)
     {
         _previousResourceStore = previousResourceStore;
-
+        
         return await Handle(new FhirDeleteRequest(
             RequestSchema: "http",
             Tenant: tenant,
@@ -145,7 +150,6 @@ public class FhirDeleteHandler(
     {
         repositoryEventCollector.Add(
             resourceType: resourceType,
-            requestId: requestId,
             repositoryEventType: RepositoryEventType.Delete, 
             resourceId: resourceId);
     }

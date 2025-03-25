@@ -59,7 +59,6 @@ public class FhirReadHandler(
     
     if (resourceStore is null)
     {
-      repositoryEventCollector.Clear();
       return new FhirOptionalResourceResponse(
         Resource: null, 
         HttpStatusCode: HttpStatusCode.NotFound, 
@@ -84,15 +83,12 @@ public class FhirReadHandler(
     
     if (resourceStore.IsDeleted)
     {
-      repositoryEventCollector.Clear();
       return new FhirOptionalResourceResponse(
         Resource: null, 
         HttpStatusCode: HttpStatusCode.Gone, 
         Headers: headers,
         RepositoryEventCollector: repositoryEventCollector);
     }
-
-    AddRepositoryEvent(resourceStore.ResourceType, resourceStore.ResourceId, request.RequestId);
     
     Resource? resource = fhirDeSerializationSupport.ToResource(resourceStore.Json);
     return new FhirOptionalResourceResponse(
@@ -107,7 +103,6 @@ public class FhirReadHandler(
 
   private FhirOptionalResourceResponse InvalidValidatorResultResponse(ValidatorResult validatorResult)
   {
-    repositoryEventCollector.Clear();
     return new FhirOptionalResourceResponse(
       Resource: validatorResult.GetOperationOutcome(), 
       HttpStatusCode: validatorResult.GetHttpStatusCode(),
@@ -137,20 +132,11 @@ public class FhirReadHandler(
 
   private FhirOptionalResourceResponse NotModifiedResponse()
   {
-    repositoryEventCollector.Clear();
     return new FhirOptionalResourceResponse(
       Resource: null, 
       HttpStatusCode: HttpStatusCode.NotModified, 
       Headers: new Dictionary<string, StringValues>(),
       RepositoryEventCollector: repositoryEventCollector);
   }
-
-  private void AddRepositoryEvent(FhirResourceTypeId resourceType, string resourceId, string requestId)
-  {
-    repositoryEventCollector.Add(
-      resourceType: resourceType,
-      requestId: requestId,
-      repositoryEventType: RepositoryEventType.Read, 
-      resourceId: resourceId);
-  }
+  
 }

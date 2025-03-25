@@ -40,26 +40,24 @@ public class FhirNotificationService(
 {
     private ICollection<ActiveSubscription>? _activeSubscriptionList;
     private ICollection<ActiveSubscription>? _endDatedSubscriptionList;
+    private string? _requestId;
 
     public async Task ProcessEventList(
-        ICollection<RepositoryEvent> repositoryEventList,
+        RepositoryEventSet repositoryEventSet,
         CancellationToken cancellationToken)
     {
-        if (repositoryEventList.Count == 0)
+        if (repositoryEventSet.RepositoryEventList.Count == 0)
         {
             return;
         }
-
-        //The set of RepositoryEvents in the collection represents all events from a single inbound request on the
-        //FHIR API, they MUST all have the same RequestId
-        ThrowIfInvalidRequestIds(repositoryEventList);
-
-        var fhirNotifiableEventList = GetFhirNotifiableEventList(repositoryEventList);
+        
+        var fhirNotifiableEventList = GetFhirNotifiableEventList(repositoryEventSet.RepositoryEventList);
         if (fhirNotifiableEventList.Count == 0)
         {
             return;
         }
 
+        _requestId = repositoryEventSet.RequestId;
         _activeSubscriptionList = await activeSubscriptionCache.GetList();
 
         foreach (RepositoryEvent fhirNotifiableEvent in fhirNotifiableEventList)
@@ -130,7 +128,7 @@ public class FhirNotificationService(
             if (SendPayloadInNotification(activeSubscription.Payload))
             {
                 logger.LogDebug("Sending PUT notification for Subscription/{SubscriptionId} against " +
-                                "{ResourceType}/{resourceId} on {EventType} event",  
+                                "{ResourceType}/{ResourceId} on {EventType} event",  
                     activeSubscription.ResourceId, 
                     repositoryEvent.ResourceType.GetCode(), 
                     repositoryEvent.ResourceId,
@@ -142,7 +140,7 @@ public class FhirNotificationService(
             }
 
             logger.LogDebug("Sending POST notification for Subscription/{SubscriptionId} against " +
-                            "{ResourceType}/{resourceId} on {EventType} event",  
+                            "{ResourceType}/{ResourceId} on {EventType} event",  
                 activeSubscription.ResourceId, 
                 repositoryEvent.ResourceType.GetCode(), 
                 repositoryEvent.ResourceId,
@@ -293,18 +291,9 @@ public class FhirNotificationService(
 
         return payload.Equals(FhirFormatType.Json.GetDescription(), StringComparison.OrdinalIgnoreCase);
     }
-
-    private static void ThrowIfInvalidRequestIds(
-        ICollection<RepositoryEvent> repositoryEventList)
-    {
-        if (!repositoryEventList.All(x => x.RequestId.Equals(repositoryEventList.First().RequestId)))
-        {
-            throw new ApplicationException("All Repository Events in the collection must have the same RequestId");
-        }
-    }
-
-    private static List<RepositoryEvent> GetFhirNotifiableEventList(
-        ICollection<RepositoryEvent> repositoryEventList)
+    
+    private static IReadOnlyCollection<RepositoryEvent> GetFhirNotifiableEventList(
+        IReadOnlyCollection<RepositoryEvent> repositoryEventList)
     {
         RepositoryEventType[] fhirNotifiableEvents = [RepositoryEventType.Create, RepositoryEventType.Update];
         return repositoryEventList.Where(x => fhirNotifiableEvents.Contains(x.RepositoryEventType)).ToList();
@@ -418,7 +407,7 @@ public class FhirNotificationService(
             "Subscription/{SubscriptionId}/_history/{SubscriptionVersionId} against Resource {ResourceName}/{ResourceId} " +
             "due to a {RepositoryEventType} Repository event",
             repositoryEvent.Tenant.Code,
-            repositoryEvent.RequestId,
+            _requestId,
             activeSubscription.ResourceId,
             activeSubscription.VersionId,
             repositoryEvent.ResourceType.GetCode(),

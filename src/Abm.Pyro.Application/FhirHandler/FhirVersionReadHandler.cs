@@ -59,8 +59,6 @@ public class FhirVersionReadHandler(
         {
             return GetFhirOptionalResourceResponse(httpStatusCode: HttpStatusCode.Gone);
         }
-
-        AddRepositoryEvent(resourceStore.ResourceType, resourceStore.ResourceId, request.RequestId);
         
         Resource? resource = fhirDeSerializationSupport.ToResource(resourceStore.Json);
         return new FhirOptionalResourceResponse(
@@ -113,13 +111,5 @@ public class FhirVersionReadHandler(
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
     }
-    
-    private void AddRepositoryEvent(FhirResourceTypeId resourceType, string resourceId, string requestId)
-    {
-        repositoryEventCollector.Add(
-            resourceType: resourceType,
-            requestId: requestId,
-            repositoryEventType: RepositoryEventType.Read, 
-            resourceId: resourceId);
-    }
+
 }

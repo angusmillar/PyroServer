@@ -15,27 +15,27 @@ public class RepositoryEventChannel(
     IHostEnvironment hostEnvironment,
     IServiceScopeFactory serviceScopeFactory) : IRepositoryEventChannel
 {
-    private readonly Channel<ICollection<RepositoryEvent>> _channel = Channel.CreateBounded<ICollection<RepositoryEvent>>(
+    private readonly Channel<RepositoryEventSet> _channel = Channel.CreateBounded<RepositoryEventSet>(
         new BoundedChannelOptions(capacity: 5000)
         {
             FullMode = BoundedChannelFullMode.Wait 
         });
 
-    public async Task AddAsync(ICollection<RepositoryEvent> repositoryEventList)
+    public async Task AddAsync(RepositoryEventSet repositoryEventList)
     {
         await _channel.Writer.WriteAsync(repositoryEventList);
     } 
 
     public async Task ProcessAsync(CancellationToken cancellationToken)
     {
-        await foreach (ICollection<RepositoryEvent> repositoryEventList in _channel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (RepositoryEventSet repositoryEventSet in _channel.Reader.ReadAllAsync(cancellationToken))
         {
-            if (repositoryEventList.Count == 0)
+            if (repositoryEventSet.RepositoryEventList.Count == 0)
             {
                 continue;
             }
 
-            ThrowIfInvalidTenants(repositoryEventList);
+            ThrowIfInvalidTenants(repositoryEventSet);
             
             //Helps with log messages order, but needs to go for production deployments
             if (hostEnvironment.IsDevelopment())
@@ -43,32 +43,37 @@ public class RepositoryEventChannel(
                 await Task.Delay(5, cancellationToken: cancellationToken);    
             }
             
-            foreach (var repositoryEvent in repositoryEventList)
+            foreach (var repositoryEvent in repositoryEventSet.RepositoryEventList)
             {
-                logger.LogDebug("Repository Event Raised for Tenant: {Tenant}, EventType: {EventType}, Resource: {ResourceType}/{ResourceId} ", repositoryEvent.Tenant.Code, repositoryEvent.RepositoryEventType.GetCode(), repositoryEvent.ResourceType.GetCode(), repositoryEvent.ResourceId);
+                logger.LogDebug("Repository Event Raised for Tenant: {Tenant}, EventType: {EventType}, " +
+                                "Resource: {ResourceType}/{ResourceId} ", 
+                    repositoryEvent.Tenant.Code, 
+                    repositoryEvent.RepositoryEventType.GetCode(), 
+                    repositoryEvent.ResourceType.GetCode(), 
+                    repositoryEvent.ResourceId);
             }
             
             using var scope = serviceScopeFactory.CreateScope();
             try
             {
                 ITenantService tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
-                tenantService.SetScopedTenant(repositoryEventList.First().Tenant);
+                tenantService.SetScopedTenant(repositoryEventSet.RepositoryEventList.First().Tenant);
                 
                 IFhirNotificationService fhirNotificationService = scope.ServiceProvider.GetRequiredService<IFhirNotificationService>();
-                await fhirNotificationService.ProcessEventList(repositoryEventList, cancellationToken);
+                await fhirNotificationService.ProcessEventList(repositoryEventSet, cancellationToken);
                 
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Uncaught exception in the {name} class", nameof(RepositoryEventChannel));
+                logger.LogError(exception, "Uncaught exception in the {ClassName} class", nameof(RepositoryEventChannel));
             }
         }
     }
-    private static void ThrowIfInvalidTenants(ICollection<RepositoryEvent> repositoryEventList)
+    private static void ThrowIfInvalidTenants(RepositoryEventSet repositoryEventSet)
     {
-        if (!repositoryEventList.All(x => x.Tenant.Equals(repositoryEventList.First().Tenant)))
+        if (!repositoryEventSet.RepositoryEventList.All(x => x.Tenant.Equals(repositoryEventSet.RepositoryEventList.First().Tenant)))
         {
-            throw new ApplicationException($"All Repository Events in a collection must have the same {nameof(Tenant)}");
+            throw new ApplicationException($"All Repository Events in a RepositoryEventSet must have the same {nameof(Tenant)}");
         }
     }
     

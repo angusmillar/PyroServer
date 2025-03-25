@@ -9,7 +9,6 @@ using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
-using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.SearchQuery;
@@ -29,7 +28,13 @@ public class FhirSearchHandler(
   IRepositoryEventCollector repositoryEventCollector)
   : IRequestHandler<FhirSearchRequest, FhirResourceResponse>, IFhirSearchHandler
 {
-  public async Task<FhirResourceResponse> Handle(string tenant, string requestId, string resourceName, string query, Dictionary<string, StringValues> headers, CancellationToken cancellationToken)
+  public async Task<FhirResourceResponse> Handle(
+    string tenant, 
+    string requestId, 
+    string resourceName, 
+    string query, 
+    Dictionary<string, StringValues> 
+      headers, CancellationToken cancellationToken)
   {
     return await Handle(new FhirSearchRequest(
       RequestSchema: "http",
@@ -63,8 +68,6 @@ public class FhirSearchHandler(
    
     ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreSearch.GetSearch(searchQueryServiceOutcome);
     
-    AddRepositoryEvents(resourceStoreSearchOutcome, request.RequestId);
-    
     Bundle bundle = await fhirBundleCreationSupport.CreateBundle(resourceStoreSearchOutcome, Bundle.BundleType.Searchset, request.RequestSchema);
     
     await paginationSupport.SetBundlePagination(bundle: bundle, 
@@ -94,21 +97,4 @@ public class FhirSearchHandler(
       RepositoryEventCollector: repositoryEventCollector);
   }
   
-  private void AddRepositoryEvents(ResourceStoreSearchOutcome resourceStoreSearchOutcome, string requestId)
-  {
-    AddRepositoryEvent(resourceStoreSearchOutcome.ResourceStoreList, requestId);
-    AddRepositoryEvent(resourceStoreSearchOutcome.IncludedResourceStoreList, requestId);
-  }
-
-  private void AddRepositoryEvent(List<ResourceStore> resourceStoreList, string requestId)
-  {
-    foreach (var resourceStore in resourceStoreList)
-    {
-      repositoryEventCollector.Add(
-        resourceType: resourceStore.ResourceType,
-        requestId: requestId,
-        repositoryEventType: RepositoryEventType.Read, 
-        resourceId: resourceStore.ResourceId);
-    }
-  }
 }

@@ -4,6 +4,6 @@ namespace Abm.Pyro.Application.FhirSubscriptions;
 
 public interface IFhirNotificationService
 {
-    Task ProcessEventList(ICollection<RepositoryEvent> repositoryEventList, CancellationToken cancellationToken);
+    Task ProcessEventList(RepositoryEventSet repositoryEventSet, CancellationToken cancellationToken);
     
 }

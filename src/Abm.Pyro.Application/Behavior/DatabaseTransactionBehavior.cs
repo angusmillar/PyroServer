@@ -1,5 +1,7 @@
 ﻿using Abm.Pyro.Application.Notification;
+using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
+using Abm.Pyro.Domain.Notification;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Abm.Pyro.Domain.Query;
@@ -13,25 +15,25 @@ public class DatabaseTransactionBehavior<TRequest, TResponse>(
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private TransactionResponse? _transactionResponse;
-
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        _transactionResponse = null;
+        
         await using IDatabaseTransaction databaseTransaction = databaseTransactionFactory.GetTransaction();
+        
         await databaseTransaction.BeginTransaction();
+        
         try
         {
             var response = await next();
-
-            TrySetTransactionResponse(response);
-            if (CanCommitTransaction())
+            
+            TransactionResponse? transactionResponse = TrySetTransactionResponse(response);
+            if (CanCommitTransaction(transactionResponse))
             {
                 await databaseTransaction.Commit();
-                await PublishRepositoryEvents();
+                await AttemptToPublishRepositoryEvents(request, transactionResponse);
                 return response;
             }
 
@@ -47,41 +49,59 @@ public class DatabaseTransactionBehavior<TRequest, TResponse>(
         }
     }
 
-    private async Task PublishRepositoryEvents()
+    private async Task AttemptToPublishRepositoryEvents(
+        TRequest request,
+        TransactionResponse? transactionResponse)
     {
-        if (_transactionResponse?.RepositoryEventCollector is null || _transactionResponse.RepositoryEventCollector.RepositoryEventList.Count == 0)
+        string? requestId = GetRequestId(request);
+        if (requestId is null)
         {
             return;
         }
 
-        await repositoryEventChannel.AddAsync(_transactionResponse.RepositoryEventCollector.RepositoryEventList.ToList());
-        //
-        // logger.LogInformation("RepositoryEventQueue Queue Count: {RepositoryEventCount}", _transactionResponse.RepositoryEventCollector.RepositoryEventList.Count);    
-        // foreach (var repositoryEvent in _transactionResponse.RepositoryEventCollector.RepositoryEventList)
-        // {
-        //     logger.LogInformation("RepositoryEventType: {RepositoryEventType}, ResourceStoreId: {ResourceStoreId}, EventTimestampUtc: {EventTimestampUtc}",
-        //         repositoryEvent.RepositoryEventType,
-        //         repositoryEvent.ResourceStoreId,
-        //         repositoryEvent.EventTimestampUtc.ToString(CultureInfo.InvariantCulture));    
-        // }
-        
+        await PublishRepositoryEvents(requestId, transactionResponse);
     }
 
-    private bool CanCommitTransaction()
+    private static string? GetRequestId(TRequest request)
     {
-        if (_transactionResponse is null)
+        if (request is FhirRequestBase fhirRequestBase && !string.IsNullOrWhiteSpace(fhirRequestBase.RequestId))
+        {
+            return fhirRequestBase.RequestId;
+        }
+
+        return null;
+    }
+
+    private async Task PublishRepositoryEvents(string requestId, TransactionResponse? transactionResponse)
+    {
+        if (transactionResponse is null)
+        {
+            return;
+        }
+        
+        await repositoryEventChannel.AddAsync(
+            new RepositoryEventSet(
+                RequestId: requestId, 
+                RepositoryEventList: transactionResponse.RepositoryEventCollector.RepositoryEventList));
+    }
+    
+    private bool CanCommitTransaction(TransactionResponse? transactionResponse)
+    {
+        if (transactionResponse is null)
         {
             return false;
         }
 
-        return _transactionResponse.CanCommitTransaction;
+        return transactionResponse.CanCommitTransaction;
     }
 
-    private void TrySetTransactionResponse(TResponse response)
+    private TransactionResponse? TrySetTransactionResponse(TResponse response)
     {
-        if (_transactionResponse is null && response is TransactionResponse transactionResponse)
+        if (response is TransactionResponse transactionResponse)
         {
-            _transactionResponse = transactionResponse;
+            return transactionResponse;
         }
+
+        return null;
     }
 }

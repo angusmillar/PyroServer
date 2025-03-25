@@ -19,7 +19,7 @@ public class RepositoryEventCollector(
         _repositoryEventList.Add(repositoryEvent);
     }
    
-    public void Add(FhirResourceTypeId resourceType, string requestId, RepositoryEventType repositoryEventType, string resourceId)
+    public void Add(FhirResourceTypeId resourceType, RepositoryEventType repositoryEventType, string resourceId)
     {
         if (_eventTimestampUtc is null)
         {
@@ -27,7 +27,6 @@ public class RepositoryEventCollector(
         }
         _repositoryEventList.Add(new RepositoryEvent(
             ResourceType: resourceType,
-            RequestId: requestId,
             RepositoryEventType: repositoryEventType, 
             ResourceId: resourceId, 
             Tenant: tenantService.GetScopedTenant(), 
