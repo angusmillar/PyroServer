@@ -27,7 +27,7 @@ public abstract class FhirOperationBaseHandler(
         repositoryEventCollector.Clear();
         return new FhirResourceResponse(
             Resource: operationOutcomeSupport.GetError(messageList: 
-                [$"The {fhirOperationLevel} level FHIR operation named: {fhirOperationName} is not supported by this server."]), 
+                [$"The {fhirOperationLevel} level FHIR operation named: ${fhirOperationName} is not supported by this server."]), 
             HttpStatusCode: HttpStatusCode.BadRequest,
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
