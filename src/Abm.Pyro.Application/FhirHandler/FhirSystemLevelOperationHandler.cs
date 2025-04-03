@@ -19,7 +19,7 @@ public class FhirSystemLevelOperationHandler(
     : FhirOperationBaseHandler(repositoryEventCollector: repositoryEventCollector, operationOutcomeSupport: operationOutcomeSupport), 
         IRequestHandler<FhirSystemLevelOperationRequest, FhirResourceResponse>
 {
-    private const FhirOperationLevel OperationSystemLevel = FhirOperationLevel.Instance;
+    private const FhirOperationLevel OperationSystemLevel = FhirOperationLevel.System;
     
     public async Task<FhirResourceResponse> Handle(FhirSystemLevelOperationRequest request,
         CancellationToken cancellationToken)
