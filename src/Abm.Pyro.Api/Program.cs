@@ -90,6 +90,11 @@ try
         .ValidateDataAnnotations()
         .ValidateOnStart();
     
+    builder.Services.AddOptions<CorsSettings>()
+        .Bind(builder.Configuration.GetSection(CorsSettings.SectionName))
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+    
     builder.Services.AddOptions<KnownProxiesSettings>()
         .Bind(builder.Configuration.GetSection(KnownProxiesSettings.SectionName))
         .ValidateDataAnnotations()
@@ -386,21 +391,18 @@ try
     );
     
     // CORS
-    // builder.Services.AddCors(options =>
-    // {
-    //     options.AddDefaultPolicy(
-    //         policy => { policy.AllowAnyOrigin(); });
-    // });
-
-    builder.Services.AddCors(o => o.AddDefaultPolicy(builder =>
+    CorsSettings? corsSettings = builder.Configuration
+        .GetRequiredSection(CorsSettings.SectionName)
+        .Get<CorsSettings>();
+    ArgumentNullException.ThrowIfNull(corsSettings);
+    
+    builder.Services.AddCors(o => o.AddDefaultPolicy(policyBuilder =>
     {
-        //ToDo: Get Origins from appsettings
-        //builder.WithOrigins(settings.AllowedOrigins);
-        builder.AllowAnyOrigin();
-        builder.AllowAnyHeader();
-        builder.AllowAnyMethod();
-        builder.AllowCredentials();
-        builder.WithExposedHeaders("Content-Location", "Location", "ETag");
+        policyBuilder.WithOrigins(corsSettings.AllowedOriginsList);
+        policyBuilder.AllowAnyHeader();
+        policyBuilder.AllowAnyMethod();
+        //builder.AllowCredentials();
+        policyBuilder.WithExposedHeaders("Content-Location", "Location", "ETag");
     }));
     
     // Request Decompression
