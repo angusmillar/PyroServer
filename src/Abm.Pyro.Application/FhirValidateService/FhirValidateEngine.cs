@@ -21,17 +21,31 @@ public class FhirValidateEngine(
 
     private async Task InitialiseValidator()
     {
+        
+        // FhirPackageSource packageResolver = new FhirPackageSource(
+        //     provider: ModelInfo.ModelInspector, 
+        //     new string[]
+        //     {
+        //         "C:\\Temp\\FHIR Packages\\hl7.fhir.r4.core#4.0.1",
+        //         "C:\\Temp\\FHIR Packages\\hl7.fhir.r4.expansions#4.0.1",
+        //         "C:\\Temp\\FHIR Packages\\hl7.fhir.uv.extensions.r4#1.0.0"
+        //     });
+        
         var fhirValidationSettings = await serviceSettingsCache.GetFhirValidationSettings();
         Uri? packageServerUrl = fhirValidationSettings.ProfilePackageServiceUrl;
         var fhirRelease = FhirRelease.R4;
-
-        var packageResolver = FhirPackageSource.CreateCorePackageSource(ModelInfo.ModelInspector, fhirRelease,
-            packageServerUrl!.OriginalString);
+        
+        //Downloads the Core FHIR profiles package from the internet 
+        IAsyncResourceResolver? packageResolver = FhirPackageSource.CreateCorePackageSource(
+            provider: ModelInfo.ModelInspector, 
+            version: fhirRelease,
+            packageServer: packageServerUrl!.OriginalString);
 
         // Finally, we combine both sources, so we will find profiles both from the core zip and from the directory.
         // By mentioning the directory source first, anything in the user directory will override what is in the core zip.
         MultiResolver multiResolver = new MultiResolver(packageResolver, asyncResourceResolver);
 
+        //This resourceResolver really should be a singleton??? 
         var resourceResolver = new CachedResolver(multiResolver);
         
         Uri? terminologyServiceUrl = fhirValidationSettings.TerminologyServiceUrl;

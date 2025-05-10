@@ -237,7 +237,7 @@ try
     // Fhir Validate Operation --------------------------------------
     builder.Services.AddScoped<IFhirValidateOperationService, FhirValidateOperationService>();
     builder.Services.AddScoped<IFhirValidateEngine, FhirValidateEngine>();
-    builder.Services.AddScoped<IAsyncResourceResolver, LocalResourceResolver>();
+    builder.Services.AddScoped<IAsyncResourceResolver, FhirValidationHybridCacheResourceResolver>();
     
     // Validators ---------------------------------------------------
     builder.Services.AddScoped<IValidator, Validator>();
@@ -276,7 +276,7 @@ try
     builder.Services.AddScoped<IMetaDataCache, MetaDataHybridCache>();
     builder.Services.AddScoped<IServiceBaseUrlCache, ServiceBaseUrlHybridCache>();
     builder.Services.AddScoped<IServiceSettingsCache, ServiceSettingsCache>();
-    
+    builder.Services.AddScoped<IFhirValidationHybridCacheResourceResolver, FhirValidationHybridCacheResourceResolver>();
     
     // FHIR Api Handlers ---------------------------
     builder.Services.AddScoped<IFhirDeleteHandler, FhirDeleteHandler>();
