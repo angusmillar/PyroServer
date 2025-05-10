@@ -30,7 +30,7 @@ public class FhirValidationHybridCacheResourceResolver(
     public Task<Resource> ResolveByUriAsync(
         string uri)
     {
-        throw new NotImplementedException("Has not been implemented as never been called while validating in development.");
+        throw new ApplicationException("Has not been implemented as never been called while validating in development.");
     }
 
     public async Task<Resource> ResolveByCanonicalUriAsync(string uri)
