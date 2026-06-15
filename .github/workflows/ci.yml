@@ -18,11 +18,11 @@ jobs:
 
       - name: Restore
         working-directory: src
-        run: dotnet restore Abm.Pyro.sln
+        run: dotnet restore Abm.Pyro.CI.slnf
 
       - name: Build
         working-directory: src
-        run: dotnet build Abm.Pyro.sln -c Release --no-restore
+        run: dotnet build Abm.Pyro.CI.slnf -c Release --no-restore
 
       - name: Test Domain
         working-directory: src
