@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        working-directory: src
+        run: dotnet restore Abm.Pyro.sln
+
+      - name: Build
+        working-directory: src
+        run: dotnet build Abm.Pyro.sln -c Release --no-restore
+
+      - name: Test Domain
+        working-directory: src
+        run: dotnet test Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj -c Release --no-build --verbosity normal
+
+      - name: Test Application
+        working-directory: src
+        run: dotnet test Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj -c Release --no-build --verbosity normal

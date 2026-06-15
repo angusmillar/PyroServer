@@ -1,0 +1,100 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name anguscontainerregistry
+
+      - name: Build and push image
+        run: |
+          TAG=${{ github.ref_name }}
+          ACR=anguscontainerregistry.azurecr.io
+          docker build \
+            -f src/Abm.Pyro.Api/Dockerfile \
+            -t $ACR/pyro-api:$TAG \
+            -t $ACR/pyro-api:latest \
+            src/
+          docker push $ACR/pyro-api:$TAG
+          docker push $ACR/pyro-api:latest
+
+  migrate:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get migration connection string from Key Vault
+        id: get-conn
+        run: |
+          CONN=$(az keyvault secret show \
+            --name ${{ vars.KEY_VAULT_DB_SECRET_NAME }} \
+            --vault-name ${{ vars.KEY_VAULT_NAME }} \
+            --query value -o tsv)
+          echo "::add-mask::$CONN"
+          echo "connection-string=$CONN" >> $GITHUB_OUTPUT
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef --version 9.0.*
+
+      - name: Run migrations
+        working-directory: src
+        run: |
+          dotnet ef database update \
+            --project Abm.Pyro.Repository \
+            --startup-project Abm.Pyro.Api \
+            --connection "${{ steps.get-conn.outputs.connection-string }}"
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update App Service container image
+        run: |
+          az webapp config container set \
+            --name ${{ vars.APP_SERVICE_NAME }} \
+            --resource-group ${{ vars.RESOURCE_GROUP }} \
+            --docker-custom-image-name anguscontainerregistry.azurecr.io/pyro-api:${{ github.ref_name }}
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --name ${{ vars.APP_SERVICE_NAME }} \
+            --resource-group ${{ vars.RESOURCE_GROUP }}
