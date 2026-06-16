@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Abm.Pyro.Domain.Enums;
+﻿using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.FhirSupport;
 using Hl7.Fhir.Model;
@@ -44,14 +43,11 @@ public class FhirValidationSettings : ServiceSettingsBase
                 isCurrent: true,
                 typeId: ServiceSettingTypeId.FhirValidation,
                 lastUpdatedUtc: dateTime,
-                json: JsonSerializer.Serialize(new FhirValidationSettings(
-                    versionId: "1",
-                    profilePackageServiceUrl: new Uri("https://some-profile-package-service-url.com"),
-                    terminologyServiceUrl: new Uri("https://some-terminology-service-url.com"),
-                    validateOnCreate: false,
-                    validateOnUpdate: false,
-                    lastUpdated: dateTime)
-                ))
+                // NOTE: fixed literal, NOT JsonSerializer.Serialize(...). EF Core HasData seed values must be
+                // deterministic; serializing at model-build time produced platform-dependent property ordering
+                // (Windows dev vs Linux CI), which triggered EF Core 9 PendingModelChangesWarning false-positives
+                // and broke the CD migrate step. Keep this string in sync with FhirValidationSettings if its shape changes.
+                json: "{\"ProfilePackageServiceUrl\":\"https://some-profile-package-service-url.com\",\"TerminologyServiceUrl\":\"https://some-terminology-service-url.com\",\"ValidateOnCreate\":false,\"ValidateOnUpdate\":false,\"VersionId\":\"1\",\"LastUpdated\":\"2025-03-01T00:00:00Z\"}")
         };
     }
 } 
