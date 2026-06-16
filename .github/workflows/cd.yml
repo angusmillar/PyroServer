@@ -74,7 +74,7 @@ jobs:
         run: |
           dotnet ef database update \
             --project Abm.Pyro.Repository \
-            --startup-project Abm.Pyro.Api \
+            --startup-project Abm.Pyro.Repository \
             --connection "${{ steps.get-conn.outputs.connection-string }}"
 
   deploy:
