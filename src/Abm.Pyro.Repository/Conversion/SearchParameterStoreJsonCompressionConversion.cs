@@ -31,12 +31,26 @@ public class SearchParameterStoreJsonCompressionConversion : IEntityTypeConfigur
 
     using var msi = new MemoryStream(bytes);
     using var mso = new MemoryStream();
-    using (var gs = new GZipStream(mso, CompressionMode.Compress)) 
+    using (var gs = new GZipStream(mso, CompressionMode.Compress))
     {
       CopyTo(msi, gs);
     }
 
-    return mso.ToArray();
+    var compressed = mso.ToArray();
+
+    // Normalize the GZip header OS byte (index 9) so compression output is identical across operating
+    // systems. .NET writes the host OS here (10 on Windows, 3 on Unix); because these compressed bytes
+    // are embedded as HasData seed values in the EF migration snapshot, a snapshot generated on one OS
+    // would otherwise mismatch the model rebuilt on another (e.g. the Linux CI runner), raising a
+    // spurious EF Core 9 PendingModelChangesWarning. The value 10 matches the existing committed
+    // snapshot, so no seed rows need rewriting. The deflate body is already deterministic across
+    // platforms, and this header byte is ignored when decompressing.
+    if (compressed.Length > 9)
+    {
+      compressed[9] = 10;
+    }
+
+    return compressed;
   }
 
   public static string Unzip(byte[] bytes)
