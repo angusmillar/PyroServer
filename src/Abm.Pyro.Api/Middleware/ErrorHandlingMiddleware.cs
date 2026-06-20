@@ -32,7 +32,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
     logger.LogError(fhirException, "FhirException has been thrown");
 
     var acceptHeader = context.Request.Headers.SingleOrDefault(x =>
-      x.Key.ToLower(System.Globalization.CultureInfo.CurrentCulture) == "accept");
+      string.Equals(x.Key, "accept", StringComparison.OrdinalIgnoreCase));
     
     FhirFormatType acceptFormatType = ContentFormatters.FhirMediaType.GetFhirFormatTypeFromAcceptHeader(
       acceptHeader.Value.First());

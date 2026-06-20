@@ -15,12 +15,12 @@ namespace Abm.Pyro.Api.ContentFormatters
       var query = context.HttpContext.Request.Query;
       if (query?.ContainsKey("_format") == true)
       {
-        if (string.Compare(query["_format"], "xml", StringComparison.CurrentCultureIgnoreCase) == 0)
+        if (string.Equals(query["_format"], "xml", StringComparison.OrdinalIgnoreCase))
         {
           context.HttpContext.Request.Headers[HeaderNames.Accept] = new string[] { FhirMediaType.XmlResource };
         }
 
-        if (string.Compare(query["_format"], "json", StringComparison.CurrentCultureIgnoreCase) == 0)
+        if (string.Equals(query["_format"], "json", StringComparison.OrdinalIgnoreCase))
         {
           context.HttpContext.Request.Headers[HeaderNames.Accept] = new string[] { FhirMediaType.JsonResource };
         }
