@@ -124,7 +124,7 @@ Domain exceptions extend `FhirException` with severity levels (`Fatal`, `Error`,
 
 ## CI/CD & Deployment
 
-The server is deployed to **Azure App Service** (Linux, container-based) as a single Docker image built from `src/Abm.Pyro.Api/Dockerfile`. Two GitHub Actions workflows live at the **repository root** under `.github/workflows/` (one level above `src/`).
+The server is deployed to **Azure App Service** (Linux, container-based) as a single Docker image built from `src/Abm.Pyro.Api/Dockerfile`. The runtime base image is **`mcr.microsoft.com/dotnet/aspnet:9.0-noble-chiseled-extra`** (shell-less, non-root, smaller/faster cold start; the `-extra` variant keeps ICU + tzdata so globalization and timezone behaviour are unchanged). Two GitHub Actions workflows live at the **repository root** under `.github/workflows/` (one level above `src/`).
 
 ### CI — `ci.yml`
 - **Triggers:** every push to `main` or `development`, and every PR targeting `main`.
