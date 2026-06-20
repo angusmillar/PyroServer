@@ -58,14 +58,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
-using Serilog.Core;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File(
-        path: "./application-start-.log", 
-        rollingInterval: RollingInterval.Day, 
-        retainedFileCountLimit: 7)
     .CreateBootstrapLogger();
 
 try
@@ -77,12 +72,10 @@ try
     builder.Host
         .AddConfigServer(SteelToeSerilogExtension.GetLoggerFactory());
 
-    Logger serilogConfiguration = new LoggerConfiguration()
-        .WriteTo.Console()
-        .ReadFrom.Configuration(builder.Configuration)
-        .CreateLogger();
-    
-    builder.Services.AddSerilog(serilogConfiguration);
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .WriteTo.Console());
     
     // Configuration settings registrations -------------------------------------------------------------
     builder.Services.AddOptions<ImplementationSettings>()
