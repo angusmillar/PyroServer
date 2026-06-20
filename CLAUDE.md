@@ -4,28 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pyro is a production-grade .NET 9.0 FHIR R4 server built on clean architecture with CQRS, multi-tenancy, hybrid caching, FHIR profile validation, and Subscriptions. The solution (`Abm.Pyro.sln`) lives one directory above this `src/` folder.
+Pyro is a production-grade .NET 9.0 FHIR R4 server built on clean architecture with CQRS, multi-tenancy, hybrid caching, FHIR profile validation, and Subscriptions. This file sits at the repository root; all .NET source and the solution (`Abm.Pyro.sln`) live under the `src/` folder.
 
 ## Commands
 
+All `dotnet` commands target the solution under `src/`. Run them from the repository root with the `src/`-relative paths below, or `cd src` first and drop the prefix.
+
 ```bash
 # Build
-dotnet build Abm.Pyro.sln
+dotnet build src/Abm.Pyro.sln
 
 # Run tests (all)
-dotnet test
+dotnet test src/Abm.Pyro.sln
 
 # Run a single test project
-dotnet test Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj
-dotnet test Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj
-dotnet test Abm.Pyro.Repository.Test/Abm.Pyro.Repository.Test.csproj
+dotnet test src/Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj
+dotnet test src/Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj
+dotnet test src/Abm.Pyro.Repository.Test/Abm.Pyro.Repository.Test.csproj
 
 # Run the API
-dotnet run --project Abm.Pyro.Api/Abm.Pyro.Api.csproj
+dotnet run --project src/Abm.Pyro.Api/Abm.Pyro.Api.csproj
 
 # EF Core migrations (run from src/)
 # Abm.Pyro.Repository is the self-contained EF startup project: it holds the
 # IDesignTimeDbContextFactory, its own appsettings.json, and the Design/Tools packages.
+cd src
 dotnet ef database update --project Abm.Pyro.Repository --startup-project Abm.Pyro.Repository
 dotnet ef migrations add <Name>  --project Abm.Pyro.Repository --startup-project Abm.Pyro.Repository
 ```
