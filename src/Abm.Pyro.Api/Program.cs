@@ -343,7 +343,18 @@ try
     
     builder.Services.AddCors(o => o.AddDefaultPolicy(policyBuilder =>
     {
-        policyBuilder.WithOrigins(corsSettings.AllowedOriginsList);
+        // A "*" entry means allow any origin (AllowAnyOrigin), which cannot be combined
+        // with AllowCredentials(). To lock the server down to specific origins, remove the
+        // "*" and list the allowed origins explicitly in the Cors:AllowedOriginsList setting.
+        if (corsSettings.AllowedOriginsList.Contains("*"))
+        {
+            policyBuilder.AllowAnyOrigin();
+        }
+        else
+        {
+            policyBuilder.WithOrigins(corsSettings.AllowedOriginsList);
+        }
+
         policyBuilder.AllowAnyHeader();
         policyBuilder.AllowAnyMethod();
         //builder.AllowCredentials();
