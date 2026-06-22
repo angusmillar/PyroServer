@@ -96,7 +96,6 @@ try
     
     // FHIR HTTP Client registration
     builder.Services.AddScoped<IFhirHttpClientFactory, FhirHttpClientFactory>();
-
     
     var jitterBackoff = Backoff.DecorrelatedJitterBackoffV2(
         medianFirstRetryDelay: TimeSpan.FromSeconds(1), 
@@ -357,7 +356,6 @@ try
 
         policyBuilder.AllowAnyHeader();
         policyBuilder.AllowAnyMethod();
-        //builder.AllowCredentials();
         policyBuilder.WithExposedHeaders("Content-Location", "Location", "ETag");
     }));
     
@@ -436,7 +434,7 @@ try
     app.UseRequestDecompression();
     app.UseResponseCompression();
 
-    app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+    app.UseMiddleware<ErrorHandlingMiddleware>();
 
     app.UseHttpsRedirection();
 
