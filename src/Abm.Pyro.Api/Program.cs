@@ -78,56 +78,8 @@ try
         .WriteTo.Console());
     
     // Configuration settings registrations -------------------------------------------------------------
-    builder.Services.AddOptions<ImplementationSettings>()
-        .Bind(builder.Configuration.GetSection(ImplementationSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-    
-    builder.Services.AddOptions<CorsSettings>()
-        .Bind(builder.Configuration.GetSection(CorsSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-    
-    builder.Services.AddOptions<KnownProxiesSettings>()
-        .Bind(builder.Configuration.GetSection(KnownProxiesSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-    
-    builder.Services.AddOptions<ServiceBaseUrlSettings>()
-        .Bind(builder.Configuration.GetSection(ServiceBaseUrlSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
+    builder.Services.AddConfigurationSettings(builder.Configuration);
 
-    builder.Services.AddOptions<ServiceDefaultTimeZoneSettings>()
-        .Bind(builder.Configuration.GetSection(ServiceDefaultTimeZoneSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    builder.Services.AddOptions<PaginationSettings>()
-        .Bind(builder.Configuration.GetSection(PaginationSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    builder.Services.AddOptions<IncludeRevIncludeSettings>()
-        .Bind(builder.Configuration.GetSection(IncludeRevIncludeSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    builder.Services.AddOptions<IndexingSettings>()
-        .Bind(builder.Configuration.GetSection(IndexingSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    builder.Services.AddOptions<ResourceEndpointPoliciesSettings>()
-        .Bind(builder.Configuration.GetSection(ResourceEndpointPoliciesSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    builder.Services.AddOptions<TenantSettings>()
-        .Bind(builder.Configuration.GetSection(TenantSettings.SectionName))
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-    
     // On Application Startup Services ----------------------------------------------------------------
     builder.Services.AddAppStartUpService<DatabaseVersionValidationOnStartupService>();
     builder.Services.AddAppStartUpService<FhirServiceBaseUrlManagementOnStartupService>();
