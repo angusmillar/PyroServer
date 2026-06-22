@@ -367,8 +367,8 @@ try
     builder.Services.AddTransient<IPyroDbContextFactory, PyroDbContextFactory>();
     builder.Services.AddTransient<IServiceBaseUrlOnStartupRepository, ServiceBaselUrlOnStartupRepository>();
 
-    string connectionString = builder.Configuration.GetConnectionString("PyroDb") ?? "[Not Found]";
-    Log.Information("SQL Connection string: {ConnectionString}", connectionString);
+    // string connectionString = builder.Configuration.GetConnectionString("PyroDb") ?? "[Not Found]";
+    // Log.Information("SQL Connection string: {ConnectionString}", connectionString);
     
     // Database Setup ----------------------
     builder.Services.AddDbContext<PyroDbContext>((services, optionsBuilder) =>
