@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Abm.Pyro.Application.OnStartupService;
 
 public class DatabaseVersionValidationOnStartupService(
-    ILogger<FhirServiceBaseUrlManagementOnStartupService> logger,
+    ILogger<DatabaseVersionValidationOnStartupService> logger,
     IDatabasePendingMigrations databasePendingMigrations,
     ITenantService tenantService) : IAppStartupService
 {

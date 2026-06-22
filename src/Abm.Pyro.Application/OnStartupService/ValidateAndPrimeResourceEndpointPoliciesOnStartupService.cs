@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace Abm.Pyro.Application.OnStartupService;
 
 public class ValidateAndPrimeResourceEndpointPoliciesOnStartupService(
-    ILogger<FhirServiceBaseUrlManagementOnStartupService> logger,
+    ILogger<ValidateAndPrimeResourceEndpointPoliciesOnStartupService> logger,
     ITenantService tenantService,
     IEndpointPolicyService endpointPolicyService)
     : IAppStartupService
