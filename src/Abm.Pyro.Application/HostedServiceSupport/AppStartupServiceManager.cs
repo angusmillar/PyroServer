@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -24,11 +25,6 @@ public class AppStartupServiceManager<T>(
         ExecutingTask = StartServicePeriodicTimerTask();
         await ExecutingTask.WaitAsync(StoppingCancellationTokenSource.Token);
         ExecutingTask = null;
-        
-        logger.LogInformation("{Interface} completed {TaskName}",
-            nameof(IAppStartupService),
-            TaskName
-        );
     }
 
     private async Task StartServicePeriodicTimerTask()
@@ -38,10 +34,16 @@ public class AppStartupServiceManager<T>(
             throw new NullReferenceException(nameof(StoppingCancellationTokenSource));
         }
         using var scope = serviceScopeFactory.CreateScope();
+        var stopwatch = Stopwatch.StartNew();
         try
         {
             var serviceToRun = scope.ServiceProvider.GetRequiredService<T>();
             await serviceToRun.DoWork(StoppingCancellationTokenSource.Token);
+            stopwatch.Stop();
+            logger.LogInformation("{TaskName} completed in {ElapsedMilliseconds} ms",
+                TaskName,
+                stopwatch.ElapsedMilliseconds
+            );
         }
         catch (Exception exception)
         {
