@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
+
+var startupStopwatch = Stopwatch.StartNew();
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -421,6 +424,14 @@ try
     builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
+
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        startupStopwatch.Stop();
+        Log.Information("Application startup completed in {ElapsedMilliseconds} ms ({ElapsedSeconds:N1} s)",
+            startupStopwatch.ElapsedMilliseconds,
+            startupStopwatch.Elapsed.TotalSeconds);
+    });
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
