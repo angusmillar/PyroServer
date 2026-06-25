@@ -235,10 +235,13 @@ try
     builder.Services.AddScoped<IFhirReadHandler, FhirReadHandler>();
     builder.Services.AddScoped<IFhirSearchHandler, FhirSearchHandler>();
 
-    // MediatR pipeline behaviors
+    // MediatR pipeline behaviors.
+    // RegisterServicesFromAssemblyContaining<Program> satisfies MediatR's internal "at least one
+    // assembly" validation. Abm.Pyro.Api contains no IRequestHandler implementations so nothing
+    // extra is registered by the scan; all handlers are wired explicitly below.
     builder.Services.AddMediatR(config =>
     {
-        config
+        config.RegisterServicesFromAssemblyContaining<Program>()
             .AddOpenBehavior(typeof(LoggingBehavior<,>))
             .AddOpenBehavior(typeof(CorrelationBehavior<,>))
             .AddOpenBehavior(typeof(DatabaseTransactionBehavior<,>));
