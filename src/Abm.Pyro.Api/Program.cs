@@ -9,7 +9,6 @@ using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Api.FhirClientFactory;
 using Abm.Pyro.Api.HttpContextAccess;
 using Abm.Pyro.Api.Middleware;
-using Abm.Pyro.Application.AssemblyMarker;
 using Abm.Pyro.Application.Behavior;
 using Abm.Pyro.Application.Cache;
 using Abm.Pyro.Application.DependencyFactory;
@@ -50,6 +49,8 @@ using Abm.Pyro.Application.TenantService;
 using Abm.Pyro.Domain.FhirOperation;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
+using Abm.Pyro.Domain.ServiceSettingRequest;
+using MediatR;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.Validation;
@@ -234,14 +235,35 @@ try
     builder.Services.AddScoped<IFhirReadHandler, FhirReadHandler>();
     builder.Services.AddScoped<IFhirSearchHandler, FhirSearchHandler>();
 
-    // MediatR pipeline (Loads all MediatR Handlers and behaviors) --------------------------- 
+    // MediatR pipeline behaviors
     builder.Services.AddMediatR(config =>
     {
-        config.RegisterServicesFromAssemblyContaining<IApplicationLayerAssemblyMarker>()
+        config
             .AddOpenBehavior(typeof(LoggingBehavior<,>))
             .AddOpenBehavior(typeof(CorrelationBehavior<,>))
             .AddOpenBehavior(typeof(DatabaseTransactionBehavior<,>));
     });
+
+    // Explicit MediatR handler registrations (replaces assembly scanning)
+    builder.Services.AddScoped<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, FhirCreateHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirReadRequest, FhirOptionalResourceResponse>, FhirReadHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse>, FhirUpdateHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirDeleteRequest, FhirOptionalResourceResponse>, FhirDeleteHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirConditionalCreateRequest, FhirOptionalResourceResponse>, FhirConditionalCreateHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirConditionalDeleteRequest, FhirOptionalResourceResponse>, FhirConditionalDeleteHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirConditionalUpdateRequest, FhirOptionalResourceResponse>, FhirConditionalUpdateHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirSearchRequest, FhirResourceResponse>, FhirSearchHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirVersionReadRequest, FhirOptionalResourceResponse>, FhirVersionReadHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirBatchOrTransactionRequest, FhirResourceResponse>, FhirBatchOrTransactionHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirMetaDataRequest, FhirResourceResponse>, FhirMetaDataHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirInstanceLevelHistoryRequest, FhirResourceResponse>, FhirInstanceLevelHistoryHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirSystemLevelHistoryRequest, FhirResourceResponse>, FhirSystemLevelHistoryHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirTypeLevelHistoryRequest, FhirResourceResponse>, FhirTypeLevelHistoryHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirInstanceLevelOperationRequest, FhirResourceResponse>, FhirInstanceLevelOperationHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirSystemLevelOperationRequest, FhirResourceResponse>, FhirSystemLevelOperationHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirTypeLevelOperationRequest, FhirResourceResponse>, FhirTypeLevelOperationHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsUpdateRequest, FhirValidationSettingsUpdateResponse>, ServiceSettingHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsGetRequest, FhirValidationSettingsGetResponse>, ServiceSettingHandler>();
 
     //Database Transactions ----------------------------------------------------------------
     builder.Services.AddScoped<IDatabaseTransactionFactory, DatabaseTransactionFactory>();
