@@ -1,6 +1,6 @@
 ﻿using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Abm.Pyro.Domain.FhirSupport;
 
 namespace Abm.Pyro.Application.Behavior;

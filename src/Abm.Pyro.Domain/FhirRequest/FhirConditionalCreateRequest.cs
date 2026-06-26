@@ -2,7 +2,7 @@
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.Validation;
 using Hl7.Fhir.Model;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Primitives;
 
 namespace Abm.Pyro.Domain.FhirRequest;

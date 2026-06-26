@@ -1,5 +1,5 @@
 ﻿using Hl7.Fhir.Model;
-using MediatR;
+using Abm.Pyro.Application.Dispatcher;
 using Microsoft.AspNetCore.Mvc;
 using Abm.Pyro.Api.Extensions;
 using Abm.Pyro.Domain.FhirRequest;
@@ -12,7 +12,7 @@ namespace Abm.Pyro.Api.Controllers;
 [Route("{tenant}")]
 [ApiController]
 public class FhirController(
-  IMediator mediator,
+  IRequestDispatcher requestDispatcher,
   IDateTimeProvider dateTimeProvider) : ControllerBase
 {
   
@@ -29,7 +29,7 @@ public class FhirController(
       Resource: resource, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirResourceConditionalCreateRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirResourceConditionalCreateRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -53,7 +53,7 @@ public class FhirController(
       Resource: resource,
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirSystemLevelOperationRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -78,7 +78,7 @@ public class FhirController(
       Resource: resource,
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirSystemLevelOperationRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -103,7 +103,7 @@ public class FhirController(
       Resource: resource,
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelOperationRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirSystemLevelOperationRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -128,7 +128,7 @@ public class FhirController(
       Resource: resource, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(fhirResourceConditionalCreateRequest, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirResourceConditionalCreateRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -152,7 +152,7 @@ public class FhirController(
       Resource: resource, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(fhirResourceNameUpdateRequest, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirResourceNameUpdateRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -176,7 +176,7 @@ public class FhirController(
       Resource: resource, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(fhirResourceNameUpdateRequest, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirResourceNameUpdateRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -200,7 +200,7 @@ public class FhirController(
       ResourceId: resourceId, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResponse fhirResponse = await mediator.Send(request, cancellationToken);
+    FhirResponse fhirResponse = await requestDispatcher.Send(request, cancellationToken);
     Response.Headers.AppendRange(fhirResponse.Headers);
     
     return  StatusCode((int)fhirResponse.HttpStatusCode);
@@ -220,7 +220,7 @@ public class FhirController(
       ResourceName: resourceName, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(request, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(request, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -242,7 +242,7 @@ public class FhirController(
       ResourceId: resourceId, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(fhirReadQuery, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirReadQuery, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -262,7 +262,7 @@ public class FhirController(
       Headers: Request.Headers.GetDictionary(), 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirSystemLevelHistoryQuery, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirSystemLevelHistoryQuery, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -282,7 +282,7 @@ public class FhirController(
       Headers: Request.Headers.GetDictionary(), 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirMetaDataRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirMetaDataRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -303,7 +303,7 @@ public class FhirController(
       ResourceName: resourceName, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirTypeLevelHistoryRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirTypeLevelHistoryRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -325,7 +325,7 @@ public class FhirController(
       ResourceId: resourceId, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirInstanceLevelHistoryRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirInstanceLevelHistoryRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -348,7 +348,7 @@ public class FhirController(
       HistoryId: historyId,
       TimeStamp: dateTimeProvider.Now);
 
-    FhirOptionalResourceResponse fhirResponse = await mediator.Send(fhirVersionReadRequest, cancellationToken);
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirVersionReadRequest, cancellationToken);
     
     Response.Headers.AppendRange(fhirResponse.Headers);
     
@@ -369,7 +369,7 @@ public class FhirController(
       ResourceName: resourceName, 
       TimeStamp: dateTimeProvider.Now);
 
-    FhirResourceResponse fhirResponse = await mediator.Send(fhirResourceNameSearchRequest, cancellationToken);
+    FhirResourceResponse fhirResponse = await requestDispatcher.Send(fhirResourceNameSearchRequest, cancellationToken);
     Response.Headers.AppendRange(fhirResponse.Headers);
     
     return  StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);

@@ -1,7 +1,7 @@
 ﻿using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.Validation;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Primitives;
 
 namespace Abm.Pyro.Domain.FhirRequest;

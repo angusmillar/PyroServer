@@ -3,7 +3,7 @@ using Abm.Pyro.Domain.ServiceSettingRequest;
 using Abm.Pyro.Domain.ServiceSettings;
 using Microsoft.AspNetCore.Mvc;
 using Hl7.Fhir.Model;
-using MediatR;
+using Abm.Pyro.Application.Dispatcher;
 using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Controllers;
@@ -12,7 +12,7 @@ namespace Abm.Pyro.Api.Controllers;
 [ApiController]
 public class AdminController(
     IFhirValidationSettingsParser fhirValidationSettingsParser,
-    IMediator mediator) : ControllerBase
+    IRequestDispatcher requestDispatcher) : ControllerBase
 {
     // [HttpGet("SearchParameter/{resourceId}/{history}/{historyId}")]
     // public async Task<ActionResult> Search(
@@ -51,7 +51,7 @@ public class AdminController(
     [HttpGet("settings/FhirValidation")]
     public async Task<ActionResult<Parameters>> GetServiceConfiguration()
     {
-        FhirValidationSettingsGetResponse fhirValidationSettingsGetResponse =  await mediator.Send(new FhirValidationSettingsGetRequest());
+        FhirValidationSettingsGetResponse fhirValidationSettingsGetResponse =  await requestDispatcher.Send(new FhirValidationSettingsGetRequest());
         
         return fhirValidationSettingsParser.GetParametersResource(fhirValidationSettingsGetResponse.FhirValidationSettings);
         
@@ -71,7 +71,7 @@ public class AdminController(
         
         ArgumentNullException.ThrowIfNull(fhirValidationSettingsOutcome.ServiceSettings);
         
-        FhirValidationSettingsUpdateResponse fhirValidationSettingsUpdateResponse =  await mediator.Send(
+        FhirValidationSettingsUpdateResponse fhirValidationSettingsUpdateResponse =  await requestDispatcher.Send(
             new FhirValidationSettingsUpdateRequest(FhirValidationSettings: fhirValidationSettingsOutcome.ServiceSettings));
 
         return fhirValidationSettingsParser.GetParametersResource(fhirValidationSettingsUpdateResponse.FhirValidationSettings);

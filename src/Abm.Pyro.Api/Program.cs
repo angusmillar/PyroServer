@@ -50,7 +50,8 @@ using Abm.Pyro.Domain.FhirOperation;
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.ServiceSettingRequest;
-using MediatR;
+using Abm.Pyro.Application.Dispatcher;
+using Abm.Pyro.Domain.Dispatcher;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.ServiceBaseUrlService;
 using Abm.Pyro.Domain.Validation;
@@ -235,19 +236,12 @@ try
     builder.Services.AddScoped<IFhirReadHandler, FhirReadHandler>();
     builder.Services.AddScoped<IFhirSearchHandler, FhirSearchHandler>();
 
-    // MediatR pipeline behaviors.
-    // RegisterServicesFromAssemblyContaining<Program> satisfies MediatR's internal "at least one
-    // assembly" validation. Abm.Pyro.Api contains no IRequestHandler implementations so nothing
-    // extra is registered by the scan; all handlers are wired explicitly below.
-    builder.Services.AddMediatR(config =>
-    {
-        config.RegisterServicesFromAssemblyContaining<Program>()
-            .AddOpenBehavior(typeof(LoggingBehavior<,>))
-            .AddOpenBehavior(typeof(CorrelationBehavior<,>))
-            .AddOpenBehavior(typeof(DatabaseTransactionBehavior<,>));
-    });
+    // Pipeline behaviors (registered as open generics; first registered = outermost in pipeline).
+    builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+    builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(CorrelationBehavior<,>));
+    builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(DatabaseTransactionBehavior<,>));
 
-    // Explicit MediatR handler registrations (replaces assembly scanning)
+    // Explicit handler registrations.
     builder.Services.AddScoped<IRequestHandler<FhirCreateRequest, FhirOptionalResourceResponse>, FhirCreateHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirReadRequest, FhirOptionalResourceResponse>, FhirReadHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirUpdateRequest, FhirOptionalResourceResponse>, FhirUpdateHandler>();
@@ -267,6 +261,7 @@ try
     builder.Services.AddScoped<IRequestHandler<FhirTypeLevelOperationRequest, FhirResourceResponse>, FhirTypeLevelOperationHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsUpdateRequest, FhirValidationSettingsUpdateResponse>, ServiceSettingHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsGetRequest, FhirValidationSettingsGetResponse>, ServiceSettingHandler>();
+    builder.Services.AddScoped<IRequestDispatcher, RequestDispatcher>();
 
     //Database Transactions ----------------------------------------------------------------
     builder.Services.AddScoped<IDatabaseTransactionFactory, DatabaseTransactionFactory>();

@@ -7,7 +7,7 @@ using Abm.Pyro.Domain.Query;
 using Abm.Pyro.Domain.ServiceSettingRequest;
 using Abm.Pyro.Domain.ServiceSettings;
 using Abm.Pyro.Domain.Support;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 
 namespace Abm.Pyro.Application.ServiceSettingHandler;
 

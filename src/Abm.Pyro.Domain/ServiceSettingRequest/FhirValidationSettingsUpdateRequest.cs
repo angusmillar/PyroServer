@@ -1,7 +1,7 @@
 ﻿using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.Notification;
 using Abm.Pyro.Domain.ServiceSettings;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 
 namespace Abm.Pyro.Domain.ServiceSettingRequest;
 

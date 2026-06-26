@@ -2,7 +2,7 @@
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.SearchQuery;
 using Abm.Pyro.Application.Validation;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirRequest;

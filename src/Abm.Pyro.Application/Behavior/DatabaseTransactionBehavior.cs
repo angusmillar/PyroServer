@@ -2,7 +2,7 @@
 using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.Notification;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Logging;
 using Abm.Pyro.Domain.Query;
 

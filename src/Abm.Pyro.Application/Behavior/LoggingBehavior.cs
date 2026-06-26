@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;

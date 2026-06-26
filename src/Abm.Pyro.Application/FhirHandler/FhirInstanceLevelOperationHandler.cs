@@ -5,7 +5,7 @@ using Abm.Pyro.Domain.FhirRequest;
 using Abm.Pyro.Domain.FhirResponse;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Notification;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Abm.Pyro.Domain.Validation;
 
 namespace Abm.Pyro.Application.FhirHandler;

@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Domain.Cache;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Configuration;

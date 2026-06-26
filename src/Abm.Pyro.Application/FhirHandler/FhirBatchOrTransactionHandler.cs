@@ -3,7 +3,7 @@ using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.FhirBundleService;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Utility;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Exceptions;

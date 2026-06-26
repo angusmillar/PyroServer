@@ -5,7 +5,7 @@ using Abm.Pyro.Application.FhirValidateService;
 using Abm.Pyro.Application.Indexing;
 using Abm.Pyro.Domain.Cache;
 using Hl7.Fhir.Model;
-using MediatR;
+using Abm.Pyro.Domain.Dispatcher;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Abm.Pyro.Domain.Configuration;
