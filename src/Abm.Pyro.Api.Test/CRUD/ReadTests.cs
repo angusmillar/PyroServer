@@ -3,9 +3,9 @@ using Hl7.Fhir.Rest;
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
 
-namespace Abm.Pyro.Api.Test.Patient;
+namespace Abm.Pyro.Api.Test.CRUD;
 
-public class PatientReadTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
+public class ReadTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
 {
     [Fact]
     public async Task Read_ExistingPatient_Returns200WithResource()

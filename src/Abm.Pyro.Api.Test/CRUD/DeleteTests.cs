@@ -3,10 +3,9 @@ using Hl7.Fhir.Rest;
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
 
+namespace Abm.Pyro.Api.Test.CRUD;
 
-namespace Abm.Pyro.Api.Test.Patient;
-
-public class PatientDeleteTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
+public class DeleteTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
 {
     [Fact]
     public async Task Delete_ExistingPatient_Returns204()

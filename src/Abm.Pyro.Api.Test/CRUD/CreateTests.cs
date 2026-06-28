@@ -1,9 +1,9 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
 
-namespace Abm.Pyro.Api.Test.Patient;
+namespace Abm.Pyro.Api.Test.CRUD;
 
-public class PatientCreateTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
+public class CreateTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
 {
     [Fact]
     public async Task Create_ValidPatient_Returns201WithLocationHeader()

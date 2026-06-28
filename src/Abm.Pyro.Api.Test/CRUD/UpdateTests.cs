@@ -1,17 +1,17 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
 
-namespace Abm.Pyro.Api.Test.Patient;
+namespace Abm.Pyro.Api.Test.CRUD;
 
-public class PatientUpdateTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
+public class UpdateTests(IntegrationTestFixture fixture) : IntegrationTestBase(fixture)
 {
     [Fact]
     public async Task Update_ExistingPatient_Returns200()
     {
         // Arrange
         Hl7.Fhir.Model.Patient created = await CreatePatientAsync("Original");
-        
-        string originalFamilyName =  created.Name.First().Family;
+
+        string originalFamilyName = created.Name.First().Family;
         created.Name.First().Family = "Updated";
 
         // Act
@@ -64,7 +64,7 @@ public class PatientUpdateTests(IntegrationTestFixture fixture) : IntegrationTes
         created.Name.First().Family = "Modified";
         await FhirClient.UpdateAsync(created);
         Hl7.Fhir.Model.Patient? afterUpdate = await FhirClient.ReadAsync<Hl7.Fhir.Model.Patient>($"Patient/{created.Id}");
-        
+
         Assert.NotNull(afterUpdate);
         Assert.NotEqual(versionAfterCreate, afterUpdate.VersionId);
     }
