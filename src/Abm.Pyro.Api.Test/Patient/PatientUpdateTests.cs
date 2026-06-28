@@ -10,12 +10,18 @@ public class PatientUpdateTests(IntegrationTestFixture fixture) : IntegrationTes
     {
         // Arrange
         Hl7.Fhir.Model.Patient created = await CreatePatientAsync("Original");
+        
+        string originalFamilyName =  created.Name.First().Family;
         created.Name.First().Family = "Updated";
 
         // Act
         Hl7.Fhir.Model.Patient? updated = await FhirClient.UpdateAsync(created);
 
         Assert.NotNull(updated);
+        Assert.NotNull(updated.Meta);
+        Assert.True(updated.Meta.LastUpdated > created.Meta.LastUpdated);
+        Assert.True(updated.Name.First().Family != originalFamilyName);
+        Assert.Equal("2", updated.Meta.VersionId);
     }
 
     [Fact]
@@ -58,7 +64,7 @@ public class PatientUpdateTests(IntegrationTestFixture fixture) : IntegrationTes
         created.Name.First().Family = "Modified";
         await FhirClient.UpdateAsync(created);
         Hl7.Fhir.Model.Patient? afterUpdate = await FhirClient.ReadAsync<Hl7.Fhir.Model.Patient>($"Patient/{created.Id}");
-
+        
         Assert.NotNull(afterUpdate);
         Assert.NotEqual(versionAfterCreate, afterUpdate.VersionId);
     }
