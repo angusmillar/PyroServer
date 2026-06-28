@@ -2,7 +2,11 @@ namespace Abm.Pyro.Api.Test.Support;
 
 public static class PatientBuilder
 {
-    public static Hl7.Fhir.Model.Patient Build(string? id = null, string? familyName = null, string? givenName = null)
+    public static Hl7.Fhir.Model.Patient Build(
+        string? id = null,
+        string? familyName = null,
+        string? givenName = null,
+        string? deceasedDateTime = null)
     {
         var patient = new Hl7.Fhir.Model.Patient
         {
@@ -18,6 +22,12 @@ public static class PatientBuilder
             BirthDate = "1990-01-15",
             Gender = Hl7.Fhir.Model.AdministrativeGender.Unknown
         };
+
+        if (deceasedDateTime is not null)
+        {
+            patient.Deceased = new Hl7.Fhir.Model.FhirDateTime(deceasedDateTime);
+        }
+
         return patient;
     }
 }
