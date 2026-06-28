@@ -11,16 +11,17 @@ Pyro is a production-grade .NET 9.0 FHIR R4 server built on clean architecture w
 All `dotnet` commands target the solution under `src/`. Run them from the repository root with the `src/`-relative paths below, or `cd src` first and drop the prefix.
 
 ```bash
-# Build
-dotnet build src/Abm.Pyro.sln
+# Build (use the CI solution filter — the full .sln includes CodeGeneration which targets .NET Framework 4.8.1)
+dotnet build src/Abm.Pyro.CI.slnf
 
-# Run tests (all)
-dotnet test src/Abm.Pyro.sln
+# Run tests (all — unit + integration)
+# Integration tests require Docker running locally (Testcontainers pulls mcr.microsoft.com/mssql/server:2022-latest)
+dotnet test src/Abm.Pyro.CI.slnf
 
 # Run a single test project
 dotnet test src/Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj
 dotnet test src/Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj
-dotnet test src/Abm.Pyro.Repository.Test/Abm.Pyro.Repository.Test.csproj
+dotnet test src/Abm.Pyro.Api.Test/Abm.Pyro.Api.Test.csproj
 
 # Run the API
 dotnet run --project src/Abm.Pyro.Api/Abm.Pyro.Api.csproj
@@ -44,7 +45,7 @@ dotnet ef migrations add <Name>  --project Abm.Pyro.Repository --startup-project
 | `Abm.Pyro.CodeGeneration` | .NET Framework 4.8.1 T4 templates → `FhirResourceType.cs` + search parameter seed data |
 | `Abm.Pyro.Domain.Test` | xUnit unit tests for domain logic |
 | `Abm.Pyro.Application.Test` | xUnit unit tests for application handlers |
-| `Abm.Pyro.Repository.Test` | Integration tests that hit a real DbContext |
+| `Abm.Pyro.Api.Test` | Full-stack integration tests using WebApplicationFactory + Testcontainers |
 
 ## Architecture
 
@@ -98,7 +99,7 @@ Three `IHostedService` implementations run at startup before the server accepts 
 
 ### Exceptions
 
-Domain exceptions extend `FhirException` with severity levels (`Fatal`, `Error`, `Warning`, `Info`). `ErrorHandlingMiddleware` converts unhandled exceptions to FHIR `OperationOutcome` responses.
+Domain exceptions extend `FhirException` with severity levels (`Fatal`, `Error`, `Warning`, `Info`). `ErrorHandlingMiddleware` converts unhandled exceptions to FHIR `OperationOutcome` responses. In non-Production environments (`IHostEnvironment.IsProduction() == false`) the full exception detail is included in the response body; in Production an opaque message with a log correlation ID is returned instead.
 
 ### Endpoint Policies
 
@@ -128,8 +129,8 @@ The server is deployed to **Azure App Service** (Linux, container-based) as a si
 
 ### CI — `ci.yml`
 - **Triggers:** every push to `main` or `development`, and every PR targeting `main`.
-- **Does:** restore → build → run the `Abm.Pyro.Domain.Test` and `Abm.Pyro.Application.Test` unit suites. No Azure interaction.
-- **Solution filter:** CI builds **`src/Abm.Pyro.CI.slnf`**, not `Abm.Pyro.sln`. The filter excludes `Abm.Pyro.CodeGeneration` (targets .NET Framework 4.8.1, which is unavailable on `ubuntu-latest`) and `Abm.Pyro.Repository.Test` (integration tests needing a live SQL Server). If you add a new .NET 9 project that CI should build, add it to the `.slnf`.
+- **Does:** restore → build → run all three test suites (Domain.Test, Application.Test, Api.Test) in a single `dotnet test` step. Docker is pre-installed on `ubuntu-latest`; Testcontainers pulls the SQL Server image on first run (~30–60 s cold, cached thereafter). No Azure interaction.
+- **Solution filter:** CI uses **`src/Abm.Pyro.CI.slnf`**, not `Abm.Pyro.sln`. The filter excludes `Abm.Pyro.CodeGeneration` (targets .NET Framework 4.8.1, unavailable on `ubuntu-latest`) and `Abm.Pyro.Domain.Benchmark`. If you add a new .NET 9 project that CI should build, add it to the `.slnf`.
 
 ### CD — `cd.yml`
 - **Trigger:** pushing a Git tag matching **`v*.*.*`** (semver). Nothing else deploys — CD is a deliberate release act, never an automatic merge/push deploy.
@@ -160,6 +161,25 @@ The CD pipeline then builds → migrates → deploys automatically. The deploy t
 - **Pushing changes to `.github/workflows/*` requires the git credential to carry the `workflow` OAuth scope** (`gh auth setup-git` with a token scoped `repo,workflow,read:org`).
 - **GitHub Actions are pinned to Node 24 majors** (`actions/checkout@v6`, `azure/login@v3`, `actions/setup-dotnet@v5`).
 - **App Service has no rename.** Reclaiming a hostname means delete + recreate, which yields a *new* Managed Identity principal — every role assignment (SQL user, AcrPull, Key Vault Secrets User) and the GitHub Actions SP's Website Contributor must be re-provisioned for the new principal.
+
+## Integration Tests (`Abm.Pyro.Api.Test`)
+
+Full-stack tests that spin up the entire Pyro server using `WebApplicationFactory<Program>` backed by a real SQL Server instance managed by Testcontainers. Docker must be running locally to execute them.
+
+### Infrastructure
+- **One SQL Server container** per test run, shared across all tests via xUnit `ICollectionFixture<IntegrationTestFixture>`.
+- **EF Core migrations** are applied programmatically against the container before the factory starts (schema must exist before startup services run).
+- **Respawn** resets only FHIR resource and index tables between tests (`ResourceStore`, `IndexString`, `IndexReference`, `IndexDateTime`, `IndexQuantity`, `IndexToken`, `IndexUri`). `SearchParameterStore`, `ServiceBaseUrl`, and `ServiceSetting` are intentionally excluded: the first two are seeded by startup services, and `ServiceSetting` is seeded by the EF migration that creates the table (a default `FhirValidation` row). Clearing `ServiceSetting` causes `ServiceConfigurationGetCurrentByType.SingleAsync` to throw on the next request.
+- **`PyroWebApplicationFactory`** overrides the `PyroDb` connection string, sets `ServiceBaseUrl:Url` to `https://localhost`, suppresses the Steeltoe ConfigServer, runs in the `Development` environment (so `ErrorHandlingMiddleware` returns full exception detail on 500s), and removes `DatabaseVersionValidationOnStartupService` from DI.
+- **`Hl7.Fhir.Rest.FhirClient`** is used as the test HTTP client. Its base address is set to `new Uri(httpClient.BaseAddress!, "pyro/")` — the trailing slash is required for correct URI resolution to `/pyro/{ResourceType}` routes. Error responses (4xx/5xx) throw `FhirOperationException { Status }`.
+
+### Test patterns
+- Success → assert the returned resource is not null.
+- 4xx errors → `Assert.ThrowsAsync<FhirOperationException>` and check `ex.Status`.
+- DELETE on a non-existent resource returns **204 No Content** (idempotent), not 404 — Pyro's `FhirDeleteHandler` always returns `NoContent` when no current resource is found.
+
+### Adding new index tables
+When a new FHIR index table is added via EF migration, add it to the `TablesToInclude` list in `IntegrationTestFixture.cs` so Respawn clears it between tests.
 
 ## Code Generation
 
