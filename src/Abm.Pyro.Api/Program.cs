@@ -486,3 +486,6 @@ finally
     Log.Information($"Shut down complete");
     Log.CloseAndFlush();
 }
+
+// Required for WebApplicationFactory in integration tests
+public partial class Program { }

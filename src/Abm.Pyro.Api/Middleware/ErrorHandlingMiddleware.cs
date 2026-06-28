@@ -1,6 +1,5 @@
 ﻿using System.Net;
 using Hl7.Fhir.Serialization;
-using System.Diagnostics;
 using Hl7.Fhir.Model;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Exceptions;
@@ -9,7 +8,7 @@ using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Middleware;
 
-public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IOperationOutcomeSupport operationOutcomeSupport)
+public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger, IOperationOutcomeSupport operationOutcomeSupport, IHostEnvironment hostEnvironment)
 {
   public async Task Invoke(HttpContext context /* other dependencies */)
   {
@@ -72,7 +71,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
   {
     string errorGuid = GuidSupport.NewFhirGuid();
     string usersErrorMessage = $"An unhanded exception has been thrown. To protect data privacy the exception information has been written to the application log with the error log identifier: {errorGuid}";
-    if (Debugger.IsAttached)
+    if (!hostEnvironment.IsProduction())
     {
       usersErrorMessage =  $"{System.Text.Encodings.Web.HtmlEncoder.Default.Encode(exec.ToString())} ->  Server Error log identifier: {errorGuid}";
     }

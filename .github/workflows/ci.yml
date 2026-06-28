@@ -24,10 +24,6 @@ jobs:
         working-directory: src
         run: dotnet build Abm.Pyro.CI.slnf -c Release --no-restore
 
-      - name: Test Domain
+      - name: Test
         working-directory: src
-        run: dotnet test Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj -c Release --no-build --verbosity normal
-
-      - name: Test Application
-        working-directory: src
-        run: dotnet test Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj -c Release --no-build --verbosity normal
+        run: dotnet test Abm.Pyro.CI.slnf -c Release --no-build --verbosity normal

@@ -2,12 +2,13 @@
   "solution": {
     "path": "Abm.Pyro.sln",
     "projects": [
-      "Abm.Pyro.Api/Abm.Pyro.Api.csproj",
-      "Abm.Pyro.Application/Abm.Pyro.Application.csproj",
-      "Abm.Pyro.Domain/Abm.Pyro.Domain.csproj",
-      "Abm.Pyro.Repository/Abm.Pyro.Repository.csproj",
-      "Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj",
-      "Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj"
+      "Abm.Pyro.Api\\Abm.Pyro.Api.csproj",
+      "Abm.Pyro.Application\\Abm.Pyro.Application.csproj",
+      "Abm.Pyro.Domain\\Abm.Pyro.Domain.csproj",
+      "Abm.Pyro.Repository\\Abm.Pyro.Repository.csproj",
+      "Abm.Pyro.Domain.Test\\Abm.Pyro.Domain.Test.csproj",
+      "Abm.Pyro.Application.Test\\Abm.Pyro.Application.Test.csproj",
+      "Abm.Pyro.Api.Test\\Abm.Pyro.Api.Test.csproj"
     ]
   }
 }
