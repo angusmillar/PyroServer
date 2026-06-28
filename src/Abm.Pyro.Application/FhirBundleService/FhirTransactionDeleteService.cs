@@ -99,7 +99,7 @@ public class FhirTransactionDeleteService(
             }
 
             ValidateDeleteRequest(requestFhirUri, deleteEntry, bundleEntryTransactionMetaData);
-            if (!bundleEntryTransactionMetaData.IsFailure)
+            if (bundleEntryTransactionMetaData.IsFailure)
             {
                 break;
             }
@@ -191,8 +191,13 @@ public class FhirTransactionDeleteService(
                 break;
             }
 
-            deleteEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}/{deleteEntry.Resource.TypeName}/{deleteEntry.Resource.Id}";
-            deleteEntry.Resource = deleteResponse.Resource; //It will always be null in this case, but may be in future we may modify the response, so let it flow through here 
+            //A DELETE entry has no resource body, so derive the deleted resource's location from the
+            //request.url (non-conditional) or the resolved match from a conditional delete.
+            string deletedResourceName = transactionResourceActionOutcome.RequestUrl.ResourceName;
+            string deletedResourceId = transactionResourceActionOutcome.ResourceUpdateInfo?.NewResourceId
+                                       ?? transactionResourceActionOutcome.RequestUrl.ResourceId;
+            deleteEntry.FullUrl = $"{transactionResourceActionOutcome.ForFullUrl.PrimaryServiceRootServers}/{deletedResourceName}/{deletedResourceId}";
+            deleteEntry.Resource = deleteResponse.Resource; //It will always be null in this case, but may be in future we may modify the response, so let it flow through here
             deleteEntry.Response = new Bundle.ResponseComponent
             {
                 Status = deleteResponse.HttpStatusCode.Display(),

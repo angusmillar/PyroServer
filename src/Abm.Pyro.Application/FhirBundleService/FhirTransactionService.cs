@@ -106,17 +106,6 @@ public class FhirTransactionService(
             return GetBadRequestFhirResourceResponse(updateResourceReferencesErrorOperationOutcome);
         }
 
-        await fhirTransactionDeleteService.PreProcessDeletes(
-            entryList: request.Bundle.Entry,
-            requestHeaders: _requestHeaders,
-            bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
-            cancellationToken: _cancellationTokenSource.Token);
-
-        if (_bundleEntryTransactionMetaDataDictionary.Any(x => x.Value.IsFailure))
-        {
-            return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
-        }
-
         //Resource Commit Processing, the order matters here
         //Ref: https://hl7.org/fhir/R4/http.html#trules
         // 1. Process any DELETE interactions
@@ -126,7 +115,10 @@ public class FhirTransactionService(
         // 5. Resolve any conditional references
 
         // 1. Process any DELETE interactions
-        await fhirTransactionDeleteService.PreProcessDeletes(entryList: request.Bundle.Entry,
+        await fhirTransactionDeleteService.ProcessDelete(
+            tenant: request.Tenant,
+            requestId: request.RequestId,
+            entryList: request.Bundle.Entry,
             requestHeaders: _requestHeaders,
             bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
             cancellationToken: _cancellationTokenSource.Token);
