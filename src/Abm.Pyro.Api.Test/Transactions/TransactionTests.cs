@@ -40,7 +40,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle transaction = TransactionBundle(
             PostEntry(PatientBuilder.Build(familyName: "Created")),
             PutEntry(updated, $"Patient/{toUpdate.Id}"),
-            DeleteEntry($"Patient/{toDelete.Id}"));
+            DeleteEntry($"Patient/{toDelete.Id}", fullUrl: $"urn:uuid:{Guid.NewGuid()}"));
 
         // Act
         Bundle? response = await FhirClient.TransactionAsync(transaction);
@@ -386,11 +386,11 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         };
     }
 
-    private static Bundle.EntryComponent DeleteEntry(string requestUrl)
+    private static Bundle.EntryComponent DeleteEntry(string requestUrl, string? fullUrl = null)
     {
         return new Bundle.EntryComponent
         {
-            FullUrl = $"urn:uuid:{Guid.NewGuid()}",
+            FullUrl = fullUrl ?? null,
             Request = new Bundle.RequestComponent
             {
                 Method = Bundle.HTTPVerb.DELETE,
