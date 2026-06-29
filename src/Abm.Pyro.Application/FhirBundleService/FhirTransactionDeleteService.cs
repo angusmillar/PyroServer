@@ -55,46 +55,52 @@ public class FhirTransactionDeleteService(
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, where as Break exits the loop
             }
 
-            Result<FhirUri> fullUrlFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(deleteEntry.FullUrl);
-            if (fullUrlFhirUriResult.IsFailed)
+            FhirUri? fullUrlFhirUri = null;
+            if (deleteEntry.FullUrl is not null)
             {
-                return operationOutcomeSupport.GetError(new[]
+                Result<FhirUri> fullUrlFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(deleteEntry.FullUrl);
+                if (fullUrlFhirUriResult.IsFailed)
                 {
-                    $"Unable to parse Bundle.entry[{i}].fullUrl of: {deleteEntry.FullUrl}. " + fullUrlFhirUriResult.Errors.First().Message
-                });
-            }
-            
-            if (!fullUrlFhirUriResult.Value.IsAbsoluteUri)
-            {
-                return operationOutcomeSupport.GetError(new[]
+                    return operationOutcomeSupport.GetError([
+                        $"Unable to parse Bundle.entry[{i}].fullUrl of: {deleteEntry.FullUrl}. " +
+                        fullUrlFhirUriResult.Errors.First().Message
+                    ]);
+                }
+
+                if (!fullUrlFhirUriResult.Value.IsAbsoluteUri)
                 {
-                    $"The Bundle.entry[{i}].fullUrl of: {deleteEntry.FullUrl} must be either an absolute, UUID or OID resource reference. "
-                });
+                    return operationOutcomeSupport.GetError([
+                        $"The Bundle.entry[{i}].fullUrl of: {deleteEntry.FullUrl} must be either an absolute, UUID or OID resource reference. "
+                    ]);
+                }
+
+                fullUrlFhirUri = fullUrlFhirUriResult.Value;
             }
-            
-            FhirUri fullUrlFhirUri = fullUrlFhirUriResult.Value;
 
             Result<FhirUri> requestFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(deleteEntry.Request.Url);
             if (requestFhirUriResult.IsFailed)
             {
-                return operationOutcomeSupport.GetError(new[]
-                {
+                return operationOutcomeSupport.GetError([
                     $"Unable to parse Bundle.entry[{i}].request.url of: {deleteEntry.Request.Url}. " + requestFhirUriResult.Errors.First().Message
-                });
+                ]);
             }
 
             FhirUri requestFhirUri = requestFhirUriResult.Value;
+            if (fullUrlFhirUri is null)
+            {
+                //Where no FullUri is provided use the requestFhirUri to identify the BundleEntryTransactionMetaData in the dictionary  
+                fullUrlFhirUri = requestFhirUri;
+            }
 
             var bundleEntryTransactionMetaData = new BundleEntryTransactionMetaData(forFullUrl: fullUrlFhirUri, requestUrl: requestFhirUri);
-            if (!bundleEntryTransactionMetaDataDictionary.TryAdd(deleteEntry.FullUrl, bundleEntryTransactionMetaData))
+            if (!bundleEntryTransactionMetaDataDictionary.TryAdd(bundleEntryTransactionMetaData.ForFullUrl.OriginalString, bundleEntryTransactionMetaData))
             {
                 //Ref: https://hl7.org/fhir/R4/http.html#trules
                 //If any resource identities (including resolved identities from conditional update/delete) overlap in steps 1-3 (DELETE, POST, PUT), then the transaction SHALL fail.
-                bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
-                bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
-                {
+                bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[fullUrlFhirUri.OriginalString];
+                bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError([
                     $"There are duplicate entries with the same fullUrl of: {deleteEntry.FullUrl} with in the Transaction Bundle, this is not allowed. "
-                });
+                ]);
                 break;
             }
 
@@ -108,7 +114,7 @@ public class FhirTransactionDeleteService(
             {
                 if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowConditionalDelete)
                 {
-                    bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
+                    bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[fullUrlFhirUri.OriginalString];
                     bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
                     {
                         $"The entry with the fullUrl of: {deleteEntry.FullUrl} was unable to be committed as a conditional DELETE action. " +
@@ -126,7 +132,7 @@ public class FhirTransactionDeleteService(
             
             if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUriResult.Value.ResourceName).AllowDelete)
             {
-                bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
+                bundleEntryTransactionMetaData = bundleEntryTransactionMetaDataDictionary[fullUrlFhirUri.OriginalString];
                 bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
                 {
                     $"The entry with the fullUrl of: {deleteEntry.FullUrl} was unable to be committed as a DELETE action. " +
@@ -160,7 +166,13 @@ public class FhirTransactionDeleteService(
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, whereas Break exits the loop
             }
 
-            var transactionResourceActionOutcome = bundleEntryTransactionMetaDataDictionary[deleteEntry.FullUrl];
+            string fullUrlKey = deleteEntry.FullUrl;
+            if (string.IsNullOrWhiteSpace(fullUrlKey))
+            {
+                fullUrlKey = deleteEntry.Request.Url;
+            }
+            
+            var transactionResourceActionOutcome = bundleEntryTransactionMetaDataDictionary[fullUrlKey];
 
             FhirOptionalResourceResponse? deleteResponse;
             if (transactionResourceActionOutcome.ResourceUpdateInfo is not null)
