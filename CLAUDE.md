@@ -105,6 +105,31 @@ Domain exceptions extend `FhirException` with severity levels (`Fatal`, `Error`,
 
 `ResourceEndpointPolicies` in `appsettings.json` defines a permission matrix (allowed HTTP operations per resource type per tenant). `ValidateAndPrimeResourceEndpointPoliciesOnStartupService` validates and primes this matrix on startup.
 
+### FHIRPath Patch
+
+Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{ResourceType}/{id}` and the conditional form `PATCH /{tenant}/{ResourceType}?{criteria}`). The request body must be a FHIR `Parameters` resource (`Content-Type: application/fhir+json`) containing one or more `operation` entries with `type`, `path`, and (where required) `name`, `value`, `index`, `source`, or `destination` parts.
+
+**Key invariant — PATCH never creates.** Unlike PUT (which upserts), PATCH returns 404 when the target resource does not exist or has been deleted. Use PUT to create or replace.
+
+**Implementation files:**
+
+| File | Role |
+|---|---|
+| `Abm.Pyro.Domain/FhirRequest/FhirPatchRequest.cs` | MediatR request record (`HttpVerbId.Patch`) |
+| `Abm.Pyro.Domain/FhirRequest/FhirConditionalPatchRequest.cs` | MediatR request record for conditional form |
+| `Abm.Pyro.Application/FhirPatch/IFhirPathPatchService.cs` | Patch service interface |
+| `Abm.Pyro.Application/FhirPatch/FhirPathPatchService.cs` | Applies FHIRPath patch operations using the Firely SDK's mutable `ElementNode` tree (`ElementNode.FromElement(new ScopedNode(...))` → mutate → `ToPoco<Resource>`) |
+| `Abm.Pyro.Application/FhirHandler/FhirPatchHandler.cs` | Loads the current resource, applies the patch, re-indexes, and stores a new `ResourceStore` row |
+| `Abm.Pyro.Application/FhirHandler/FhirConditionalPatchHandler.cs` | Resolves a single matching resource via search then delegates to `FhirPatchHandler` |
+| `Abm.Pyro.Application/Validation/PatchRequestValidator.cs` | Validates `AllowPatch` policy and that the body is a `Parameters` resource |
+| `Abm.Pyro.Application/Validation/ConditionalPatchRequestValidator.cs` | Same for the conditional form, checks `AllowConditionalPatch` |
+
+**Supported operations:** `add`, `insert`, `delete`, `replace`, `move`. An empty `Parameters` resource (no `operation` entries) is rejected with 400.
+
+**Endpoint policy flags:** `AllowPatch` and `AllowConditionalPatch` must be `true` in the relevant policy in `appsettings.json` (`ResourceEndpointPolicies`). Both are `true` in the built-in `AllowAll` policy and `false` in `ReadAndSearch`.
+
+**`HttpVerbId.Patch = 5`** is stored in the `ResourceStore` row written by a successful patch and has a corresponding EF Core migration (`20260701141423_PatchOperationHttpVerbAdd`).
+
 ## Key Dependencies
 
 - `Hl7.Fhir.R4` v5.11.4 — official FHIR R4 SDK
@@ -177,6 +202,13 @@ Full-stack tests that spin up the entire Pyro server using `WebApplicationFactor
 - Success → assert the returned resource is not null.
 - 4xx errors → `Assert.ThrowsAsync<FhirOperationException>` and check `ex.Status`.
 - DELETE on a non-existent resource returns **204 No Content** (idempotent), not 404 — Pyro's `FhirDeleteHandler` always returns `NoContent` when no current resource is found.
+- PATCH on a non-existent or deleted resource returns **404 Not Found** — PATCH never creates.
+
+### PATCH-specific test patterns
+- Direct PATCH: `FhirClient.PatchAsync(new Uri($"Patient/{id}", UriKind.Relative), patchParameters)`.
+- Conditional PATCH: `FhirClient.ConditionalPatchAsync<TResource>(SearchParams condition, patchParameters)` — note this is a generic method keyed on the resource type; passing a query-string URI to `PatchAsync` is rejected by the client with `ArgumentException` because `PatchAsync(Uri, ...)` validates that the URI contains a resource ID.
+- If-Match (optimistic concurrency): `FhirClient.PatchAsync` has no `ifMatch` parameter. Create a dedicated `FhirClient` from `Fixture.Factory.CreateClient()` and add the header via `httpClient.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", "W/\"1\"")` before constructing the client.
+- Patch body: build a `Parameters` resource with `parameter[].name = "operation"` and nested `part` entries (`type`, `path`, and operation-specific parts). An empty `Parameters` (no operations) returns 400.
 
 ### Adding new index tables
 When a new FHIR index table is added via EF migration, add it to the `TablesToInclude` list in `IntegrationTestFixture.cs` so Respawn clears it between tests.
