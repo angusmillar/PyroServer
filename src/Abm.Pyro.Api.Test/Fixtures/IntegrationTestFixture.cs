@@ -13,9 +13,9 @@ public class IntegrationTestFixture : IAsyncLifetime
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
-    private PyroWebApplicationFactory _factory = default!;
     private Respawner _respawner = default!;
 
+    public PyroWebApplicationFactory Factory { get; private set; } = default!;
     public HttpClient HttpClient { get; private set; } = default!;
     public string ConnectionString { get; private set; } = default!;
 
@@ -55,10 +55,10 @@ public class IntegrationTestFixture : IAsyncLifetime
 
         // 4. Start WebApplicationFactory (this triggers the kept startup services,
         //    including FhirServiceBaseUrlManagementOnStartupService which seeds ServiceBaseUrl)
-        _factory = new PyroWebApplicationFactory(ConnectionString);
+        Factory = new PyroWebApplicationFactory(ConnectionString);
 
         // 5. Create the shared HttpClient — base address is the test server
-        HttpClient = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        HttpClient = Factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
@@ -74,7 +74,7 @@ public class IntegrationTestFixture : IAsyncLifetime
     public async Task DisposeAsync()
     {
         HttpClient.Dispose();
-        await _factory.DisposeAsync();
+        await Factory.DisposeAsync();
         await _sqlContainer.DisposeAsync();
     }
 }

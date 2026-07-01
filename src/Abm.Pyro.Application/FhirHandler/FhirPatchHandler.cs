@@ -230,7 +230,7 @@ public class FhirPatchHandler(
             Resource: operationOutcomeSupport.GetError(
             [
                 $"Resource {resourceName}/{resourceId} was not found. " +
-                "PATCH does not create resources — use PUT to upsert."
+                "PATCH does not create resources — use POST or PUT."
             ]),
             HttpStatusCode: HttpStatusCode.NotFound,
             Headers: new Dictionary<string, StringValues>(),
@@ -243,7 +243,7 @@ public class FhirPatchHandler(
         return new FhirOptionalResourceResponse(
             Resource: ex.OperationOutcome
                       ?? operationOutcomeSupport.GetError(ex.MessageList ?? [ex.Message]),
-            HttpStatusCode: HttpStatusCode.BadRequest,
+            HttpStatusCode: ex.HttpStatusCode,
             Headers: new Dictionary<string, StringValues>(),
             RepositoryEventCollector: repositoryEventCollector);
     }

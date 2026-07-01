@@ -109,7 +109,7 @@ public class FhirConditionalPatchHandler(
             Resource: operationOutcomeSupport.GetError(
             [
                 $"Conditional PATCH found no {resourceName} resources matching the supplied search criteria. " +
-                "PATCH does not create resources — use PUT to upsert."
+                "PATCH does not create resources — use POST or PUT."
             ]),
             HttpStatusCode: HttpStatusCode.NotFound,
             Headers: new Dictionary<string, StringValues>(),

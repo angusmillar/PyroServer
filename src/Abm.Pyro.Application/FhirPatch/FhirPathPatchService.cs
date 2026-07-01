@@ -20,9 +20,16 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
 
     public Resource Apply(Resource target, Parameters patchParameters)
     {
+        IEnumerable<Parameters.ParameterComponent> operations =
+            patchParameters.Parameter.Where(p => p.Name == "operation").ToList();
+
+        if (!operations.Any())
+            throw new FhirErrorException(HttpStatusCode.BadRequest,
+                "The patch Parameters resource contains no 'operation' entries. At least one operation is required.");
+
         ElementNode mutableTree = ElementNode.FromElement(new ScopedNode(target.ToTypedElement()));
 
-        foreach (Parameters.ParameterComponent parameter in patchParameters.Parameter.Where(p => p.Name == "operation"))
+        foreach (Parameters.ParameterComponent parameter in operations)
             ApplyOperation(mutableTree, ExtractOperation(parameter));
 
         return mutableTree.ToPoco<Resource>(ModelInfo.ModelInspector)
