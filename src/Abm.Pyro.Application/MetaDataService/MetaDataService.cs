@@ -252,6 +252,10 @@ public class MetaDataService(
             new CapabilityStatement.ResourceInteractionComponent()
             {
                 Code = CapabilityStatement.TypeRestfulInteraction.Create
+            },
+            new CapabilityStatement.ResourceInteractionComponent()
+            {
+                Code = CapabilityStatement.TypeRestfulInteraction.Patch
             }
         };
     }

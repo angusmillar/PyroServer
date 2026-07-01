@@ -11,5 +11,7 @@ public enum HttpVerbId : int
   [EnumInfo("GET", "Get")]
   Get = 3,
   [EnumInfo("DELETE", "Delete")]
-  Delete = 4
+  Delete = 4,
+  [EnumInfo("PATCH", "Patch")]
+  Patch = 5
 }

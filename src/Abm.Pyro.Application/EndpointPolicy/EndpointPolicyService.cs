@@ -128,6 +128,8 @@ public class EndpointPolicyService(
             AllowConditionalCreate: tenantDefaultPolicy.AllowConditionalCreate,
             AllowConditionalUpdate: tenantDefaultPolicy.AllowConditionalUpdate,
             AllowConditionalDelete: tenantDefaultPolicy.AllowConditionalDelete,
+            AllowPatch: tenantDefaultPolicy.AllowPatch,
+            AllowConditionalPatch: tenantDefaultPolicy.AllowConditionalPatch,
             AllowBaseTransaction: tenantDefaultPolicy.AllowBaseTransaction,
             AllowBaseBatch: tenantDefaultPolicy.AllowBaseBatch,
             AllowBaseMetadata: tenantDefaultPolicy.AllowBaseMetadata,
@@ -168,6 +170,8 @@ public class EndpointPolicyService(
                 bool allowConditionalCreate = defaultEndpointPolicy.AllowConditionalCreate;
                 bool allowConditionalUpdate = defaultEndpointPolicy.AllowConditionalUpdate;
                 bool allowConditionalDelete = defaultEndpointPolicy.AllowConditionalDelete;
+                bool allowPatch = defaultEndpointPolicy.AllowPatch;
+                bool allowConditionalPatch = defaultEndpointPolicy.AllowConditionalPatch;
                 bool allowBaseTransaction = defaultEndpointPolicy.AllowBaseTransaction;
                 bool allowBaseBatch = defaultEndpointPolicy.AllowBaseBatch;
                 bool allowBaseMetadata = defaultEndpointPolicy.AllowBaseMetadata;
@@ -196,6 +200,8 @@ public class EndpointPolicyService(
                         allowConditionalUpdate);
                     allowConditionalDelete = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalDelete,
                         allowConditionalDelete);
+                    allowPatch = OnlySetIfFalse(enforceableEndpointPolicy.AllowPatch, allowPatch);
+                    allowConditionalPatch = OnlySetIfFalse(enforceableEndpointPolicy.AllowConditionalPatch, allowConditionalPatch);
                     allowBaseTransaction = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction,
                         allowBaseTransaction);
                     allowBaseBatch = OnlySetIfFalse(enforceableEndpointPolicy.AllowBaseTransaction, allowBaseBatch);
@@ -240,6 +246,8 @@ public class EndpointPolicyService(
                     AllowConditionalCreate: allowConditionalCreate,
                     AllowConditionalUpdate: allowConditionalUpdate,
                     AllowConditionalDelete: allowConditionalDelete,
+                    AllowPatch: allowPatch,
+                    AllowConditionalPatch: allowConditionalPatch,
                     AllowBaseTransaction: allowBaseTransaction,
                     AllowBaseBatch: allowBaseBatch,
                     AllowBaseMetadata: allowBaseMetadata,
@@ -401,6 +409,8 @@ public class EndpointPolicyService(
             AllowConditionalCreate: false,
             AllowConditionalUpdate: false,
             AllowConditionalDelete: false,
+            AllowPatch: false,
+            AllowConditionalPatch: false,
             AllowBaseTransaction: false,
             AllowBaseBatch: false,
             AllowBaseMetadata: false,

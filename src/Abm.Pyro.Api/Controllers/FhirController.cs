@@ -186,6 +186,53 @@ public class FhirController(
         
   }
   
+  [HttpPatch("{resourceName}/{resourceId}")]
+  public async Task<ActionResult<Resource>> Patch(string tenant, string resourceName, string resourceId, [FromBody]Resource resource, CancellationToken cancellationToken)
+  {
+    FhirPatchRequest fhirPatchRequest = new FhirPatchRequest(
+      RequestSchema: Request.Scheme,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
+      RequestPath: Request.Path,
+      QueryString: Request.QueryString.Value,
+      Headers: Request.Headers.GetDictionary(),
+      ResourceName: resourceName,
+      ResourceId: resourceId,
+      Resource: resource,
+      TimeStamp: dateTimeProvider.Now);
+
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirPatchRequest, cancellationToken);
+
+    Response.Headers.AppendRange(fhirResponse.Headers);
+
+    resource.AddAnnotation(Hl7.Fhir.Rest.SummaryType.False);
+
+    return StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);
+  }
+
+  [HttpPatch("{resourceName}")]
+  public async Task<ActionResult<Resource>> ConditionalPatch(string tenant, string resourceName, [FromBody]Resource resource, CancellationToken cancellationToken)
+  {
+    FhirConditionalPatchRequest fhirConditionalPatchRequest = new FhirConditionalPatchRequest(
+      RequestSchema: Request.Scheme,
+      Tenant: tenant,
+      RequestId: GuidSupport.NewFhirGuid(),
+      RequestPath: Request.Path,
+      QueryString: Request.QueryString.Value,
+      Headers: Request.Headers.GetDictionary(),
+      ResourceName: resourceName,
+      Resource: resource,
+      TimeStamp: dateTimeProvider.Now);
+
+    FhirOptionalResourceResponse fhirResponse = await requestDispatcher.Send(fhirConditionalPatchRequest, cancellationToken);
+
+    Response.Headers.AppendRange(fhirResponse.Headers);
+
+    resource.AddAnnotation(Hl7.Fhir.Rest.SummaryType.False);
+
+    return StatusCode((int)fhirResponse.HttpStatusCode, fhirResponse.Resource);
+  }
+
   [HttpDelete("{resourceName}/{resourceId}")]
   public async Task<ActionResult<Resource>> Delete(string tenant, string resourceName, string resourceId, CancellationToken cancellationToken)
   {

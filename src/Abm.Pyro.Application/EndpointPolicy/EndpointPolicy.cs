@@ -11,6 +11,8 @@ public record EndpointPolicy(
     bool AllowConditionalCreate,
     bool AllowConditionalUpdate,
     bool AllowConditionalDelete,
+    bool AllowPatch,
+    bool AllowConditionalPatch,
     bool AllowBaseTransaction,
     bool AllowBaseBatch,
     bool AllowBaseMetadata,

@@ -17,6 +17,7 @@ using Abm.Pyro.Application.Extensions;
 using Abm.Pyro.Application.FhirBundleService;
 using Abm.Pyro.Application.FhirClientFactory;
 using Abm.Pyro.Application.FhirHandler;
+using Abm.Pyro.Application.FhirPatch;
 using Abm.Pyro.Application.FhirResolver;
 using Abm.Pyro.Application.FhirSubscriptions;
 using Abm.Pyro.Application.FhirValidateService;
@@ -212,6 +213,8 @@ try
     builder.Services.AddScoped<IValidatorBase<FhirMetaDataRequest>, MetaDataRequestValidator>();
     builder.Services.AddKeyedScoped<IValidatorBase<FhirTypeLevelOperationRequest>, FhirTypeLevelValidateOperationRequestValidator>(FhirOperationLevel.Type);
     builder.Services.AddKeyedScoped<IValidatorBase<FhirInstanceLevelOperationRequest>, FhirInstanceLevelValidateOperationRequestValidator>(FhirOperationLevel.Instance);
+    builder.Services.AddScoped<IValidatorBase<FhirPatchRequest>, PatchRequestValidator>();
+    builder.Services.AddScoped<IValidatorBase<FhirConditionalPatchRequest>, ConditionalPatchRequestValidator>();
     
     // Caching ---------------------------
     RedisCacheSettings? redisCacheSettings = builder.Configuration
@@ -235,6 +238,9 @@ try
     builder.Services.AddScoped<IFhirUpdateHandler, FhirUpdateHandler>();
     builder.Services.AddScoped<IFhirReadHandler, FhirReadHandler>();
     builder.Services.AddScoped<IFhirSearchHandler, FhirSearchHandler>();
+    builder.Services.AddScoped<IFhirPatchHandler, FhirPatchHandler>();
+    builder.Services.AddScoped<IFhirConditionalPatchHandler, FhirConditionalPatchHandler>();
+    builder.Services.AddSingleton<IFhirPathPatchService, FhirPathPatchService>();
 
     // Pipeline behaviors (registered as open generics; first registered = outermost in pipeline).
     builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
@@ -261,6 +267,8 @@ try
     builder.Services.AddScoped<IRequestHandler<FhirTypeLevelOperationRequest, FhirResourceResponse>, FhirTypeLevelOperationHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsUpdateRequest, FhirValidationSettingsUpdateResponse>, ServiceSettingHandler>();
     builder.Services.AddScoped<IRequestHandler<FhirValidationSettingsGetRequest, FhirValidationSettingsGetResponse>, ServiceSettingHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirPatchRequest, FhirOptionalResourceResponse>, FhirPatchHandler>();
+    builder.Services.AddScoped<IRequestHandler<FhirConditionalPatchRequest, FhirOptionalResourceResponse>, FhirConditionalPatchHandler>();
     builder.Services.AddScoped<IRequestDispatcher, RequestDispatcher>();
 
     //Database Transactions ----------------------------------------------------------------

@@ -15,6 +15,8 @@ public class ResourceEndpointPolicy
     public required bool AllowConditionalCreate { get; init; } = false;
     public required bool AllowConditionalUpdate { get; init; } = false;
     public required bool AllowConditionalDelete { get; init; } = false;
+    public required bool AllowPatch { get; init; } = false;
+    public required bool AllowConditionalPatch { get; init; } = false;
     public required bool AllowBaseTransaction { get; init; } = false;
     public required bool AllowBaseBatch { get; init; } = false;
     public required bool AllowBaseMetadata { get; init; } = false;
