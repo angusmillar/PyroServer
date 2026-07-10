@@ -6,7 +6,8 @@ public static class PatientBuilder
         string? id = null,
         string? familyName = null,
         string? givenName = null,
-        string? deceasedDateTime = null)
+        string? deceasedDateTime = null,
+        string? managingOrganizationId = null)
     {
         var patient = new Hl7.Fhir.Model.Patient
         {
@@ -26,6 +27,11 @@ public static class PatientBuilder
         if (deceasedDateTime is not null)
         {
             patient.Deceased = new Hl7.Fhir.Model.FhirDateTime(deceasedDateTime);
+        }
+
+        if (managingOrganizationId is not null)
+        {
+            patient.ManagingOrganization = new Hl7.Fhir.Model.ResourceReference($"Organization/{managingOrganizationId}");
         }
 
         return patient;
