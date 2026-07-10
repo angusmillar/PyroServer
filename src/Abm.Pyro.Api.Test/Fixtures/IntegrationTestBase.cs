@@ -20,7 +20,8 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         
         var fhirClientSettings = new FhirClientSettings()
         {
-            PreferredFormat = ResourceFormat.Json
+            PreferredFormat = ResourceFormat.Json,
+            PreferredParameterHandling = SearchParameterHandling.Strict
         };
         
         var tenantBaseAddress = new Uri(Fixture.HttpClient.BaseAddress!, "pyro/");
