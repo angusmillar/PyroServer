@@ -52,14 +52,14 @@ dotnet ef migrations add <Name>  --project Abm.Pyro.Repository --startup-project
 ### Request Lifecycle
 
 1. `FhirController` (one controller, tenant-scoped route `/{tenant}/fhir/{resourceName}/...`) receives the HTTP request.
-2. The controller dispatches a **MediatR request** (e.g. `FhirCreateRequest`, `FhirSearchRequest`).
+2. The controller dispatches a **Mediator behavioral design pattern request** (e.g. `FhirCreateRequest`, `FhirSearchRequest`).
 3. Three **pipeline behaviors** execute in order: `CorrelationBehavior` → `LoggingBehavior` → `DatabaseTransactionBehavior`.
 4. The relevant **handler** in `Abm.Pyro.Application/FhirHandler/` processes the request using repository and support services.
 5. The handler returns a typed **response record** from `Abm.Pyro.Domain/FhirResponse/`, which the controller maps to an HTTP response.
 
-### CQRS / MediatR
+### Mediator Pattern
 
-All FHIR operations are modelled as immutable `record` types in `Abm.Pyro.Domain/FhirRequest/`. Every request implements `IRequest<TResponse>` and `IValidatable`. Handlers live in `Abm.Pyro.Application/FhirHandler/`. MediatR assembly scanning is anchored on `IApplicationLayerAssemblyMarker`.
+All FHIR operations are modelled as immutable `record` types in `Abm.Pyro.Domain/FhirRequest/`. Every request implements `IRequest<TResponse>` and `IValidatable`. Handlers live in `Abm.Pyro.Application/FhirHandler/`.
 
 ### Validation
 
@@ -115,8 +115,8 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 
 | File | Role |
 |---|---|
-| `Abm.Pyro.Domain/FhirRequest/FhirPatchRequest.cs` | MediatR request record (`HttpVerbId.Patch`) |
-| `Abm.Pyro.Domain/FhirRequest/FhirConditionalPatchRequest.cs` | MediatR request record for conditional form |
+| `Abm.Pyro.Domain/FhirRequest/FhirPatchRequest.cs` | Mediator request record (`HttpVerbId.Patch`) |
+| `Abm.Pyro.Domain/FhirRequest/FhirConditionalPatchRequest.cs` | Mediator request record for conditional form |
 | `Abm.Pyro.Application/FhirPatch/IFhirPathPatchService.cs` | Patch service interface |
 | `Abm.Pyro.Application/FhirPatch/FhirPathPatchService.cs` | Applies FHIRPath patch operations using the Firely SDK's mutable `ElementNode` tree (`ElementNode.FromElement(new ScopedNode(...))` → mutate → `ToPoco<Resource>`) |
 | `Abm.Pyro.Application/FhirHandler/FhirPatchHandler.cs` | Loads the current resource, applies the patch, re-indexes, and stores a new `ResourceStore` row |
@@ -133,7 +133,6 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 ## Key Dependencies
 
 - `Hl7.Fhir.R4` v5.11.4 — official FHIR R4 SDK
-- `MediatR` v12.4.1
 - `Entity Framework Core` v9.0.1 (SQL Server)
 - `Firely.Fhir.Validation.R4` v2.6.3 — FHIR profile validation
 - `ZiggyCreatures.FusionCache` v2.0.0
