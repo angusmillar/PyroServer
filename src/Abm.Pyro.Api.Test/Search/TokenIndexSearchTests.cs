@@ -46,6 +46,19 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
     }
     
     [Fact]
+    public async Task Search_BySystemWithoutCode_ReturnsMatchingObservation()
+    {
+        // FHIR token search with no code matches on system alone.
+        await CreateObservationAsync(loincCode: BodyWeightCode);
+
+        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+            new[] { $"code={CodeSystemUriSupport.Loinc}|" });
+
+        Assert.NotNull(bundle);
+        Assert.Single(bundle.Entry);
+    }
+    
+    [Fact]
     public async Task Search_BySystemOnly_ReturnsMatchingObservations()
     {
         // FHIR token search with no system prefix matches on code alone.
