@@ -212,6 +212,15 @@ Full-stack tests that spin up the entire Pyro server using `WebApplicationFactor
 ### Adding new index tables
 When a new FHIR index table is added via EF migration, add it to the `TablesToInclude` list in `IntegrationTestFixture.cs` so Respawn clears it between tests.
 
+## Coding Conventions
+
+- When a file needs the FHIR model namespace and/or the `Task` type, prefer these using statements:
+  ```csharp
+  using Hl7.Fhir.Model;
+  using Task = System.Threading.Tasks.Task;
+  ```
+  The `Task` alias avoids ambiguity with `Hl7.Fhir.Model.Task` (the FHIR `Task` resource type), which otherwise collides with `System.Threading.Tasks.Task`.
+
 ## Code Generation
 
 `Abm.Pyro.CodeGeneration` targets .NET Framework 4.8.1. Its T4 templates generate `FhirResourceType.cs` and the search parameter seed files from FHIR definition ZIPs. Re-run the templates when upgrading the FHIR version; the generated output is committed.
