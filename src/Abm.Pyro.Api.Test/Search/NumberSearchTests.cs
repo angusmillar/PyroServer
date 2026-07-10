@@ -1,5 +1,7 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
+using Hl7.Fhir.Model;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Test.Search;
 
@@ -18,7 +20,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // eq: the stored value equals the search value (within implicit range of the given precision).
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=eq0.8" });
 
         Assert.NotNull(bundle);
@@ -31,7 +33,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // When no prefix is supplied the server treats it as eq.
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=0.8" });
 
         Assert.NotNull(bundle);
@@ -46,7 +48,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // ne: the stored value is NOT equal to the search value — equal resource must not appear.
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=ne0.8" });
 
         Assert.NotNull(bundle);
@@ -60,7 +62,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         await CreateAsync(probability: 0.3M);
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=ne0.8" });
 
         Assert.NotNull(bundle);
@@ -75,7 +77,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // gt: stored 0.8 is greater than search value 0.7 — should match.
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=gt0.7" });
 
         Assert.NotNull(bundle);
@@ -88,7 +90,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // gt is strictly greater-than — an equal value must not match.
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=gt0.8" });
 
         Assert.NotNull(bundle);
@@ -103,7 +105,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // lt: stored 0.3 is less than search value 0.5 — should match.
         await CreateAsync(probability: 0.3M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=lt0.5" });
 
         Assert.NotNull(bundle);
@@ -116,7 +118,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // lt is strictly less-than — an equal value must not match.
         await CreateAsync(probability: 0.3M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=lt0.3" });
 
         Assert.NotNull(bundle);
@@ -131,7 +133,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // ge: stored 0.8 >= search value 0.8 — boundary value must match.
         await CreateAsync(probability: 0.8M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=ge0.8" });
 
         Assert.NotNull(bundle);
@@ -146,7 +148,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         // le: stored 0.3 <= search value 0.3 — boundary value must match.
         await CreateAsync(probability: 0.3M);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.RiskAssessment>(
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
             new[] { "probability=le0.3" });
 
         Assert.NotNull(bundle);
@@ -155,10 +157,10 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
 
     private async Task CreateAsync(decimal probability)
     {
-        Hl7.Fhir.Model.Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());
         Assert.NotNull(patient);
 
-        Hl7.Fhir.Model.RiskAssessment? created = await FhirClient.CreateAsync(
+        RiskAssessment? created = await FhirClient.CreateAsync(
             RiskAssessmentBuilder.Build(probability: probability, subjectPatientId: patient.Id));
         Assert.NotNull(created);
     }

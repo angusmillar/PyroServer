@@ -1,5 +1,7 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
+using Hl7.Fhir.Model;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Test.Search;
 
@@ -13,7 +15,7 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
     {
         await CreateValueSetAsync(url: TestUrl);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.ValueSet>(
+        Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(
             new[] { $"url={TestUrl}" });
 
         Assert.NotNull(bundle);
@@ -25,7 +27,7 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
     {
         await CreateValueSetAsync(url: TestUrl);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.ValueSet>(
+        Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(
             new[] { "url=http://example.org/fhir/ValueSet/does-not-exist" });
 
         Assert.NotNull(bundle);
@@ -38,18 +40,18 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
         await CreateValueSetAsync(url: TestUrl, name: "ColourValueSet");
         await CreateValueSetAsync(url: OtherUrl, name: "AnimalValueSet");
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.ValueSet>(
+        Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(
             new[] { $"url={TestUrl}" });
 
         Assert.NotNull(bundle);
         Assert.Single(bundle.Entry);
-        var returned = Assert.IsType<Hl7.Fhir.Model.ValueSet>(bundle.Entry[0].Resource);
+        var returned = Assert.IsType<ValueSet>(bundle.Entry[0].Resource);
         Assert.Equal("ColourValueSet", returned.Name);
     }
 
     private async Task CreateValueSetAsync(string? url = null, string? name = null)
     {
-        Hl7.Fhir.Model.ValueSet? valueSet = await FhirClient.CreateAsync(
+        ValueSet? valueSet = await FhirClient.CreateAsync(
             ValueSetBuilder.Build(url: url, name: name));
         Assert.NotNull(valueSet);
     }

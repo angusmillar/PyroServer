@@ -1,5 +1,7 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
+using Hl7.Fhir.Model;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Test.Search;
 
@@ -10,7 +12,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
     {
         await CreateObservationAsync(valueQuantityAmount: 80, valueQuantityUnit: "kg");
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"value-quantity=80|{CodeSystemUriSupport.Ucum}|kg" });
 
         Assert.NotNull(bundle);
@@ -22,7 +24,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
     {
         await CreateObservationAsync(valueQuantityAmount: 80, valueQuantityUnit: "kg");
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"value-quantity=70|{CodeSystemUriSupport.Ucum}|kg" });
 
         Assert.NotNull(bundle);
@@ -35,7 +37,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
         await CreateObservationAsync(valueQuantityAmount: 80, valueQuantityUnit: "kg");
         await CreateObservationAsync(valueQuantityAmount: 70, valueQuantityUnit: "kg");
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"value-quantity=80|{CodeSystemUriSupport.Ucum}|kg" });
 
         Assert.NotNull(bundle);
@@ -44,7 +46,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
 
     private async Task CreateObservationAsync(decimal? valueQuantityAmount = null, string? valueQuantityUnit = null)
     {
-        Hl7.Fhir.Model.Observation? observation = await FhirClient.CreateAsync(
+        Observation? observation = await FhirClient.CreateAsync(
             ObservationBuilder.Build(
                 valueQuantityAmount: valueQuantityAmount,
                 valueQuantityUnit: valueQuantityUnit));

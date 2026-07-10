@@ -1,5 +1,7 @@
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
+using Hl7.Fhir.Model;
+using Task = System.Threading.Tasks.Task;
 
 namespace Abm.Pyro.Api.Test.Search;
 
@@ -13,7 +15,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
     {
         await CreateObservationAsync(loincCode: BodyWeightCode);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"code={CodeSystemUriSupport.Loinc}|{BodyWeightCode}" });
 
         Assert.NotNull(bundle);
@@ -25,7 +27,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
     {
         await CreateObservationAsync(loincCode: BodyWeightCode);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"code={CodeSystemUriSupport.Loinc}|{HeartRateCode}" });
 
         Assert.NotNull(bundle);
@@ -38,7 +40,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         // FHIR token search with no system prefix matches on code alone.
         await CreateObservationAsync(loincCode: BodyWeightCode);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"code={BodyWeightCode}" });
 
         Assert.NotNull(bundle);
@@ -51,7 +53,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         // FHIR token search with no code matches on system alone.
         await CreateObservationAsync(loincCode: BodyWeightCode);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"code={CodeSystemUriSupport.Loinc}|" });
 
         Assert.NotNull(bundle);
@@ -65,7 +67,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         await CreateObservationAsync(loincCode: BodyWeightCode);
         await CreateObservationAsync(loincCode: HeartRateCode);
 
-        Hl7.Fhir.Model.Bundle? bundle = await FhirClient.SearchAsync<Hl7.Fhir.Model.Observation>(
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
             new[] { $"code={CodeSystemUriSupport.Loinc}|" });
 
         Assert.NotNull(bundle);
@@ -74,7 +76,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
 
     private async Task CreateObservationAsync(string? loincCode = null)
     {
-        Hl7.Fhir.Model.Observation? observation = await FhirClient.CreateAsync(
+        Observation? observation = await FhirClient.CreateAsync(
             ObservationBuilder.Build(loincCode: loincCode));
         Assert.NotNull(observation);
     }
