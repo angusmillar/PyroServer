@@ -139,7 +139,7 @@ try
 
     builder.Services.AddScoped<IFhirTransactionDeleteService, FhirTransactionDeleteService>();
     builder.Services.AddScoped<IFhirTransactionPostService, FhirTransactionPostService>();
-    builder.Services.AddScoped<IFhirTransactionPutService, FhirTransactionPutService>();
+    builder.Services.AddScoped<IFhirTransactionPutAndPatchService, FhirTransactionPutAndPatchService>();
     builder.Services.AddScoped<IFhirTransactionGetService, FhirTransactionGetService>();
     
     builder.Services.AddScoped<IFhirBundleCommonSupport, FhirBundleCommonSupport>();

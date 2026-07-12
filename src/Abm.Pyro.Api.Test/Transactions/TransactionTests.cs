@@ -324,6 +324,264 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
     }
 
     // ------------------------------------------------------------------
+    // PATCH inside a transaction Bundle.
+    // Ref: https://hl7.org/fhir/R4/fhirpatch.html
+    // Key invariant carried over from the standalone PATCH endpoint: PATCH never creates.
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task Transaction_DirectPatch_ExistingPatient_UpdatesAndPersists()
+    {
+        Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "PreImage"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("PostImage"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient/{existing.Id}", patch));
+
+        Bundle? response = await FhirClient.TransactionAsync(transaction);
+
+        Assert.NotNull(response);
+        Assert.Single(response.Entry);
+        Assert.StartsWith("200", response.Entry[0].Response.Status);
+
+        var patchedPatient = Assert.IsType<Patient>(response.Entry[0].Resource);
+        Assert.Equal("PostImage", patchedPatient.Name.First().Family);
+        Assert.Equal("2", patchedPatient.Meta.VersionId);
+
+        Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
+                           ?? throw new InvalidOperationException("Patched patient not found");
+        Assert.Equal("PostImage", readBack.Name.First().Family);
+        Assert.Equal("2", readBack.Meta.VersionId);
+    }
+
+    [Fact]
+    public async Task Transaction_ConditionalPatch_OneMatch_UpdatesExisting()
+    {
+        const string mrn = "cp-1";
+        Patient existing = await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "Before"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("After"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient?identifier={MrnSystem}|{mrn}", patch));
+
+        Bundle? response = await FhirClient.TransactionAsync(transaction);
+
+        Assert.NotNull(response);
+        Assert.StartsWith("200", response.Entry[0].Response.Status);
+        Assert.Equal(existing.Id, response.Entry[0].Resource.Id);
+
+        Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
+                           ?? throw new InvalidOperationException("Patched patient not found");
+        Assert.Equal("After", readBack.Name.First().Family);
+    }
+
+    [Fact]
+    public async Task Transaction_ConditionalPatch_ZeroMatches_RollsBackWholeTransaction()
+    {
+        const string mrn = "cp-zero";
+        const string siblingMrn = "cp-zero-sibling";
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+
+        Bundle transaction = TransactionBundle(
+            PostEntry(PatientWithIdentifier(siblingMrn, family: "RollbackVictim")),
+            PatchEntry($"Patient?identifier={MrnSystem}|{mrn}", patch));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+
+        // The sibling POST must not have been committed either - the transaction is atomic.
+        Bundle? search = await FhirClient.SearchAsync<Patient>(new[] { $"identifier={MrnSystem}|{siblingMrn}" });
+        Assert.NotNull(search);
+        Assert.Empty(search.Entry);
+    }
+
+    [Fact]
+    public async Task Transaction_ConditionalPatch_MultipleMatches_FailsTransaction()
+    {
+        const string mrn = "cp-multi";
+        await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "First"));
+        await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "Second"));
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient?identifier={MrnSystem}|{mrn}", patch));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+    }
+
+    [Fact]
+    public async Task Transaction_DirectPatch_NonExistentResource_FailsTransaction()
+    {
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient/{Guid.NewGuid()}", patch));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+    }
+
+    [Fact]
+    public async Task Transaction_DirectPatch_DeletedResource_FailsTransaction()
+    {
+        Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "ToBeDeletedThenPatched"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+        await FhirClient.DeleteAsync($"Patient/{existing.Id}");
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient/{existing.Id}", patch));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+    }
+
+    [Fact]
+    public async Task Transaction_MixedVerbBundle_AllSucceedIncludingPatch()
+    {
+        Patient toUpdate = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "MixedPutOriginal"))
+                           ?? throw new InvalidOperationException("Seed create (toUpdate) returned null");
+        Patient toPatch = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "MixedPatchOriginal"))
+                          ?? throw new InvalidOperationException("Seed create (toPatch) returned null");
+        Patient toDelete = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "MixedDoomed"))
+                           ?? throw new InvalidOperationException("Seed create (toDelete) returned null");
+        Patient toGet = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "MixedReadable"))
+                        ?? throw new InvalidOperationException("Seed create (toGet) returned null");
+
+        Patient updated = PatientBuilder.Build(id: toUpdate.Id, familyName: "MixedPutUpdated");
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("MixedPatchUpdated"));
+
+        Bundle transaction = TransactionBundle(
+            PostEntry(PatientBuilder.Build(familyName: "MixedCreated")),
+            PutEntry(updated, $"Patient/{toUpdate.Id}"),
+            PatchEntry($"Patient/{toPatch.Id}", patch),
+            DeleteEntry($"Patient/{toDelete.Id}"),
+            GetEntry($"Patient/{toGet.Id}"));
+
+        Bundle? response = await FhirClient.TransactionAsync(transaction);
+
+        Assert.NotNull(response);
+        Assert.Equal(5, response.Entry.Count);
+        Assert.StartsWith("201", response.Entry[0].Response.Status); // POST
+        Assert.StartsWith("200", response.Entry[1].Response.Status); // PUT
+        Assert.StartsWith("200", response.Entry[2].Response.Status); // PATCH
+        Assert.StartsWith("204", response.Entry[3].Response.Status); // DELETE
+        Assert.StartsWith("200", response.Entry[4].Response.Status); // GET
+
+        var patchedPatient = Assert.IsType<Patient>(response.Entry[2].Resource);
+        Assert.Equal("MixedPatchUpdated", patchedPatient.Name.First().Family);
+
+        Patient patchedReadBack = await FhirClient.ReadAsync<Patient>($"Patient/{toPatch.Id}")
+                                  ?? throw new InvalidOperationException("Patched patient not found");
+        Assert.Equal("MixedPatchUpdated", patchedReadBack.Name.First().Family);
+    }
+
+    [Fact]
+    public async Task Transaction_PatchValueReferencingSameBundlePost_ResolvesToNewId()
+    {
+        Observation existingObservation = await FhirClient.CreateAsync(ObservationBuilder.Build())
+                                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        string patientUrn = $"urn:uuid:{Guid.NewGuid()}";
+        Parameters patch = MakeOp("add", "Observation", name: "subject", value: new ResourceReference(patientUrn));
+
+        Bundle transaction = TransactionBundle(
+            PostEntry(PatientBuilder.Build(familyName: "PatchValueTarget"), fullUrl: patientUrn),
+            PatchEntry($"Observation/{existingObservation.Id}", patch));
+
+        Bundle? response = await FhirClient.TransactionAsync(transaction);
+
+        Assert.NotNull(response);
+        Assert.Equal(2, response.Entry.Count);
+        Assert.StartsWith("201", response.Entry[0].Response.Status);
+        Assert.StartsWith("200", response.Entry[1].Response.Status);
+
+        var newPatientId = response.Entry[0].Resource.Id;
+        var patchedObservation = Assert.IsType<Observation>(response.Entry[1].Resource);
+        Assert.Contains($"Patient/{newPatientId}", patchedObservation.Subject.Reference);
+
+        Observation readBack = await FhirClient.ReadAsync<Observation>($"Observation/{existingObservation.Id}")
+                               ?? throw new InvalidOperationException("Patched observation not found");
+        Assert.Contains($"Patient/{newPatientId}", readBack.Subject.Reference);
+    }
+
+    [Fact]
+    public async Task Transaction_PutAndPatchOverlapOnSameTarget_FailsTransaction()
+    {
+        Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "OverlapOriginal"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        Patient putUpdate = PatientBuilder.Build(id: existing.Id, familyName: "OverlapViaPut");
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("OverlapViaPatch"));
+
+        Bundle transaction = TransactionBundle(
+            PutEntry(putUpdate, $"Patient/{existing.Id}"),
+            PatchEntry($"Patient/{existing.Id}", patch));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+
+        // Neither the PUT nor the PATCH may have been committed.
+        Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
+                           ?? throw new InvalidOperationException("Patient not found");
+        Assert.Equal("OverlapOriginal", readBack.Name.First().Family);
+        Assert.Equal("1", readBack.Meta.VersionId);
+    }
+
+    [Fact]
+    public async Task Transaction_DirectPatch_IfMatchPreconditionFailure_FailsTransaction()
+    {
+        Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "IfMatchOriginal"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient/{existing.Id}", patch, ifMatch: "W/\"99\""));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+
+        Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
+                           ?? throw new InvalidOperationException("Patient not found");
+        Assert.Equal("IfMatchOriginal", readBack.Name.First().Family);
+        Assert.Equal("1", readBack.Meta.VersionId);
+    }
+
+    [Fact]
+    public async Task Transaction_DirectPatch_EmptyParametersBody_FailsTransaction()
+    {
+        Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "EmptyPatchOriginal"))
+                           ?? throw new InvalidOperationException("Seed create returned null");
+
+        Bundle transaction = TransactionBundle(
+            PatchEntry($"Patient/{existing.Id}", new Parameters()));
+
+        FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
+            () => FhirClient.TransactionAsync(transaction));
+        Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
+
+        Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
+                           ?? throw new InvalidOperationException("Patient not found");
+        Assert.Equal("EmptyPatchOriginal", readBack.Name.First().Family);
+        Assert.Equal("1", readBack.Meta.VersionId);
+    }
+
+    // ------------------------------------------------------------------
     // Response bundle metadata population.
     // ------------------------------------------------------------------
 
@@ -409,6 +667,51 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                 Url = requestUrl
             }
         };
+    }
+
+    private static Bundle.EntryComponent PatchEntry(string requestUrl, Parameters patchParameters, string? fullUrl = null, string? ifMatch = null)
+    {
+        return new Bundle.EntryComponent
+        {
+            FullUrl = fullUrl ?? $"urn:uuid:{Guid.NewGuid()}",
+            Resource = patchParameters,
+            Request = new Bundle.RequestComponent
+            {
+                Method = Bundle.HTTPVerb.PATCH,
+                Url = requestUrl,
+                IfMatch = ifMatch
+            }
+        };
+    }
+
+    // Copied from Patch/PatchTests.cs's patch-body builder for use in transaction-Bundle PATCH entries.
+    private static Parameters MakeOp(
+        string    type,
+        string    path,
+        string?   name        = null,
+        DataType? value       = null,
+        int?      index       = null,
+        int?      source      = null,
+        int?      destination = null)
+    {
+        var op = new Parameters.ParameterComponent
+        {
+            Name = "operation",
+            Part =
+            [
+                new() { Name = "type", Value = new Code(type) },
+                new() { Name = "path", Value = new FhirString(path) }
+            ]
+        };
+        if (name        is not null) op.Part.Add(new() { Name = "name",        Value = new FhirString(name) });
+        if (value       is not null) op.Part.Add(new() { Name = "value",       Value = value });
+        if (index       is not null) op.Part.Add(new() { Name = "index",       Value = new Integer(index) });
+        if (source      is not null) op.Part.Add(new() { Name = "source",      Value = new Integer(source) });
+        if (destination is not null) op.Part.Add(new() { Name = "destination", Value = new Integer(destination) });
+
+        var p = new Parameters();
+        p.Parameter.Add(op);
+        return p;
     }
 
     private static Patient PatientWithIdentifier(string mrn, string? family = null)

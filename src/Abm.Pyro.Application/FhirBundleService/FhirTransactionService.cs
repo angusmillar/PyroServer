@@ -21,7 +21,7 @@ namespace Abm.Pyro.Application.FhirBundleService;
 public class FhirTransactionService(
     IFhirTransactionDeleteService fhirTransactionDeleteService,
     IFhirTransactionPostService fhirTransactionPostService,
-    IFhirTransactionPutService fhirTransactionPutService,
+    IFhirTransactionPutAndPatchService fhirTransactionPutAndPatchService,
     IFhirTransactionGetService fhirTransactionGetService,
     IFhirBundleCommonSupport fhirBundleCommonSupport,
     IOperationOutcomeSupport operationOutcomeSupport,
@@ -83,7 +83,7 @@ public class FhirTransactionService(
             return GetBadRequestFhirResourceResponse(_bundleEntryTransactionMetaDataDictionary);
         }
 
-        OperationOutcome? preProcessPutsOperationOutcomeError = await fhirTransactionPutService.PreProcessPuts(
+        OperationOutcome? preProcessPutsOperationOutcomeError = await fhirTransactionPutAndPatchService.PreProcessPutsAndPatches(
             entryList: request.Bundle.Entry,
             requestHeaders: _requestHeaders,
             bundleEntryTransactionMetaDataDictionary: _bundleEntryTransactionMetaDataDictionary,
@@ -143,7 +143,7 @@ public class FhirTransactionService(
         }
 
         // 3. Process any PUT or PATCH interactions
-        await fhirTransactionPutService.ProcessPuts(
+        await fhirTransactionPutAndPatchService.ProcessPutsAndPatches(
             tenant: request.Tenant,
             requestId: request.RequestId,
             entryList: request.Bundle.Entry,

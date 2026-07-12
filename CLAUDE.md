@@ -130,6 +130,8 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 
 **`HttpVerbId.Patch = 5`** is stored in the `ResourceStore` row written by a successful patch and has a corresponding EF Core migration (`20260701141423_PatchOperationHttpVerbAdd`).
 
+**PATCH inside transaction Bundles.** A `PATCH` entry (direct or conditional) inside a FHIR transaction `Bundle` is supported, handled by `FhirTransactionPutAndPatchService` (`Abm.Pyro.Application/FhirBundleService/`) — the PUT/PATCH-processing service in step 3 of the transaction commit sequence (`FhirTransactionService.cs`), reusing `IFhirPatchHandler` exactly as it reuses `IFhirUpdateHandler` for PUT. Pre-process resolves the PATCH target's identity (direct: load by id; conditional: run the search pipeline with PATCH match semantics) before commit, the same way conditional-PUT resolution works. Conditional PATCH with zero matches fails the whole transaction (PATCH never creates, even inside a transaction). Two entries (PUT or PATCH) resolving to the same `ResourceType/id` within one transaction also fails the transaction, per the FHIR trules overlapping-identity rule. PATCHing a resource whose *identity* is created by a POST/PUT in the same bundle is not supported (the target must already exist in the database) — but a patch *value* (e.g. a `valueReference`) pointing at a same-bundle POST/PUT is resolved correctly, since the generic reference-rewriting machinery in `FhirTransactionService.UpdateResourceReferences` walks a PATCH entry's `Parameters` body the same way it walks any other resource.
+
 ## Key Dependencies
 
 - `Hl7.Fhir.R4` v5.11.4 — official FHIR R4 SDK
@@ -208,6 +210,9 @@ Full-stack tests that spin up the entire Pyro server using `WebApplicationFactor
 - Conditional PATCH: `FhirClient.ConditionalPatchAsync<TResource>(SearchParams condition, patchParameters)` — note this is a generic method keyed on the resource type; passing a query-string URI to `PatchAsync` is rejected by the client with `ArgumentException` because `PatchAsync(Uri, ...)` validates that the URI contains a resource ID.
 - If-Match (optimistic concurrency): `FhirClient.PatchAsync` has no `ifMatch` parameter. Create a dedicated `FhirClient` from `Fixture.Factory.CreateClient()` and add the header via `httpClient.DefaultRequestHeaders.TryAddWithoutValidation("If-Match", "W/\"1\"")` before constructing the client.
 - Patch body: build a `Parameters` resource with `parameter[].name = "operation"` and nested `part` entries (`type`, `path`, and operation-specific parts). An empty `Parameters` (no operations) returns 400.
+
+### Transaction-PATCH test pattern
+A PATCH entry inside a transaction `Bundle` is a `Bundle.EntryComponent` with `Request.Method = Bundle.HTTPVerb.PATCH`, `Request.Url` set to either `ResourceType/id` (direct) or `ResourceType?criteria` (conditional), and `Resource` set to a `Parameters` patch document (see `Transactions/TransactionTests.cs`'s `PatchEntry(...)` helper and `Patch/PatchTests.cs`'s `MakeOp(...)` builder, reused for building the `Parameters` body). Post the bundle via `FhirClient.TransactionAsync(bundle)`; a successful PATCH entry's `Bundle.Entry[x].Response.Status` is `"200 OK"` and `Entry[x].Resource` is the patched resource. A failing entry anywhere in the bundle rolls back the whole transaction — assert `FhirOperationException { Status == HttpStatusCode.BadRequest }` and, where relevant, confirm a sibling entry was not committed by reading it back afterwards.
 
 ### Adding new index tables
 When a new FHIR index table is added via EF migration, add it to the `TablesToInclude` list in `IntegrationTestFixture.cs` so Respawn clears it between tests.

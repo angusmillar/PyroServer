@@ -77,6 +77,9 @@ public class FhirBundleCreationCreationSupport(
         case HttpVerbId.Delete:
           oResEntry.Request.Method = Bundle.HTTPVerb.DELETE;
           break;
+        case HttpVerbId.Patch:
+          oResEntry.Request.Method = Bundle.HTTPVerb.PATCH;
+          break;
         default:
           throw new ArgumentOutOfRangeException(nameof(resourceStore.HttpVerb));
       }
