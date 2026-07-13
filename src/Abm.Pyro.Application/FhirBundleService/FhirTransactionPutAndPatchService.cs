@@ -1,4 +1,4 @@
-using Abm.Pyro.Application.DependencyFactory;
+﻿using Abm.Pyro.Application.DependencyFactory;
 using Abm.Pyro.Application.EndpointPolicy;
 using Abm.Pyro.Application.FhirHandler;
 using Abm.Pyro.Application.SearchQuery;
@@ -161,7 +161,8 @@ public class FhirTransactionPutAndPatchService(
                 if (entry.Resource is not Parameters patchParameters)
                 {
                     throw new ApplicationException(
-                        $"The Bundle entry with the fullUrl of: {entry.FullUrl} was pre-processed as a PATCH action, but its entry.resource was not of type Parameters at commit time.");
+                        $"The Bundle entry with the fullUrl of: {entry.FullUrl} was pre-processed as a PATCH action, " +
+                        $"but its entry.resource was not of type Parameters at commit time.");
                 }
 
                 response = await fhirPatchHandler.Handle(
