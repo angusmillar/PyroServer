@@ -22,37 +22,6 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
 {
     private const string MrnSystem = "http://example.org/fhir/mrn";
 
-    // ── patch body builder ────────────────────────────────────────────────────
-
-    private static Parameters MakeOp(
-        string    type,
-        string    path,
-        string?   name        = null,
-        DataType? value       = null,
-        int?      index       = null,
-        int?      source      = null,
-        int?      destination = null)
-    {
-        var op = new Parameters.ParameterComponent
-        {
-            Name = "operation",
-            Part =
-            [
-                new() { Name = "type", Value = new Code(type) },
-                new() { Name = "path", Value = new FhirString(path) }
-            ]
-        };
-        if (name        is not null) op.Part.Add(new() { Name = "name",        Value = new FhirString(name) });
-        if (value       is not null) op.Part.Add(new() { Name = "value",       Value = value });
-        if (index       is not null) op.Part.Add(new() { Name = "index",       Value = new Integer(index) });
-        if (source      is not null) op.Part.Add(new() { Name = "source",      Value = new Integer(source) });
-        if (destination is not null) op.Part.Add(new() { Name = "destination", Value = new Integer(destination) });
-
-        var p = new Parameters();
-        p.Parameter.Add(op);
-        return p;
-    }
-
     // ── FhirClient helpers ────────────────────────────────────────────────────
 
     /// Direct PATCH by resource ID via FhirClient.
@@ -113,7 +82,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     public async Task Patch_ExistingPatient_Returns200()
     {
         Patient created = await CreatePatientAsync("Smith");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"))]);
 
         Resource? result = await PatchAsync("Patient", created.Id!, patch);
 
@@ -124,7 +94,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     public async Task Patch_ExistingPatient_PersistsChange_ConfirmedBySubsequentRead()
     {
         Patient created = await CreatePatientAsync("Smith");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"))]);
 
         await PatchAsync("Patient", created.Id!, patch);
         Patient? readBack = await FhirClient.ReadAsync<Patient>($"Patient/{created.Id}");
@@ -139,7 +110,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
         Patient created = await CreatePatientAsync(); // version 1
 
         Resource? result = await PatchAsync("Patient", created.Id!,
-            MakeOp("replace", "Patient.name[0].family", value: new FhirString("Updated")));
+            PatchBuilder.GetParameters(
+                [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Updated"))]));
 
         Patient patched = Assert.IsType<Patient>(result);
         Assert.Equal("2", patched.Meta?.VersionId);
@@ -151,7 +123,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
         Patient created = await CreatePatientAsync("Before");
 
         Resource? result = await PatchAsync("Patient", created.Id!,
-            MakeOp("replace", "Patient.name[0].family", value: new FhirString("After")));
+            PatchBuilder.GetParameters(
+                [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("After"))]));
 
         Patient patched = Assert.IsType<Patient>(result);
         Assert.Equal(created.Id, patched.Id);
@@ -163,7 +136,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     public async Task Patch_ExistingPatient_AddOperation_AppendsNewName()
     {
         Patient created = await CreatePatientAsync(); // starts with one name
-        Parameters patch = MakeOp("add", "Patient", name: "name", value: new HumanName { Family = "Alias" });
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("add", "Patient", name: "name", value: new HumanName { Family = "Alias" })]);
 
         await PatchAsync("Patient", created.Id!, patch);
         Patient? readBack = await FhirClient.ReadAsync<Patient>($"Patient/{created.Id}");
@@ -177,7 +151,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     public async Task Patch_ExistingPatient_DeleteOperation_RemovesField()
     {
         Patient created = await CreatePatientAsync(); // PatientBuilder sets BirthDate = "1990-01-15"
-        Parameters patch = MakeOp("delete", "Patient.birthDate");
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("delete", "Patient.birthDate")]);
 
         await PatchAsync("Patient", created.Id!, patch);
         Patient? readBack = await FhirClient.ReadAsync<Patient>($"Patient/{created.Id}");
@@ -191,27 +166,11 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     {
         Patient created = await CreatePatientAsync("Duck");
 
-        var patch = new Parameters();
-        patch.Parameter.Add(new Parameters.ParameterComponent
-        {
-            Name = "operation",
-            Part =
-            [
-                new() { Name = "type",  Value = new Code("replace") },
-                new() { Name = "path",  Value = new FhirString("Patient.name[0].family") },
-                new() { Name = "value", Value = new FhirString("Quack") }
-            ]
-        });
-        patch.Parameter.Add(new Parameters.ParameterComponent
-        {
-            Name = "operation",
-            Part =
-            [
-                new() { Name = "type",  Value = new Code("replace") },
-                new() { Name = "path",  Value = new FhirString("Patient.gender") },
-                new() { Name = "value", Value = new Code("male") }
-            ]
-        });
+        Parameters patch = PatchBuilder.GetParameters(
+        [
+            PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Quack")),
+            PatchBuilder.MakeOp("replace", "Patient.gender", value: new Code("male"))
+        ]);
 
         await PatchAsync("Patient", created.Id!, patch);
         Patient? readBack = await FhirClient.ReadAsync<Patient>($"Patient/{created.Id}");
@@ -228,7 +187,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     [Fact]
     public async Task Patch_NonExistentPatient_Returns404_NotCreated()
     {
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Ghost"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Ghost"))]);
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => PatchAsync("Patient", "id-does-not-exist-99999", patch));
@@ -244,7 +204,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => PatchAsync("Patient", created.Id!,
-                MakeOp("replace", "Patient.name[0].family", value: new FhirString("Ghost"))));
+                PatchBuilder.GetParameters(
+                    [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Ghost"))])));
 
         Assert.Equal(HttpStatusCode.NotFound, ex.Status);
     }
@@ -258,7 +219,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     {
         Patient created = await CreatePatientAsync(); // version 1
         FhirClient clientWithIfMatch = CreateFhirClientWithIfMatch("W/\"1\"");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Versioned"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Versioned"))]);
 
         Resource? result = await clientWithIfMatch.PatchAsync(
             new Uri($"Patient/{created.Id}", UriKind.Relative), patch);
@@ -271,7 +233,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     {
         Patient created = await CreatePatientAsync(); // version 1
         FhirClient clientWithIfMatch = CreateFhirClientWithIfMatch("W/\"99\"");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Versioned"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Versioned"))]);
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => clientWithIfMatch.PatchAsync(
@@ -302,7 +265,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => PatchAsync("Patient", created.Id!,
-                MakeOp("delete", "Patient.nonExistentElement")));
+                PatchBuilder.GetParameters(
+                    [PatchBuilder.MakeOp("delete", "Patient.nonExistentElement")])));
 
         Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
     }
@@ -314,7 +278,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => PatchAsync("Patient", created.Id!,
-                MakeOp("explode", "Patient.name[0].family")));
+                PatchBuilder.GetParameters(
+                    [PatchBuilder.MakeOp("explode", "Patient.name[0].family")])));
 
         Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
     }
@@ -325,7 +290,9 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
         Patient created = await CreatePatientAsync(); // one name at index [0]
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
-            () => PatchAsync("Patient", created.Id!, MakeOp("delete", "Patient.name[99]")));
+            () => PatchAsync("Patient", created.Id!,
+                PatchBuilder.GetParameters(
+                    [PatchBuilder.MakeOp("delete", "Patient.name[99]")])));
 
         Assert.Equal(HttpStatusCode.BadRequest, ex.Status);
     }
@@ -339,7 +306,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     {
         const string mrn = "cpatch-one-1";
         await CreatePatientWithIdentifierAsync(mrn, "Smith");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"))]);
 
         Resource? result = await ConditionalPatchAsync<Patient>($"identifier={MrnSystem}|{mrn}", patch);
 
@@ -351,7 +319,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     {
         const string mrn = "cpatch-one-2";
         Patient created = await CreatePatientWithIdentifierAsync(mrn, "Smith");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"))]);
 
         await ConditionalPatchAsync<Patient>($"identifier={MrnSystem}|{mrn}", patch);
         Patient? readBack = await FhirClient.ReadAsync<Patient>($"Patient/{created.Id}");
@@ -363,7 +332,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
     [Fact]
     public async Task ConditionalPatch_NoMatch_Returns404()
     {
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Jones"))]);
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => ConditionalPatchAsync<Patient>($"identifier={MrnSystem}|no-such-patient-99999", patch));
@@ -377,7 +347,8 @@ public class PatchTests(IntegrationTestFixture fixture) : IntegrationTestBase(fi
         const string mrn = "cpatch-multi-1";
         await CreatePatientWithIdentifierAsync(mrn, "Alpha");
         await CreatePatientWithIdentifierAsync(mrn, "Beta");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("Gamma"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("Gamma"))]);
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => ConditionalPatchAsync<Patient>($"identifier={MrnSystem}|{mrn}", patch));

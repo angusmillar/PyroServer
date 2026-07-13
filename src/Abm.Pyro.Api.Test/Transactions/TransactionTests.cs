@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using Abm.Pyro.Api.Test.Fixtures;
 using Abm.Pyro.Api.Test.Support;
+using Abm.Pyro.Domain.Support;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
 using Task = System.Threading.Tasks.Task;
@@ -335,7 +336,8 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "PreImage"))
                            ?? throw new InvalidOperationException("Seed create returned null");
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("PostImage"));
+        Parameters patch = PatchBuilder.GetParameters( 
+            [PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("PostImage"))]);
 
         Bundle transaction = TransactionBundle(
             PatchEntry($"Patient/{existing.Id}", patch));
@@ -363,7 +365,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient existing = await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "Before"))
                            ?? throw new InvalidOperationException("Seed create returned null");
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("After"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("After"))]);
 
         Bundle transaction = TransactionBundle(
             PatchEntry($"Patient?identifier={MrnSystem}|{mrn}", patch));
@@ -385,7 +387,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         const string mrn = "cp-zero";
         const string siblingMrn = "cp-zero-sibling";
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"))]);
 
         Bundle transaction = TransactionBundle(
             PostEntry(PatientWithIdentifier(siblingMrn, family: "RollbackVictim")),
@@ -408,7 +410,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "First"));
         await FhirClient.CreateAsync(PatientWithIdentifier(mrn, family: "Second"));
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"))]);
 
         Bundle transaction = TransactionBundle(
             PatchEntry($"Patient?identifier={MrnSystem}|{mrn}", patch));
@@ -421,7 +423,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
     [Fact]
     public async Task Transaction_DirectPatch_NonExistentResource_FailsTransaction()
     {
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"))]);
 
         Bundle transaction = TransactionBundle(
             PatchEntry($"Patient/{Guid.NewGuid()}", patch));
@@ -438,7 +440,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                            ?? throw new InvalidOperationException("Seed create returned null");
         await FhirClient.DeleteAsync($"Patient/{existing.Id}");
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"))]);
 
         Bundle transaction = TransactionBundle(
             PatchEntry($"Patient/{existing.Id}", patch));
@@ -461,7 +463,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                         ?? throw new InvalidOperationException("Seed create (toGet) returned null");
 
         Patient updated = PatientBuilder.Build(id: toUpdate.Id, familyName: "MixedPutUpdated");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("MixedPatchUpdated"));
+        Parameters patch = PatchBuilder.GetParameters([ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("MixedPatchUpdated"))]);
 
         Bundle transaction = TransactionBundle(
             PostEntry(PatientBuilder.Build(familyName: "MixedCreated")),
@@ -495,7 +497,9 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                                            ?? throw new InvalidOperationException("Seed create returned null");
 
         string patientUrn = $"urn:uuid:{Guid.NewGuid()}";
-        Parameters patch = MakeOp("add", "Observation", name: "subject", value: new ResourceReference(patientUrn));
+        Parameters patch = PatchBuilder.GetParameters([
+            PatchBuilder.MakeOp("add", "Observation", name: "subject", value: new ResourceReference(patientUrn))
+        ]);
 
         Bundle transaction = TransactionBundle(
             PostEntry(PatientBuilder.Build(familyName: "PatchValueTarget"), fullUrl: patientUrn),
@@ -524,7 +528,8 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                            ?? throw new InvalidOperationException("Seed create returned null");
 
         Patient putUpdate = PatientBuilder.Build(id: existing.Id, familyName: "OverlapViaPut");
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("OverlapViaPatch"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("OverlapViaPatch"))]);
 
         Bundle transaction = TransactionBundle(
             PutEntry(putUpdate, $"Patient/{existing.Id}"),
@@ -547,10 +552,11 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient existing = await FhirClient.CreateAsync(PatientBuilder.Build(familyName: "IfMatchOriginal"))
                            ?? throw new InvalidOperationException("Seed create returned null");
 
-        Parameters patch = MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"));
+        Parameters patch = PatchBuilder.GetParameters(
+            [ PatchBuilder.MakeOp("replace", "Patient.name[0].family", value: new FhirString("ShouldNotApply"))]);
 
         Bundle transaction = TransactionBundle(
-            PatchEntry($"Patient/{existing.Id}", patch, ifMatch: "W/\"99\""));
+            PatchEntry($"Patient/{existing.Id}", patch, ifMatch: StringSupport.GetEtag(99)));
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => FhirClient.TransactionAsync(transaction));
@@ -682,36 +688,6 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
                 IfMatch = ifMatch
             }
         };
-    }
-
-    // Copied from Patch/PatchTests.cs's patch-body builder for use in transaction-Bundle PATCH entries.
-    private static Parameters MakeOp(
-        string    type,
-        string    path,
-        string?   name        = null,
-        DataType? value       = null,
-        int?      index       = null,
-        int?      source      = null,
-        int?      destination = null)
-    {
-        var op = new Parameters.ParameterComponent
-        {
-            Name = "operation",
-            Part =
-            [
-                new() { Name = "type", Value = new Code(type) },
-                new() { Name = "path", Value = new FhirString(path) }
-            ]
-        };
-        if (name        is not null) op.Part.Add(new() { Name = "name",        Value = new FhirString(name) });
-        if (value       is not null) op.Part.Add(new() { Name = "value",       Value = value });
-        if (index       is not null) op.Part.Add(new() { Name = "index",       Value = new Integer(index) });
-        if (source      is not null) op.Part.Add(new() { Name = "source",      Value = new Integer(source) });
-        if (destination is not null) op.Part.Add(new() { Name = "destination", Value = new Integer(destination) });
-
-        var p = new Parameters();
-        p.Parameter.Add(op);
-        return p;
     }
 
     private static Patient PatientWithIdentifier(string mrn, string? family = null)
