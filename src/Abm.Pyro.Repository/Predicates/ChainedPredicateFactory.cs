@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using LinqKit;
 using Microsoft.Extensions.Options;
 using Abm.Pyro.Domain.Cache;
@@ -8,79 +8,81 @@ using Abm.Pyro.Domain.SearchQueryEntity;
 namespace Abm.Pyro.Repository.Predicates;
 
 public class ChainedPredicateFactory(
-  PyroDbContext context, 
-  ISearchPredicateFactory searchPredicateFactory, 
+  PyroDbContext context,
+  ISearchPredicateFactory searchPredicateFactory,
   IServiceBaseUrlCache serviceBaseUrlCache,
   IOptions<IndexingSettings> indexingSettingsOptions)
   : IChainedPredicateFactory
 {
   public async Task<ExpressionStarter<ResourceStore>> GetChainedPredicate(IList<SearchQueryBase> searchQueryList)
   {
-    ServiceBaseUrl? primaryServiceBaseUrl = await serviceBaseUrlCache.GetPrimaryAsync();
-    if (primaryServiceBaseUrl is null || primaryServiceBaseUrl.ServiceBaseUrlId is null)
+    ExpressionStarter<ResourceStore> predicate = PredicateBuilder.New<ResourceStore>(true);
+
+    List<SearchQueryBase> chainedSearchQueryList = searchQueryList.Where(x => x.ChainedSearchParameter is not null).ToList();
+    if (chainedSearchQueryList.Count == 0)
     {
-      throw new NullReferenceException(nameof(primaryServiceBaseUrl));
+      return predicate;
     }
 
-    IEnumerable<SearchQueryBase> chainedSearchQueryList = searchQueryList.Where(x => x.ChainedSearchParameter is not null);
+    ServiceBaseUrl primaryServiceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
+    if (primaryServiceBaseUrl.ServiceBaseUrlId is null)
+    {
+      throw new InvalidOperationException($"The primary {nameof(ServiceBaseUrl)} must have a {nameof(ServiceBaseUrl.ServiceBaseUrlId)}");
+    }
 
-    ExpressionStarter<ResourceStore> predicate = PredicateBuilder.New<ResourceStore>(true);
     foreach (var chainedSearchQuery in chainedSearchQueryList)
     {
-      if (chainedSearchQuery is SearchQueryReference searchQueryReference)
+      if (chainedSearchQuery is not SearchQueryReference searchQueryReference)
       {
-        Expression<Func<IndexReference, bool>> chainedReferenceIndexQuery = await ChainedReference(searchQueryReference, primaryServiceBaseUrl.ServiceBaseUrlId.Value);
-        predicate = predicate.And(p => p.IndexReferenceList.Any(chainedReferenceIndexQuery.Compile()));
+        throw new InvalidOperationException("All chained searchParameters must be of type SearchQueryReference");
       }
-      else
-      {
-        throw new ApplicationException("All chained searchParameters must be of type SearchQueryReference");
-      }
+
+      Expression<Func<IndexReference, bool>> chainedReferenceIndexPredicate = await GetChainedReferencePredicate(searchQueryReference, primaryServiceBaseUrl.ServiceBaseUrlId.Value);
+      // .Compile() is a LinqKit marker expanded by AsExpandable() at query time; it is never executed in-memory.
+      predicate = predicate.And(p => p.IndexReferenceList.Any(chainedReferenceIndexPredicate.Compile()));
     }
     return predicate;
   }
 
-  private async Task<Expression<Func<IndexReference, bool>>> ChainedReference(SearchQueryReference searchQueryReference, int primaryServiceBaseUrlId)
+  private async Task<Expression<Func<IndexReference, bool>>> GetChainedReferencePredicate(SearchQueryReference searchQueryReference, int primaryServiceBaseUrlId)
   {
-    if (searchQueryReference.IsChained && searchQueryReference.ChainedSearchParameter is SearchQueryReference chainedSearchQueryReference && chainedSearchQueryReference.IsChained)
-    {
-      //Recursive call 
-      Expression<Func<IndexReference, bool>> chainedReferencePredicate = await ChainedReference(chainedSearchQueryReference, primaryServiceBaseUrlId);
-      
-      var chainLinkReferenceIndexQuery = context.Set<ResourceStore>().AsExpandable().Where(x => x.IndexReferenceList.Any(chainedReferencePredicate.Compile()));
-
-      return i =>
-        i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
-        i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
-        i.ResourceStore!.ResourceType == searchQueryReference.ResourceTypeContext &&
-        chainLinkReferenceIndexQuery.Select(b => b.ResourceId).Contains(i.ResourceId);
-    }
-
-    ExpressionStarter<ResourceStore> finalNodePredicate = await searchPredicateFactory.GetResourceStoreIndexPredicate(new [] { searchQueryReference.ChainedSearchParameter! });
-    IQueryable<ResourceStore> finalNodeQuery = context.Set<ResourceStore>().AsExpandable().Where(finalNodePredicate);
+    IQueryable<ResourceStore> chainTargetQuery = await GetChainTargetQuery(searchQueryReference, primaryServiceBaseUrlId);
 
     if (indexingSettingsOptions.Value.RemoveHistoricResourceIndexesOnUpdateOrDelete)
     {
+      // Historic index rows are removed on update/delete, so any index row that matched the
+      // chained criteria already belongs to a current resource version.
       return i =>
         i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
         i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
         i.ResourceStore!.ResourceType == searchQueryReference.ResourceTypeContext &&
-        finalNodeQuery.Select(b => b.ResourceId).Contains(i.ResourceId);
+        chainTargetQuery.Any(t => t.ResourceId == i.ResourceId);
     }
-    
+
+    // Historic index rows are retained, so the chain target set can contain historic resource
+    // versions. The reference must resolve to the exact resource version that matched:
+    // a version-specific reference (VersionId != null) must match both ResourceId and VersionId
+    // on the SAME target row, and a non-versioned reference resolves to the current version.
     return i =>
-        (i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
-        i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
-        i.ResourceStore!.ResourceType == searchQueryReference.ResourceTypeContext &&
-        i.VersionId != null &&
-        finalNodeQuery.Select(b => b.ResourceId).Contains(i.ResourceId) &&
-        finalNodeQuery.Select(b => b.VersionId.ToString()).Contains(i.VersionId))
-      || 
-        (i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
-         i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
-         i.ResourceStore!.ResourceType == searchQueryReference.ResourceTypeContext &&
-         i.VersionId == null &&
-         finalNodeQuery.Select(b => b.ResourceId).Contains(i.ResourceId) &&
-         finalNodeQuery.Select(b => b.IsCurrent).Contains(true) );
+      i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
+      i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
+      i.ResourceStore!.ResourceType == searchQueryReference.ResourceTypeContext &&
+      ((i.VersionId != null && chainTargetQuery.Any(t => t.ResourceId == i.ResourceId && t.VersionId.ToString() == i.VersionId)) ||
+       (i.VersionId == null && chainTargetQuery.Any(t => t.ResourceId == i.ResourceId && t.IsCurrent)));
+  }
+
+  private async Task<IQueryable<ResourceStore>> GetChainTargetQuery(SearchQueryReference searchQueryReference, int primaryServiceBaseUrlId)
+  {
+    if (searchQueryReference.ChainedSearchParameter is SearchQueryReference chainedSearchQueryReference && chainedSearchQueryReference.IsChained)
+    {
+      // Intermediate chain link: the target set is the resources whose reference indexes
+      // satisfy the next link of the chain (recursive).
+      Expression<Func<IndexReference, bool>> nextLinkPredicate = await GetChainedReferencePredicate(chainedSearchQueryReference, primaryServiceBaseUrlId);
+      return context.Set<ResourceStore>().AsExpandable().Where(x => x.IndexReferenceList.Any(nextLinkPredicate.Compile()));
+    }
+
+    // Final chain link: the target set is the resources matching the terminal search parameter.
+    ExpressionStarter<ResourceStore> finalNodePredicate = await searchPredicateFactory.GetResourceStoreIndexPredicate([searchQueryReference.ChainedSearchParameter!]);
+    return context.Set<ResourceStore>().AsExpandable().Where(finalNodePredicate);
   }
 }
