@@ -1,29 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <LangVersion>13</LangVersion>
+        <LangVersion>14</LangVersion>
         <UserSecretsId>08007212-d74d-4291-9832-1212af5fa9aa</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="9.0.8" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
+      <PackageReference Include="LinqKit.Microsoft.EntityFrameworkCore" Version="10.0.11" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.1" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.1">
+      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.10">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="9.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.10" />
     </ItemGroup>
 
     <ItemGroup>

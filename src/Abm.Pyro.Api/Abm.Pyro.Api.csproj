@@ -3,19 +3,19 @@
     <PropertyGroup>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <LangVersion>13</LangVersion>
+        <LangVersion>14</LangVersion>
         <UserSecretsId>946ad5cd-8167-47c7-9917-57804054534d</UserSecretsId>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Hl7.Fhir.R4" Version="5.11.4" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.10" />
         <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-        <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
         <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
         <PackageReference Include="Steeltoe.Extensions.Configuration.ConfigServerCore" Version="3.2.8" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />

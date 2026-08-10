@@ -1,16 +1,16 @@
 <p align="center">
   <img src="./assets/readme/hero.jpg" width="50%"
-       alt="Pyro Server — a production-grade, open-source FHIR R4 server built on .NET 9, with 1,371 search parameters across 134 resource types, multi-tenancy, and subscriptions">
+       alt="Pyro Server — a production-grade, open-source FHIR R4 server built on .NET 10, with 1,371 search parameters across 134 resource types, multi-tenancy, and subscriptions">
 </p>
 
 <p align="center">
   <a href="https://github.com/angusmillar/PyroServer/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/angusmillar/PyroServer/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt=".NET 9.0" src="https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white">
+  <img alt=".NET 10.0" src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white">
   <img alt="FHIR v4.0.1" src="https://img.shields.io/badge/FHIR-v4.0.1-E0341A">
-  <img alt="SQL Server" src="https://img.shields.io/badge/SQL%20Server-EF%20Core%209-CC2927?logo=microsoftsqlserver&logoColor=white">
+  <img alt="SQL Server" src="https://img.shields.io/badge/SQL%20Server-EF%20Core%2010-CC2927?logo=microsoftsqlserver&logoColor=white">
 </p>
 
-**PyroServer** is an open-source **FHIR R4 (v4.0.1)** server built on .NET 9. It provides a complete FHIR REST API — comprehensive search, transactions, FHIRPath patch, profile validation, and subscriptions — on a clean, multi-tenant architecture, and is deployed to Azure App Service as a single container.
+**PyroServer** is an open-source **FHIR R4 (v4.0.1)** server built on .NET 10. It provides a complete FHIR REST API — comprehensive search, transactions, FHIRPath patch, profile validation, and subscriptions — on a clean, multi-tenant architecture, and is deployed to Azure App Service as a single container.
 
 ## Highlights
 
@@ -88,7 +88,7 @@ See [`CLAUDE.md`](./CLAUDE.md) at the repository root for a deeper architectural
 
 ## Getting started
 
-> **Prerequisites:** .NET 9 SDK, a SQL Server instance (local or Docker), and the EF Core CLI tools.
+> **Prerequisites:** .NET 10 SDK, a SQL Server instance (local or Docker), and the EF Core CLI tools.
 
 1. **Clone and restore.** Restore NuGet packages for the solution at `src/Abm.Pyro.sln` (or `src/Abm.Pyro.CI.slnf` if you don't have a .NET Framework 4.8.1 toolchain for `Abm.Pyro.CodeGeneration`).
 
@@ -159,12 +159,12 @@ See [`CLAUDE.md`](./CLAUDE.md) for the full pipeline, security model, and requir
 |---|---|
 | FHIR model & REST SDK | [`Hl7.Fhir.R4`](https://www.nuget.org/packages/Hl7.Fhir.R4) 5.11.4 |
 | Profile validation | [`Firely.Fhir.Validation.R4`](https://www.nuget.org/packages/Firely.Fhir.Validation.R4) 2.6.3 · `Firely.Fhir.Packages` 4.9.0 |
-| Persistence | `Microsoft.EntityFrameworkCore.SqlServer` 9.0.1 |
+| Persistence | `Microsoft.EntityFrameworkCore.SqlServer` 10.0.10 |
 | Caching | `ZiggyCreatures.FusionCache` 2.0.0 (+ Redis backplane) |
-| Logging | `Serilog.AspNetCore` 9.0.0 (Splunk + rolling-file sinks) |
+| Logging | `Serilog.AspNetCore` 10.0.0 (Splunk + rolling-file sinks) |
 | Config | `Steeltoe.Extensions.Configuration.ConfigServerCore` 3.2.8 (optional, disabled by default) |
-| HTTP resilience | `Microsoft.Extensions.Http.Polly` 9.0.1 · `Polly.Contrib.WaitAndRetry` 1.1.1 |
+| HTTP resilience | `Microsoft.Extensions.Http.Polly` 10.0.10 · `Polly.Contrib.WaitAndRetry` 1.1.1 |
 | API docs | `Swashbuckle.AspNetCore` 7.2.0 |
-| Application plumbing | `FluentResults` 3.16.0 · `LinqKit.Microsoft.EntityFrameworkCore` 9.0.8 · `NewId` 4.0.1 |
+| Application plumbing | `FluentResults` 3.16.0 · `LinqKit.Microsoft.EntityFrameworkCore` 10.0.11 · `NewId` 4.0.1 |
 
-All projects target **.NET 9.0**, except `Abm.Pyro.CodeGeneration`, which targets **.NET Framework 4.8.1** because its T4 templates depend on tooling only available there.
+All projects target **.NET 10.0**, except `Abm.Pyro.CodeGeneration`, which targets **.NET Framework 4.8.1** because its T4 templates depend on tooling only available there.

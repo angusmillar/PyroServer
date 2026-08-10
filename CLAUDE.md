@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pyro is a production-grade .NET 9.0 FHIR R4 server built on clean architecture with CQRS, multi-tenancy, hybrid caching, FHIR profile validation, and Subscriptions. This file sits at the repository root; all .NET source and the solution (`Abm.Pyro.sln`) live under the `src/` folder.
+Pyro is a production-grade .NET 10.0 FHIR R4 server built on clean architecture with CQRS, multi-tenancy, hybrid caching, FHIR profile validation, and Subscriptions. This file sits at the repository root; all .NET source and the solution (`Abm.Pyro.sln`) live under the `src/` folder.
 
 ## Commands
 
@@ -135,10 +135,10 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 ## Key Dependencies
 
 - `Hl7.Fhir.R4` v5.11.4 — official FHIR R4 SDK
-- `Entity Framework Core` v9.0.1 (SQL Server)
+- `Entity Framework Core` v10.0.10 (SQL Server)
 - `Firely.Fhir.Validation.R4` v2.6.3 — FHIR profile validation
 - `ZiggyCreatures.FusionCache` v2.0.0
-- `Serilog` v9.0.0 with Splunk and rolling-file sinks
+- `Serilog` v10.0.0 with Splunk and rolling-file sinks
 - `Steeltoe ConfigServer` v3.2.8 — Spring Cloud Config support (disabled by default)
 - `Polly` v7.x — HTTP resilience (12 retries with jitter on the FHIR HTTP client)
 
@@ -151,12 +151,12 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 
 ## CI/CD & Deployment
 
-The server is deployed to **Azure App Service** (Linux, container-based) as a single Docker image built from `src/Abm.Pyro.Api/Dockerfile`. The runtime base image is **`mcr.microsoft.com/dotnet/aspnet:9.0-noble-chiseled-extra`** (shell-less, non-root, smaller/faster cold start; the `-extra` variant keeps ICU + tzdata so globalization and timezone behaviour are unchanged). Two GitHub Actions workflows live at the **repository root** under `.github/workflows/` (one level above `src/`).
+The server is deployed to **Azure App Service** (Linux, container-based) as a single Docker image built from `src/Abm.Pyro.Api/Dockerfile`. The runtime base image is **`mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra`** (shell-less, non-root, smaller/faster cold start; the `-extra` variant keeps ICU + tzdata so globalization and timezone behaviour are unchanged). Two GitHub Actions workflows live at the **repository root** under `.github/workflows/` (one level above `src/`).
 
 ### CI — `ci.yml`
 - **Triggers:** every push to `main` or `development`, and every PR targeting `main`.
 - **Does:** restore → build → run all three test suites (Domain.Test, Application.Test, Api.Test) in a single `dotnet test` step. Docker is pre-installed on `ubuntu-latest`; Testcontainers pulls the SQL Server image on first run (~30–60 s cold, cached thereafter). No Azure interaction.
-- **Solution filter:** CI uses **`src/Abm.Pyro.CI.slnf`**, not `Abm.Pyro.sln`. The filter excludes `Abm.Pyro.CodeGeneration` (targets .NET Framework 4.8.1, unavailable on `ubuntu-latest`) and `Abm.Pyro.Domain.Benchmark`. If you add a new .NET 9 project that CI should build, add it to the `.slnf`.
+- **Solution filter:** CI uses **`src/Abm.Pyro.CI.slnf`**, not `Abm.Pyro.sln`. The filter excludes `Abm.Pyro.CodeGeneration` (targets .NET Framework 4.8.1, unavailable on `ubuntu-latest`) and `Abm.Pyro.Domain.Benchmark`. If you add a new .NET 10 project that CI should build, add it to the `.slnf`.
 
 ### CD — `cd.yml`
 - **Trigger:** pushing a Git tag matching **`v*.*.*`** (semver). Nothing else deploys — CD is a deliberate release act, never an automatic merge/push deploy.
@@ -183,7 +183,7 @@ The CD pipeline then builds → migrates → deploys automatically. The deploy t
 - `WEBSITES_PORT=8080`, `ASPNETCORE_ENVIRONMENT=Production`, `ServiceBaseUrl__Url=https://pyroserver.azurewebsites.net`.
 
 ### Gotchas worth knowing before changing the pipeline
-- **EF migration snapshots must be byte-identical across Windows and Linux.** Snapshots are authored on Windows but verified on the Linux CI/CD runner; EF Core 9 fails `database update` with `PendingModelChangesWarning` if they differ. The seed data is GZip-compressed via value converters in `Abm.Pyro.Repository/Conversion/`, and the GZip header OS byte is normalized so Windows-authored snapshots validate on Linux. After adding a migration, verify with `dotnet ef migrations has-pending-model-changes` (ideally also in a Linux `mcr.microsoft.com/dotnet/sdk:9.0` container). Keep any new seed data deterministic (constant literals, not runtime-serialized objects).
+- **EF migration snapshots must be byte-identical across Windows and Linux.** Snapshots are authored on Windows but verified on the Linux CI/CD runner; EF Core 10 fails `database update` with `PendingModelChangesWarning` if they differ. The seed data is GZip-compressed via value converters in `Abm.Pyro.Repository/Conversion/`, and the GZip header OS byte is normalized so Windows-authored snapshots validate on Linux. After adding a migration, verify with `dotnet ef migrations has-pending-model-changes` (ideally also in a Linux `mcr.microsoft.com/dotnet/sdk:10.0` container). Keep any new seed data deterministic (constant literals, not runtime-serialized objects).
 - **Pushing changes to `.github/workflows/*` requires the git credential to carry the `workflow` OAuth scope** (`gh auth setup-git` with a token scoped `repo,workflow,read:org`).
 - **GitHub Actions are pinned to Node 24 majors** (`actions/checkout@v6`, `azure/login@v3`, `actions/setup-dotnet@v5`).
 - **App Service has no rename.** Reclaiming a hostname means delete + recreate, which yields a *new* Managed Identity principal — every role assignment (SQL user, AcrPull, Key Vault Secrets User) and the GitHub Actions SP's Website Contributor must be re-provisioned for the new principal.
