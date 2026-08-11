@@ -2,9 +2,7 @@
 using Microsoft.Net.Http.Headers;
 using System.Text;
 using Hl7.Fhir.Model;
-using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Utility;
-using Abm.Pyro.Domain.Exceptions;
 
 namespace Abm.Pyro.Api.ContentFormatters
 {
@@ -55,21 +53,6 @@ namespace Abm.Pyro.Api.ContentFormatters
         return resource.Annotation<Hl7.Fhir.Rest.SummaryType>();
       }
       return null;
-    }
-    
-    protected static SerializationFilter? GetSerializationFilter(Hl7.Fhir.Rest.SummaryType? summaryType)
-    {
-      return summaryType switch
-      {
-        Hl7.Fhir.Rest.SummaryType.True => SerializationFilter.ForSummary(),
-        Hl7.Fhir.Rest.SummaryType.Text => SerializationFilter.ForText(),
-        Hl7.Fhir.Rest.SummaryType.Data => SerializationFilter.ForData(),
-        Hl7.Fhir.Rest.SummaryType.Count => null,
-        Hl7.Fhir.Rest.SummaryType.False => null,
-        null => null,
-        _ => throw new FhirFatalException(System.Net.HttpStatusCode.BadRequest,
-          $"Unable to resolve SummaryType for value: {summaryType}.")
-      };
     }
 
   }

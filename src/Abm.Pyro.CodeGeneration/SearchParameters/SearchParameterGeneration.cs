@@ -169,7 +169,7 @@ namespace Abm.Pyro.CodeGeneration.SearchParameters
     {
       var settings = new FhirJsonPocoSerializerSettings();
 
-      var options = new JsonSerializerOptions().ForFhir(typeof(Resource).Assembly, settings);
+      var options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector, settings);
       options.WriteIndented = false;
 
       return JsonSerializer.Serialize(resource, options);

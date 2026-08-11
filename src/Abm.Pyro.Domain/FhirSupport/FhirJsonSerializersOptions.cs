@@ -19,21 +19,21 @@ public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
   {
     var settings = new FhirJsonPocoSerializerSettings()
                    {
-                     SummaryFilter = GetSerializationFilter(summaryType)
+                     SummaryFilterFactory = GetSerializationFilterFactory(summaryType)
                    };
-    
+
     var options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
-      
+
      return pretty ? options.ForFhir(settings).Pretty() : options.ForFhir(settings);
   }
-  
-  private static SerializationFilter? GetSerializationFilter(SummaryType? summaryType)
+
+  private static Func<SerializationFilter>? GetSerializationFilterFactory(SummaryType? summaryType)
   {
     return summaryType switch
     {
-      SummaryType.True => SerializationFilter.ForSummary(),
-      SummaryType.Text => SerializationFilter.ForText(),
-      SummaryType.Data => SerializationFilter.ForData(),
+      SummaryType.True => SerializationFilter.CreateSummaryFactory(),
+      SummaryType.Text => SerializationFilter.CreateTextFactory(),
+      SummaryType.Data => SerializationFilter.CreateDataFactory(),
       SummaryType.Count => null,
       SummaryType.False => null,
       null => null,
