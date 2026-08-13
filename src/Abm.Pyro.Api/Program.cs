@@ -38,7 +38,6 @@ using Abm.Pyro.Repository;
 using Abm.Pyro.Repository.Predicates;
 using Abm.Pyro.Repository.Query;
 using Abm.Pyro.Repository.Service;
-using Steeltoe.Extensions.Configuration.ConfigServer;
 using Abm.Pyro.Application.HostedServiceSupport;
 using Abm.Pyro.Application.Manager;
 using Abm.Pyro.Application.MetaDataService;
@@ -75,9 +74,6 @@ try
     
     Log.Information("Starting up application {Environment}", builder.Environment.IsDevelopment() ? "(Is Development Environment)" : string.Empty); 
     
-    builder.Host
-        .AddConfigServer(SteelToeSerilogExtension.GetLoggerFactory());
-
     builder.Host.UseSerilog((context, services, configuration) => configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)

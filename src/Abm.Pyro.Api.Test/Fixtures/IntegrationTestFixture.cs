@@ -9,8 +9,7 @@ namespace Abm.Pyro.Api.Test.Fixtures;
 
 public class IntegrationTestFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _sqlContainer = new MsSqlBuilder()
-        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+    private readonly MsSqlContainer _sqlContainer = new MsSqlBuilder(image: "mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     private Respawner _respawner = default!;
