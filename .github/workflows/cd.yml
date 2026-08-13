@@ -69,6 +69,10 @@ jobs:
       - name: Install EF Core tools
         run: dotnet tool install --global dotnet-ef --version 10.0.*
 
+      - name: Restore dependencies
+        working-directory: src
+        run: dotnet restore
+
       - name: Run migrations
         working-directory: src
         run: |
