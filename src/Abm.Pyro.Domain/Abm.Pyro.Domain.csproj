@@ -9,9 +9,9 @@
 
     <ItemGroup>
       <PackageReference Include="Hl7.Fhir.R4" Version="5.13.4" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
-      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.10" />
-      <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+      <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />
+      <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.11" />
       <PackageReference Include="NewId" Version="4.0.1" />
     </ItemGroup>
 
