@@ -17,7 +17,7 @@ public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
   
   public JsonSerializerOptions ForSerialization(SummaryType? summaryType, bool pretty = false)
   {
-    var settings = new FhirJsonPocoSerializerSettings()
+    var settings = new FhirJsonConverterOptions()
                    {
                      SummaryFilterFactory = GetSerializationFilterFactory(summaryType)
                    };
