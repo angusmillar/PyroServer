@@ -58,7 +58,7 @@ public class NumberSetterTest
         private IEnumerable<ITypedElement> GetTypedElementList(string expression,
             Resource resource)
         {
-            ScopedNode resourceModel = new ScopedNode(resource.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(resource.ToPocoNode(ModelInfo.ModelInspector));
                 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
 

@@ -10,49 +10,49 @@ namespace Abm.Pyro.Application.FhirResolver;
 public class FhirPathResolve(
     IFhirUriFactory fhirUriFactory) : IFhirPathResolve
 {
-    public ITypedElement Resolver(string url)
+    public PocoNode Resolver(string url)
     {
-        var defaultModelFactory = new DefaultModelFactory();
         if (fhirUriFactory.TryParse(url, out FhirUri? fhirUri, out string errorMessage))
         {
             if (fhirUri.IsOperation || fhirUri.IsUrn)
             {
-                return GetOperationOutcomeResourceReference(defaultModelFactory);
+                return GetOperationOutcomeResourceReference();
             }
-            
+
             Type? resourceType = ModelInfo.GetTypeForFhirType(fhirUri.ResourceName);
-      
+
             if (resourceType is null)
             {
                 throw new ApplicationException($"Unable to find a FHIR domain resource of type '{fhirUri.ResourceName}'.");
             }
-            
-            if (defaultModelFactory.Create(resourceType) is DomainResource domainResource)
+
+            if (Activator.CreateInstance(resourceType) is DomainResource domainResource)
             {
                 domainResource.Id = fhirUri.ResourceId;
 
-                return domainResource.ToTypedElement().ToScopedNode();
+                return domainResource.ToPocoNode(ModelInfo.ModelInspector);
             }
 
             throw new ApplicationException($"Unable to create a FHIR domain resource of type '{resourceType.Name}'.");
         }
 
-        return GetOperationOutcomeResourceReference(defaultModelFactory);
-        
-        
+        return GetOperationOutcomeResourceReference();
+
+
         //If this below is a problem in the future, you could return the above commented out code which would ignore
         //the invalid reference.
         // throw new FhirErrorException(
-        //     httpStatusCode: HttpStatusCode.BadRequest, 
+        //     httpStatusCode: HttpStatusCode.BadRequest,
         //     message: $"A FHIR resource reference is invalid. Reference: {url}. {errorMessage}");
     }
 
-    private static ITypedElement GetOperationOutcomeResourceReference(DefaultModelFactory defaultModelFactory)
+    private static PocoNode GetOperationOutcomeResourceReference()
     {
-        if (defaultModelFactory.Create(ModelInfo.GetTypeForFhirType(FhirResourceTypeId.OperationOutcome.GetCode())) is DomainResource operationOutcomeResource)
+        Type? operationOutcomeType = ModelInfo.GetTypeForFhirType(FhirResourceTypeId.OperationOutcome.GetCode());
+        if (operationOutcomeType is not null && Activator.CreateInstance(operationOutcomeType) is DomainResource operationOutcomeResource)
         {
             operationOutcomeResource.Id = "temp";
-            return operationOutcomeResource.ToTypedElement().ToScopedNode();
+            return operationOutcomeResource.ToPocoNode(ModelInfo.ModelInspector);
         }
 
         throw new ApplicationException(

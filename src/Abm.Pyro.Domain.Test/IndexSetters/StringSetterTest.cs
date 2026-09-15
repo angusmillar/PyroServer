@@ -52,7 +52,7 @@ public class StringSetterTest
         private IEnumerable<ITypedElement> GetTypedElementList(string expression,
             Patient patientResource)
         {
-            ScopedNode resourceModel = new ScopedNode(patientResource.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(patientResource.ToPocoNode(ModelInfo.ModelInspector));
                 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
 

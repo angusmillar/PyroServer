@@ -81,7 +81,7 @@ namespace Abm.Pyro.Application.Indexing
 
             try
             {
-                ScopedNode resourceModel = new ScopedNode(fhirResource.ToTypedElement());
+                ScopedNode resourceModel = new ScopedNode(fhirResource.ToPocoNode(ModelInfo.ModelInspector));
                 
                 return resourceModel.Select(
                     expression: searchParameter.Expression,

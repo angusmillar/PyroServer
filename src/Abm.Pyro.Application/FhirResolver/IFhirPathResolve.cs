@@ -1,7 +1,7 @@
-using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.Model;
 namespace Abm.Pyro.Application.FhirResolver;
 
 public interface IFhirPathResolve
 {
-  ITypedElement Resolver(string url);
+  PocoNode Resolver(string url);
 }

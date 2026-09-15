@@ -46,7 +46,7 @@ public class DateTimeSetterTest
             DateTime lastUpdated = new DateTimeOffset(2023, 10, 05, 10, 00, 00, 000, serviceDefaultTimeZoneSettings.TimeZoneTimeSpan).UtcDateTime;
             Patient patientResource = TestResourceFactory.PatientResource.GetDonaldDuck();
             patientResource.Meta.LastUpdated = lastUpdated;
-            ScopedNode resourceModel = new ScopedNode(patientResource.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(patientResource.ToPocoNode(ModelInfo.ModelInspector));
 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
             
@@ -86,7 +86,7 @@ public class DateTimeSetterTest
             var birthDate = new Hl7.Fhir.Model.Date(dob.Year, dob.Month, dob.Day);
             Patient patientResource = TestResourceFactory.PatientResource.GetDonaldDuck();
             patientResource.BirthDateElement = birthDate;
-            ScopedNode resourceModel = new ScopedNode(patientResource.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(patientResource.ToPocoNode(ModelInfo.ModelInspector));
 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
             
@@ -129,7 +129,7 @@ public class DateTimeSetterTest
             
             Patient patientResource = TestResourceFactory.PatientResource.GetDonaldDuck();
             patientResource.Deceased = new FhirDateTime(deceasedDateTime);
-            ScopedNode resourceModel = new ScopedNode(patientResource.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(patientResource.ToPocoNode(ModelInfo.ModelInspector));
 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
             
@@ -170,7 +170,7 @@ public class DateTimeSetterTest
 
             Observation hemoglobinObservation = TestResourceFactory.ObservationResource.GetHemoglobinObservation();
             hemoglobinObservation.Effective = new Period(start: new FhirDateTime(effectiveStartDate), end: new FhirDateTime(effectiveEndDate));
-            ScopedNode resourceModel = new ScopedNode(hemoglobinObservation.ToTypedElement());
+            ScopedNode resourceModel = new ScopedNode(hemoglobinObservation.ToPocoNode(ModelInfo.ModelInspector));
 
             var fhirPathResolveMock = new Mock<IFhirPathResolve>();
             

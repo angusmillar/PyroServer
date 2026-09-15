@@ -27,7 +27,7 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
             throw new FhirErrorException(HttpStatusCode.BadRequest,
                 "The patch Parameters resource contains no 'operation' entries. At least one operation is required.");
 
-        ElementNode mutableTree = ElementNode.FromElement(new ScopedNode(target.ToTypedElement()));
+        ElementNode mutableTree = ElementNode.FromElement(new ScopedNode(target.ToPocoNode(ModelInfo.ModelInspector)));
 
         foreach (Parameters.ParameterComponent parameter in operations)
             ApplyOperation(mutableTree, ExtractOperation(parameter));
@@ -63,7 +63,7 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
                 "Patch 'add' operation requires a 'value' part.");
 
         ElementNode parent = NavigatePath(root, op.Path, "add");
-        ElementNode newChild = ElementNode.FromElement(op.Value.ToTypedElement());
+        ElementNode newChild = ElementNode.FromElement(op.Value.ToPocoNode(ModelInfo.ModelInspector));
         parent.Add(ModelInfo.ModelInspector, newChild, op.Name);
     }
 
@@ -85,7 +85,7 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
             throw new FhirErrorException(HttpStatusCode.BadRequest,
                 $"Patch 'insert': index {idx} is out of range for list of length {siblings.Count}.");
 
-        ElementNode newChild = ElementNode.FromElement(op.Value.ToTypedElement());
+        ElementNode newChild = ElementNode.FromElement(op.Value.ToPocoNode(ModelInfo.ModelInspector));
 
         // Remove and re-add siblings in the new order with the new element at idx
         foreach (ElementNode sib in siblings) parent.Remove(sib);
@@ -129,7 +129,7 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
                              ?? throw new FhirErrorException(HttpStatusCode.BadRequest,
                                  $"Patch 'replace': path '{op.Path}' resolved to the resource root, which cannot be replaced.");
 
-        ElementNode replacement = ElementNode.FromElement(op.Value.ToTypedElement());
+        ElementNode replacement = ElementNode.FromElement(op.Value.ToPocoNode(ModelInfo.ModelInspector));
         replacement.Name = target.Name;
         parent.Replace(ModelInfo.ModelInspector, target, replacement);
     }
