@@ -31,9 +31,9 @@ public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
   {
     return summaryType switch
     {
-      SummaryType.True => SerializationFilter.CreateSummaryFactory(),
-      SummaryType.Text => SerializationFilter.CreateTextFactory(),
-      SummaryType.Data => SerializationFilter.CreateDataFactory(),
+      SummaryType.True => SerializationFilter.ForSummary,
+      SummaryType.Text => SerializationFilter.ForText,
+      SummaryType.Data => SerializationFilter.ForData,
       SummaryType.Count => null,
       SummaryType.False => null,
       null => null,
