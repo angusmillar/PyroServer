@@ -88,41 +88,10 @@ public class TokenSetter : ITokenSetter
       case Location.PositionComponent positionComponent:
         return SePositionComponent(positionComponent);
       default:
-      {
-        if (fhirValue.TypeName == "code")
-        {
-          return SetCodeTypeT(fhirValue);
-        }
-
         throw new FormatException($"Unknown FHIR DataType: {fhirValue.GetType().Name} for the SearchParameter entity with the database " +
                                   $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                   $"name of: {SearchParameterName}");
-      }
     }
-  }
-
-  private IList<IndexToken> SetCodeTypeT(Base baseValue)
-  {
-    if (!baseValue.Any())
-    {
-      return Array.Empty<IndexToken>();
-    }
-
-    if (!baseValue.First().Key.Equals("value", StringComparison.OrdinalIgnoreCase))
-    {
-      return Array.Empty<IndexToken>();
-    }
-
-    if (baseValue.First().Value is string value)
-    {
-      if (string.IsNullOrWhiteSpace(value))
-      {
-        return Array.Empty<IndexToken>();
-      }
-      return new List<IndexToken>() { SetTokenIndexToLowerCaseTrim(null, value) };
-    }
-
-    return Array.Empty<IndexToken>();
   }
 
   private IList<IndexToken> SePositionComponent(Location.PositionComponent positionComponent)
