@@ -51,13 +51,11 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
     {
       case FhirFormatType.Xml:
       {
-        FhirXmlSerializer fhirXmlSerializer = new FhirXmlSerializer(new SerializerSettings() { Pretty = true });
-        return context.Response.WriteAsync(fhirXmlSerializer.SerializeToString(operationOutcomeResult));
+        return context.Response.WriteAsync(operationOutcomeResult.ToPocoNode(ModelInfo.ModelInspector).ToXml(pretty: true));
       }
       case FhirFormatType.Json:
       {
-        FhirJsonSerializer fhirJsonSerializer = new FhirJsonSerializer(new SerializerSettings() { Pretty = true });
-        return context.Response.WriteAsync(fhirJsonSerializer.SerializeToString(operationOutcomeResult));
+        return context.Response.WriteAsync(operationOutcomeResult.ToPocoNode(ModelInfo.ModelInspector).ToJson(pretty: true));
       }
       default:
         logger.LogError("Unexpected FhirFormatType type encountered of : {AcceptFormatType}",
@@ -80,8 +78,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
     OperationOutcome operationOutcomeResult = operationOutcomeSupport.GetFatal(new string[] { usersErrorMessage });
     context.Response.ContentType = ContentFormatters.FhirMediaType.GetMediaTypeHeaderValue(operationOutcomeResult.GetType(), FhirFormatType.Xml).Value;
     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-    FhirXmlSerializer fhirXmlSerializer = new FhirXmlSerializer(new SerializerSettings() { Pretty = true });
-    return context.Response.WriteAsync(fhirXmlSerializer.SerializeToString(operationOutcomeResult));
+    return context.Response.WriteAsync(operationOutcomeResult.ToPocoNode(ModelInfo.ModelInspector).ToXml(pretty: true));
   }
   
 }
