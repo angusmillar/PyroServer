@@ -55,6 +55,9 @@ public class FhirCreateHandlerTest
         
         Observation observationResourceFromDbAdd = GetObservationResource();
         
+        ArgumentNullException.ThrowIfNull(observationResourceFromDbAdd.Id);
+        ArgumentNullException.ThrowIfNull(observationResourceFromDbAdd.VersionId);
+        
         ResourceStore? resourceStoreFromDbAdd = new ResourceStore(
             resourceStoreId: 1,
             resourceId: observationResourceFromDbAdd.Id,

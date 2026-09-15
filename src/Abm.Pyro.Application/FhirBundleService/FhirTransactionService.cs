@@ -207,9 +207,9 @@ public class FhirTransactionService(
 
     private OperationOutcome? ValidateAllBundleRequestPropertiesSet(IEnumerable<Bundle.EntryComponent> entryList)
     {
+        
         var invalidFullUrlList = entryList
-            .Where(x => x.Request is null)
-            .Select(x => x.FullUrl);
+            .Where(x => x.Request?.Url is null).ToArray();
 
         if (!invalidFullUrlList.Any())
         {
@@ -220,7 +220,7 @@ public class FhirTransactionService(
         foreach (var invalidFullUrl in invalidFullUrlList)
         {
             errorMessageList.Add(
-                $"The entry with a fullUrl of : {invalidFullUrl} was missing a Request element. All entries within a Transaction Bundle must contain a bundle.entry[x].request element. ");
+                $"The entry with a fullUrl of : {invalidFullUrl} was missing a Request element. All entries within a Transaction Bundle must contain a bundle.entry[x].request.url element. ");
         }
 
         return operationOutcomeSupport.GetError(errorMessageList.ToArray());
@@ -387,7 +387,7 @@ public class FhirTransactionService(
         {
             return operationOutcomeSupport.GetError(new[]
             {
-                $"Within the bundle.entry[{entryCounter}].resource of type the {entry.Resource.TypeName}, with the fullURL: {entry.FullUrl}, " +
+                $"Within the bundle.entry[{entryCounter}].resource, of type the {entry.Resource?.TypeName ?? "[None]"}, with the fullURL: {entry.FullUrl}, " +
                 $"a resource reference of: '{resourceReference.Reference}' was unable to parse. " + resourceReferenceFhirUriResult.Errors.First().Message
             });
         }
@@ -418,7 +418,7 @@ public class FhirTransactionService(
     
     
     private string? UpdateReferenceString(
-        string fromReference,
+        string? fromReference,
         CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -465,7 +465,7 @@ public class FhirTransactionService(
         {
             return operationOutcomeSupport.GetError(new[]
             {
-                $"Within the bundle.entry[{entryCounter}].resource, of type the {entry.Resource.TypeName}, with the fullURL: {entry.FullUrl}, " +
+                $"Within the bundle.entry[{entryCounter}].resource, of type the {entry.Resource?.TypeName}, with the fullURL: {entry.FullUrl}, " +
                 $"a conditional resource reference search query of : '{resourceReference.Reference}' encountered a (412 PreconditionFailed) response " +
                 $", indicating the criteria were not selective enough."
             });

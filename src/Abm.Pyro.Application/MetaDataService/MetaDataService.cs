@@ -98,6 +98,7 @@ public class MetaDataService(
         //Populate the revincludes now that we have iterated all resources search parameters 
         foreach (var restResource in resourceComponentList)
         {
+            ArgumentNullException.ThrowIfNull(restResource.Type);
             restResource.SearchRevInclude = GetResourceSearchRevInclude(restResource.Type);    
         }
         

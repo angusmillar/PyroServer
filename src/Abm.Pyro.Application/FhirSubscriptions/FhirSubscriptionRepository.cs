@@ -32,17 +32,22 @@ public class FhirSubscriptionRepository(
         var activeSubscriptions = new List<ActiveSubscription>();
         foreach (var resourceStore in resourceStoreSearchOutcome.ResourceStoreList)
         {
+            
             Resource? resource = fhirDeSerializationSupport.ToResource(resourceStore.Json);
             if (resource is not Subscription subscription)
             {
                 throw new InvalidCastException(nameof(resource));
             }
+            ArgumentNullException.ThrowIfNull(subscription.Id);
+            ArgumentNullException.ThrowIfNull(subscription.Criteria);
+            ArgumentNullException.ThrowIfNull(subscription.Channel.Endpoint);
+            ArgumentNullException.ThrowIfNull(subscription.Channel.Payload);
             
             FhirUri criteriaFhirUri = ParsesActiveSubscriptionCriteria(subscription.Id, subscription.Criteria);
 
             FhirResourceTypeId fhirResourceType =
                 fhirResourceTypeSupport.GetRequiredFhirResourceType(criteriaFhirUri.ResourceName);
-
+            
             activeSubscriptions.Add(new ActiveSubscription(
                 ResourceStoreId: resourceStore.ResourceStoreId!.Value,
                 ResourceId: resourceStore.ResourceId,
@@ -51,7 +56,7 @@ public class FhirSubscriptionRepository(
                 CriteriaQuery: criteriaFhirUri.Query,
                 Endpoint: new Uri(subscription.Channel.Endpoint),
                 Payload: subscription.Channel.Payload,
-                Headers: subscription.Channel.Header.ToArray(),
+                Headers: subscription.Channel.Header.Where(header => header is not null).ToArray()!,
                 EndDateTime: subscription.End));
         }
 

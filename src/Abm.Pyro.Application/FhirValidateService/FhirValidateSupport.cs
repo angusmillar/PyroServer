@@ -126,6 +126,6 @@ public static class FhirValidateSupport
         List<Parameters.ParameterComponent> parameterList)
     {
         return parameterList.FirstOrDefault(x =>
-            x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
+            x.Name != null && x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
     }
 }

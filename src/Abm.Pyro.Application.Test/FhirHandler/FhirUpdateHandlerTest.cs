@@ -80,7 +80,10 @@ public class FhirUpdateHandlerTest
         
         _fhirResourceTypeSupport = new FhirResourceTypeSupport();
 
+        
         var observationResource = GetObservationResource();
+        
+        ArgumentNullException.ThrowIfNull(observationResource.VersionId);
         
         ResourceStoreUpdateProjection? resourceStoreFoundForUpdate = new ResourceStoreUpdateProjection(
             resourceStoreId: 1,
@@ -119,6 +122,7 @@ public class FhirUpdateHandlerTest
                 rowVersion: 100));
         
         
+        ArgumentNullException.ThrowIfNull(observationResource.Id);
         
         ResourceStore? resourceStoreHistoryEntity = new ResourceStore(
             resourceStoreId: 1,
@@ -374,6 +378,11 @@ public class FhirUpdateHandlerTest
                 
             var cancellationTokenSource = new CancellationTokenSource();
 
+            var obs = new Observation()
+            {
+                Id = "test-patient-one-id"
+            };
+            
             var timeStamp = DateTimeOffset.Now;
             var fhirUpdateRequest = new FhirUpdateRequest(
                 RequestSchema: "http",
@@ -383,7 +392,7 @@ public class FhirUpdateHandlerTest
                 QueryString: null,
                 Headers: new Dictionary<string, StringValues>(),
                 ResourceName: ResourceType.Observation.GetLiteral(),
-                Resource: new Observation(),
+                Resource: obs,
                 ResourceId: "test-patient-one-id",
                 TimeStamp: timeStamp);
             

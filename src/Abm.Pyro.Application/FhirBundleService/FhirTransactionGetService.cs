@@ -47,7 +47,7 @@ public class FhirTransactionGetService(
             {
                 return entityRequestIsNullOperationOutcome;
             }
-            
+            ArgumentNullException.ThrowIfNull(getEntry.Request);
             Result<FhirUri> requestFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(getEntry.Request.Url);
             if (requestFhirUriResult.IsFailed)
             {
@@ -147,6 +147,7 @@ public class FhirTransactionGetService(
     private Dictionary<string, StringValues> GetRequestHeaders(Bundle.EntryComponent getEntry,
         Dictionary<string, StringValues> requestHeaders)
     {
+        ArgumentNullException.ThrowIfNull(getEntry.Request);
         var readRequestHeaders = fhirRequestHttpHeaderSupport.GetRequestHeadersFromBundleEntryRequest(getEntry.Request);
         foreach (var requestHeader in requestHeaders)
         {
@@ -190,7 +191,7 @@ public class FhirTransactionGetService(
             }, operationOutcome: operationOutcome);
         }
 
-        throw new ApplicationException($"When {nameof(readResponse.HttpStatusCode)} is {HttpStatusCode.BadRequest.ToString()}, " +
+        throw new ApplicationException($"When {nameof(readResponse.HttpStatusCode)} is {nameof(HttpStatusCode.BadRequest)}, " +
                                        $"the {nameof(readResponse.Resource)} is expected to be of type OperationOutcome");
     }
     private bool IsSearchRequest(FhirUri requestFhirUri)

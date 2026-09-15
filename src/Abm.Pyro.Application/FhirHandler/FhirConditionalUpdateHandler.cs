@@ -72,25 +72,12 @@ public class FhirConditionalUpdateHandler(
             //Multiple matches: The server returns a 412 Precondition Failed error indicating the client's criteria were not selective enough preferably with an OperationOutcome
             return PreconditionFailed();
         }
-
-        if (IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal) && ResourceIdProvided(request.Resource.Id) &&
-            !MatchedResourceIdEqualsProvidedResourcedId(request.Resource.Id, resourceStoreSearchOutcome.ResourceStoreList.First().ResourceId))
+        
+        if (IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal))
         {
-            //One Match, resource id provided but does not match resource found: The server returns a 400 Bad Request error indicating the client id
-            //specification was a problem preferably with an OperationOutcome
-            return BadRequestResourceIdsMismatch();
-        }
-
-        if (IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal) && (!ResourceIdProvided(request.Resource.Id) ||
-                                                                              MatchedResourceIdEqualsProvidedResourcedId(request.Resource.Id,
-                                                                                  resourceStoreSearchOutcome.ResourceStoreList.First().ResourceId)))
-        {
-            if (!ResourceIdProvided(request.Resource.Id))
-            {
-                request.Resource.Id = resourceStoreSearchOutcome.ResourceStoreList.First().ResourceId;
-            }
+            request.Resource.Id = resourceStoreSearchOutcome.ResourceStoreList.First().ResourceId;
             
-            //One Match, no resource id provided OR (resource id provided and it matches the found resource): The server performs the update against the matching resource
+            //One Match, no resource id provided OR (resource id provided, and it matches the found resource): The server performs the update against the matching resource
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
                     RequestPath: request.RequestPath,
@@ -125,6 +112,7 @@ public class FhirConditionalUpdateHandler(
         if (NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && ResourceIdProvided(request.Resource.Id))
         {
             //No matches, id provided: The server treats the interaction as an Update as Create interaction (or rejects it, if it does not support Update as Create)
+            ArgumentNullException.ThrowIfNull(request.Resource.Id);
             
             return await fhirUpdateHandler.Handle(new FhirUpdateRequest(
                     RequestSchema: request.RequestSchema,
@@ -183,7 +171,7 @@ public class FhirConditionalUpdateHandler(
     }
 
     public static bool MatchedResourceIdEqualsProvidedResourcedId(string matchedResourceId,
-        string providedResourceId)
+        string? providedResourceId)
     {
         return (matchedResourceId.Equals(providedResourceId, StringComparison.Ordinal));
     }

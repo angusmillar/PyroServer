@@ -67,7 +67,10 @@ public class FhirTransactionPutAndPatchService(
                 });
             }
             FhirUri fullUrlFhirUri = fullUrlFhirUriResult.Value;
-
+            
+            ArgumentNullException.ThrowIfNull(entry.Request);
+            ArgumentNullException.ThrowIfNull(entry.FullUrl);
+            
             Result<FhirUri> requestFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(entry.Request.Url);
             if (requestFhirUriResult.IsFailed)
             {
@@ -140,13 +143,17 @@ public class FhirTransactionPutAndPatchService(
             {
                 break;
             }
-
+            
             Bundle.EntryComponent? entry = GetPutOrPatchEntry(entryList[i]);
             if (entry is null)
             {
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, whereas Break exits the loop
             }
 
+            ArgumentNullException.ThrowIfNull(entry.FullUrl);
+            ArgumentNullException.ThrowIfNull(entry.Request);
+            ArgumentNullException.ThrowIfNull(entry.Resource);
+            
             var transactionResourceActionOutcome = transactionResourceActionOutcomeDictionary[entry.FullUrl];
 
             ArgumentNullException.ThrowIfNull(transactionResourceActionOutcome.ResourceUpdateInfo);
@@ -179,7 +186,6 @@ public class FhirTransactionPutAndPatchService(
             {
                 verbName = "PUT";
                 entry.Resource.Id = transactionResourceActionOutcome.ResourceUpdateInfo.NewResourceId;
-
                 response = await fhirUpdateHandler.Handle(
                     tenant: tenant,
                     requestId: requestId,
@@ -231,7 +237,7 @@ public class FhirTransactionPutAndPatchService(
             await PreProcessConditionalUpdate(putEntry, requestHeaders, bundleEntryTransactionMetaData);
             return;
         }
-
+        
         if (!endpointPolicyService.GetEndpointPolicy(tenantService.GetScopedTenantCode(), requestFhirUri.ResourceName).AllowUpdate)
         {
             bundleEntryTransactionMetaData.FailureOperationOutcome = GetEndpointPolicyRefusedFailure(putEntry.FullUrl, "PUT");
@@ -281,6 +287,7 @@ public class FhirTransactionPutAndPatchService(
         BundleEntryTransactionMetaData bundleEntryTransactionMetaData)
     {
         ArgumentNullException.ThrowIfNull(putEntry.Resource);
+        
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(putEntry.Resource.TypeName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, bundleEntryTransactionMetaData.RequestUrl.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
@@ -294,8 +301,6 @@ public class FhirTransactionPutAndPatchService(
 
         ResourceStoreSearchOutcome resourceStoreSearchOutcome = await resourceStoreSearch.GetSearch(searchQueryServiceOutcome);
 
-
-
         if (FhirConditionalUpdateHandler.IsMoreThanOneResourceMatch(resourceStoreSearchOutcome.SearchTotal))
         {
             //Multiple matches: The server returns a 412 Precondition Failed error indicating the client's criteria were not selective enough preferably with an OperationOutcome
@@ -306,11 +311,9 @@ public class FhirTransactionPutAndPatchService(
             });
             return;
         }
-
-
-
-
-        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && !FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
+        
+        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && 
+            !FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
         {
             //No matches, no id provided: The server creates the resource.
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
@@ -322,9 +325,12 @@ public class FhirTransactionPutAndPatchService(
             return;
         }
 
-        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
+        if (FhirConditionalUpdateHandler.NoResourceMatch(resourceStoreSearchOutcome.SearchTotal) && 
+            FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
         {
-            //No matches, id provided: The server treats the interaction as an 'Update as Create' interaction (or rejects it, if 'Update as Create' not supported by the server)
+            ArgumentNullException.ThrowIfNull(putEntry.Resource.Id);
+            //No matches, id provided: The server treats the interaction as an 'Update as Create' interaction
+            //(or rejects it, if 'Update as Create' not supported by the server)
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
                 ResourceName: putEntry.Resource.TypeName,
                 NewResourceId: putEntry.Resource.Id,
@@ -335,31 +341,12 @@ public class FhirTransactionPutAndPatchService(
         }
 
         ResourceStore matchedResourceStore = resourceStoreSearchOutcome.ResourceStoreList.First();
-
-
-        if (FhirConditionalUpdateHandler.IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal) && FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id) &&
-            !FhirConditionalUpdateHandler.MatchedResourceIdEqualsProvidedResourcedId(putEntry.Resource.Id, matchedResourceStore.ResourceId))
+        
+        if (FhirConditionalUpdateHandler.IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal))
         {
-            //One Match, resource id provided but does not match resource found: The server returns a 400 Bad Request error indicating the client id
-            //specification was a problem preferably with an OperationOutcome
-            bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
-            {
-                $"The entry with the fullUrl of: {putEntry.FullUrl} was unable to be committed as a PUT action. " +
-                $"Conditional update criteria returned a single matched resource, however its resource id did not match the entry.resource's id. "
-            });
-            return;
-        }
-
-        if (FhirConditionalUpdateHandler.IsSingleResourceMatch(resourceStoreSearchOutcome.SearchTotal) && (!FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id) ||
-                                                                                                           FhirConditionalUpdateHandler.MatchedResourceIdEqualsProvidedResourcedId(putEntry.Resource.Id,
-                                                                                                               matchedResourceStore.ResourceId)))
-        {
-            if (!FhirConditionalUpdateHandler.ResourceIdProvided(putEntry.Resource.Id))
-            {
-                putEntry.Resource.Id = matchedResourceStore.ResourceId;
-            }
-
-            //One Match, no resource id provided OR (resource id provided and it matches the found resource): The server performs the update against the matching resource
+            putEntry.Resource.Id = matchedResourceStore.ResourceId;
+            
+            //One Match, no resource id provided OR (resource id provided, and it matches the found resource): The server performs the update against the matching resource
             bundleEntryTransactionMetaData.ResourceUpdateInfo = new ResourceUpdateInfo(
                 ResourceName: putEntry.Resource.TypeName,
                 NewResourceId: matchedResourceStore.ResourceId,
@@ -386,6 +373,18 @@ public class FhirTransactionPutAndPatchService(
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(putEntry.Resource?.Id))
+        {
+            bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
+            {
+                $"The entry with the fullUrl of: {putEntry.FullUrl} was unable to be committed as a PUT action. " +
+                $"The entry.resource.id was found to be empty."
+            });
+            return;
+        }
+        
+        ArgumentNullException.ThrowIfNull(putEntry.Resource?.Id);
+        
         if (!ResourceIdsAreEqual(putEntry.Resource.Id, bundleEntryTransactionMetaData.RequestUrl.ResourceId))
         {
             bundleEntryTransactionMetaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
@@ -525,7 +524,7 @@ public class FhirTransactionPutAndPatchService(
             metaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
             {
                 $"The entry with the fullUrl of: {putEntry.FullUrl} was unable to be committed as a PUT action. " +
-                $"Unable to parse its request.url of: {putEntry.Request.Url}. " +
+                $"Unable to parse its request.url of: {putEntry.Request?.Url}. " +
                 $"No Resource name could be found."
             });
             return;
@@ -540,7 +539,7 @@ public class FhirTransactionPutAndPatchService(
             }, metaData.FailureOperationOutcome);
             return;
         }
-
+        
         if (!requestFhirUri.ResourceName.Equals(putEntry.Resource.TypeName))
         {
             metaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
@@ -561,7 +560,7 @@ public class FhirTransactionPutAndPatchService(
             metaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
             {
                 $"The entry with the fullUrl of: {patchEntry.FullUrl} was unable to be committed as a PATCH action. " +
-                $"Unable to parse its request.url of: {patchEntry.Request.Url}. " +
+                $"Unable to parse its request.url of: {patchEntry.Request?.Url}. " +
                 $"No Resource name could be found."
             });
             return;
@@ -600,6 +599,7 @@ public class FhirTransactionPutAndPatchService(
     private Dictionary<string, StringValues> GetEntryRequestHeaders(Bundle.EntryComponent entry,
         Dictionary<string, StringValues> requestHeaders)
     {
+        ArgumentNullException.ThrowIfNull(entry.Request);
         var entryRequestHeaders = fhirRequestHttpHeaderSupport.GetRequestHeadersFromBundleEntryRequest(entry.Request);
         foreach (var requestHeader in requestHeaders)
         {

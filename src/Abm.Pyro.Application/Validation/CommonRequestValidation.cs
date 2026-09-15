@@ -36,19 +36,27 @@ public class CommonRequestValidation(
         
     }
     
-    public IEnumerable<string> DoResourceIdsMatch(string requestEndpointResourceId, string requestBodyResourceResourceId)
+    public IEnumerable<string> DoResourceIdsMatch(string? requestEndpointResourceId, string? requestBodyResourceResourceId)
     {
-        if (requestEndpointResourceId.Equals(requestBodyResourceResourceId, StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(requestEndpointResourceId))
         {
-            return [];
+            return ["The resource id in the URL is null or empty"];
+        }
+        
+        if (string.IsNullOrWhiteSpace(requestBodyResourceResourceId))
+        {
+            return ["The resource's id in the body is null or empty"];
+        }
+        
+        if (!requestEndpointResourceId.Equals(requestBodyResourceResourceId, StringComparison.Ordinal))
+        {
+            return ["The resource's id in the body must match the resource id in the URL"];    
         }
     
-        return
-        [
-            "The resource's id in the body must match the resource id in the URL"
-        ];
-
+        return [];
+        
     }
+    
     
     public IEnumerable<string> IsValidRequestEndpointResourceType(string requestEndpointResourceName)
     {

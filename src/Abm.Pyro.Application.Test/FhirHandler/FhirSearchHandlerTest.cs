@@ -133,6 +133,8 @@ public class FhirSearchHandlerTest
         int resourceStoreIdCounter = 1;
         foreach (var resource in resourceList)
         {
+            ArgumentNullException.ThrowIfNull(resource.Id);
+            
             var resourceStoreOne = new ResourceStore(
                 resourceStoreId: resourceStoreIdCounter,
                 resourceId: resource.Id,

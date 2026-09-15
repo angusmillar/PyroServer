@@ -53,6 +53,8 @@ public class FhirTransactionPostService(
             {
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, where as Break exits the loop
             }
+            ArgumentNullException.ThrowIfNull(postEntry.Request);
+            ArgumentNullException.ThrowIfNull(postEntry.FullUrl);
             
             Result<FhirUri> fullUrlFhirUriResult = fhirBundleCommonSupport.ParseFhirUri(postEntry.FullUrl);
             if (fullUrlFhirUriResult.IsFailed)
@@ -132,6 +134,7 @@ public class FhirTransactionPostService(
                 break;
             }
             
+            ArgumentNullException.ThrowIfNull(postEntry.Resource);
             PreProcessCreate(bundleEntryTransactionMetaData, resourceName: postEntry.Resource.TypeName);
             if (bundleEntryTransactionMetaData.IsFailure)
             {
@@ -163,9 +166,12 @@ public class FhirTransactionPostService(
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, whereas Break exits the loop
             }
 
+            ArgumentNullException.ThrowIfNull(postEntry.FullUrl);
             var transactionResourceActionOutcome = transactionResourceActionOutcomeDictionary[postEntry.FullUrl];
 
             ArgumentNullException.ThrowIfNull(transactionResourceActionOutcome.ResourceUpdateInfo);
+            
+            ArgumentNullException.ThrowIfNull(postEntry.Resource);
             
             postEntry.Resource.Id = transactionResourceActionOutcome.ResourceUpdateInfo.NewResourceId;
 
@@ -354,6 +360,7 @@ public class FhirTransactionPostService(
     private Dictionary<string, StringValues> GetPostRequestHeaders(Bundle.EntryComponent postEntry,
         Dictionary<string, StringValues> requestHeaders)
     {
+        ArgumentNullException.ThrowIfNull(postEntry.Request);
         var postRequestHeaders = fhirRequestHttpHeaderSupport.GetRequestHeadersFromBundleEntryRequest(postEntry.Request);
         foreach (var requestHeader in requestHeaders)
         {

@@ -168,8 +168,10 @@ public class FhirTransactionDeleteService(
             {
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, whereas Break exits the loop
             }
-
-            string fullUrlKey = deleteEntry.FullUrl;
+            
+            ArgumentNullException.ThrowIfNull(deleteEntry.Request?.Url);
+            
+            string? fullUrlKey = deleteEntry.FullUrl;
             if (string.IsNullOrWhiteSpace(fullUrlKey))
             {
                 fullUrlKey = deleteEntry.Request.Url;
@@ -294,7 +296,7 @@ public class FhirTransactionDeleteService(
             metaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
             {
                 $"The entry with the fullUrl of: {deleteEntry.FullUrl} was unable to be committed as a DELETE action. " +
-                $"Unable to parse its request.url of: {deleteEntry.Request.Url}. " +
+                $"Unable to parse its request.url of: {deleteEntry.Request?.Url}. " +
                 $"No Resource name could be found."
             });
             return;

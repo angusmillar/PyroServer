@@ -119,8 +119,10 @@ public sealed class FhirPathPatchService : IFhirPathPatchService
 
         if (op.Value is PrimitiveType primitive)
         {
-            // Primitive: update the leaf value in-place; node stays in the tree
-            target.Value = primitive.ObjectValue;
+            // Primitive: update the leaf value in-place; node stays in the tree.
+            // Go via ToPocoNode (not PrimitiveType.ObjectValue/JsonValue) so instant/integer64/base64Binary
+            // land in the system-typed form ElementNode.Value expects, not the raw JSON-string form.
+            target.Value = ElementNode.FromElement(primitive.ToPocoNode(ModelInfo.ModelInspector)).Value;
             return;
         }
 

@@ -15,7 +15,7 @@ public class FhirNarrativeSupport(
     public void UpdateAllReferences(Narrative? narrative,
         Dictionary<string, BundleEntryTransactionMetaData> bundleEntryTransactionMetaDataDictionary)
     {
-        if (narrative is null)
+        if (narrative?.Div is null)
         {
             return;
         }

@@ -73,8 +73,9 @@ public class FhirCreateHandler(
         {
             return InvalidValidatorResultResponse(validatorResult);
         }
-        
-        if (string.IsNullOrWhiteSpace(request.ResourceId))
+
+        request.Resource.Id = request.ResourceId;
+        if (string.IsNullOrWhiteSpace(request.Resource.Id))
         {
             request.Resource.Id = GuidSupport.NewFhirGuid();
         }
@@ -104,7 +105,7 @@ public class FhirCreateHandler(
         SetResourceMeta(request.Resource, request.TimeStamp);
 
         IndexerOutcome indexerOutcome = await indexer.Process(request.Resource, fhirResourceType);
-
+        
         var resourceStore = new ResourceStore(
             resourceStoreId: null,
             resourceId: request.Resource.Id,

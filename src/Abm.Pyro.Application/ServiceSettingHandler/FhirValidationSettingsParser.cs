@@ -49,6 +49,7 @@ public class FhirValidationSettingsParser(
         ArgumentNullException.ThrowIfNull(terminologyServiceParameterComponent);
         ArgumentNullException.ThrowIfNull(validateOnCreateParameterComponent);
         ArgumentNullException.ThrowIfNull(validateOnUpdateParameterComponent);
+        ArgumentNullException.ThrowIfNull(parameters.Meta?.VersionId);
         
         Uri? profilePackageServiceUrl = FhirParameterSupport.GetParameterFhirUrlValue(profileParameterComponent);
         if (profilePackageServiceUrl is null)
