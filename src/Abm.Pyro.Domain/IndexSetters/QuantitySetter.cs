@@ -18,41 +18,23 @@ public class QuantitySetter(IQuantityComparatorMap quantityComparatorMap) : IQua
     SearchParameterId = searchParameterId;
     SearchParameterName = searchParameterName;
 
-    if (typedElement is ScopedNode scopedNode && scopedNode.Current is IFhirValueProvider fhirValueProvider)
+    if (typedElement is not IFhirValueProvider fhirValueProvider)
     {
-      if (fhirValueProvider.FhirValue is null)
-      {
-        throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
-                                         $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                         $"name of: {SearchParameterName}");
-      }
-
-      return ProcessFhirDataType(fhirValueProvider.FhirValue);
-    }
-
-    if (typedElement.Value is null)
-    {
-      throw new NullReferenceException($"ITypedElement's Value found to be null for the SearchParameter entity with the database " +
+      throw new NullReferenceException($"ITypedElement was expected to implement IFhirValueProvider for the SearchParameter entity with the database " +
                                        $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                        $"name of: {SearchParameterName}");
     }
-    
-    return ProcessPrimitiveDataType(typedElement.Value);
 
-  }
-
-  private IList<IndexQuantity> ProcessPrimitiveDataType(object obj)
-  {
-    switch (obj)
+    if (fhirValueProvider.FhirValue is null)
     {
-      default:
-        throw new FormatException($"Unknown Primitive DataType: {obj.GetType().Name} for the SearchParameter entity with the database " +
-                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                  $"name of: {SearchParameterName}");
-
+      throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
+                                       $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                       $"name of: {SearchParameterName}");
     }
+
+    return ProcessFhirDataType(fhirValueProvider.FhirValue);
   }
-  
+
   private IList<IndexQuantity> ProcessFhirDataType(Base fhirValue)
   {
 
@@ -66,6 +48,8 @@ public class QuantitySetter(IQuantityComparatorMap quantityComparatorMap) : IQua
         return SetPositionComponent(positionComponent);
       case Hl7.Fhir.Model.Range range:
         return SetRange(range);
+      case DynamicPrimitive dynamicPrimitive:
+        return ProcessDynamicPrimitive(dynamicPrimitive);
       default:
         throw new FormatException($"Unknown FhirType: {fhirValue.GetType().Name} for the SearchParameter entity with the database " +
                                   $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
@@ -74,6 +58,21 @@ public class QuantitySetter(IQuantityComparatorMap quantityComparatorMap) : IQua
   }
   
   
+  private IList<IndexQuantity> ProcessDynamicPrimitive(DynamicPrimitive dynamicPrimitive)
+  {
+    switch (dynamicPrimitive.Value)
+    {
+      case Hl7.Fhir.ElementModel.Types.Quantity quantity:
+        return SetFPQuantity(quantity);
+      case decimal d:
+        return new List<IndexQuantity>() { SetIndexQuantity(d, null, null, null, null) };
+      default:
+        throw new FormatException($"Unknown FHIRPath computed DataType: {dynamicPrimitive.Value?.GetType().Name} for the SearchParameter entity with the database " +
+                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                  $"name of: {SearchParameterName}");
+    }
+  }
+
   private IList<IndexQuantity> SetRange(Hl7.Fhir.Model.Range range)
   {
     //If either value is missing then their is no range as the Range data type uses SimpleQuantity 
@@ -127,6 +126,12 @@ public class QuantitySetter(IQuantityComparatorMap quantityComparatorMap) : IQua
     //More thinking required. At present the server never indexes this so the search never finds it. Not greate!
     return Array.Empty<IndexQuantity>();
   }
+  private IList<IndexQuantity> SetFPQuantity(Hl7.Fhir.ElementModel.Types.Quantity quantity)
+  {
+    var resourceIndex = SetIndexQuantity(quantity.Value, null, null, null, quantity.Unit);
+    return new List<IndexQuantity>() { resourceIndex };
+  }
+
   private IList<IndexQuantity> SetQuantity(Quantity quantity)
   {
     QuantityComparator? comparator = null;

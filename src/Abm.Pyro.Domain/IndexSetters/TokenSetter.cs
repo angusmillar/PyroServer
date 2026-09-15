@@ -20,43 +20,23 @@ public class TokenSetter : ITokenSetter
     SearchParameterId = searchParameterId;
     SearchParameterName = searchParameterName;
 
-    if (typedElement is ScopedNode scopedNode && scopedNode.Current is IFhirValueProvider fhirValueProvider)
+    if (typedElement is not IFhirValueProvider fhirValueProvider)
     {
-      if (fhirValueProvider.FhirValue is null)
-      {
-        throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
-                                         $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                         $"name of: {SearchParameterName}");
-      }
-
-      return ProcessFhirDataType(fhirValueProvider.FhirValue);
-    }
-
-    if (typedElement.Value is null)
-    {
-      throw new NullReferenceException($"ITypedElement's Value found to be null for the SearchParameter entity with the database " +
+      throw new NullReferenceException($"ITypedElement was expected to implement IFhirValueProvider for the SearchParameter entity with the database " +
                                        $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                        $"name of: {SearchParameterName}");
     }
-    
-    return ProcessPrimitiveDataType(typedElement.Value);
-    
-  }
-  
-  private IList<IndexToken> ProcessPrimitiveDataType(object obj)
-  {
-    switch (obj)
-    {
-      case bool boolean:
-        return SetBoolean(boolean);
-      default:
-        throw new FormatException($"Unknown Primitive DataType: {obj.GetType().Name} for the SearchParameter entity with the database " +
-                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                  $"name of: {SearchParameterName}");
 
+    if (fhirValueProvider.FhirValue is null)
+    {
+      throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
+                                       $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                       $"name of: {SearchParameterName}");
     }
+
+    return ProcessFhirDataType(fhirValueProvider.FhirValue);
   }
-  
+
   private IList<IndexToken> ProcessFhirDataType(Base fhirValue)
   {
     switch (fhirValue)
@@ -87,11 +67,42 @@ public class TokenSetter : ITokenSetter
         return SetRange(range);
       case Location.PositionComponent positionComponent:
         return SePositionComponent(positionComponent);
+      case DynamicPrimitive dynamicPrimitive:
+        return ProcessDynamicPrimitive(dynamicPrimitive);
       default:
         throw new FormatException($"Unknown FHIR DataType: {fhirValue.GetType().Name} for the SearchParameter entity with the database " +
                                   $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                   $"name of: {SearchParameterName}");
     }
+  }
+
+  private IList<IndexToken> ProcessDynamicPrimitive(DynamicPrimitive dynamicPrimitive)
+  {
+    switch (dynamicPrimitive.Value)
+    {
+      case bool boolean:
+        return SetBoolean(boolean);
+      case string str:
+        return GetTokenIndexIfNotNullOrWhiteSpace(str);
+      default:
+        throw new FormatException($"Unknown FHIRPath computed DataType: {dynamicPrimitive.Value?.GetType().Name} for the SearchParameter entity with the database " +
+                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                  $"name of: {SearchParameterName}");
+    }
+  }
+
+  private IList<IndexToken> GetTokenIndexIfNotNullOrWhiteSpace(string? value)
+  {
+    if (string.IsNullOrWhiteSpace(value))
+    {
+      return Array.Empty<IndexToken>();
+    }
+    return new List<IndexToken>() { SetTokenIndexToLowerCaseTrim(null, value) };
+  }
+
+  private IList<IndexToken> SetBoolean(bool boolean)
+  {
+    return new List<IndexToken>() { SetTokenIndexToLowerCaseTrim(null, boolean.ToString()) };
   }
 
   private IList<IndexToken> SePositionComponent(Location.PositionComponent positionComponent)
@@ -216,11 +227,6 @@ public class TokenSetter : ITokenSetter
     }
 
     return new List<IndexToken>() { SetTokenIndexToLowerCaseTrim(null, fhirDateTime.Value) };
-  }
-
-  private IList<IndexToken> SetBoolean(bool boolean)
-  {
-    return new List<IndexToken>() { SetTokenIndexToLowerCaseTrim(null, boolean.ToString()) };
   }
 
   private IList<IndexToken> SetFhirBoolean(FhirBoolean fhirBoolean)

@@ -19,38 +19,21 @@ public class NumberSetter : INumberSetter
     SearchParameterId = searchParameterId;
     SearchParameterName = searchParameterName;
 
-    if (typedElement is ScopedNode scopedNode && scopedNode.Current is IFhirValueProvider fhirValueProvider)
+    if (typedElement is not IFhirValueProvider fhirValueProvider)
     {
-      if (fhirValueProvider.FhirValue is null)
-      {
-        throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
-                                         $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                         $"name of: {SearchParameterName}");
-      }
-
-      return ProcessFhirDataType(fhirValueProvider.FhirValue);
-    }
-
-    if (typedElement.Value is null)
-    {
-      throw new NullReferenceException($"ITypedElement's Value found to be null for the SearchParameter entity with the database " +
+      throw new NullReferenceException($"ITypedElement was expected to implement IFhirValueProvider for the SearchParameter entity with the database " +
                                        $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                        $"name of: {SearchParameterName}");
     }
 
-    return ProcessPrimitiveDataType(typedElement.Value);
-  }
-
-  private IList<IndexQuantity> ProcessPrimitiveDataType(object obj)
-  {
-    switch (obj)
+    if (fhirValueProvider.FhirValue is null)
     {
-      default:
-        throw new FormatException($"Unknown Primitive DataType: {obj.GetType().Name} for the SearchParameter entity with the database " +
-                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
-                                  $"name of: {SearchParameterName}");
-
+      throw new NullReferenceException($"FhirValueProvider's FhirValue found to be null for the SearchParameter entity with the database " +
+                                       $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                       $"name of: {SearchParameterName}");
     }
+
+    return ProcessFhirDataType(fhirValueProvider.FhirValue);
   }
 
   private IList<IndexQuantity> ProcessFhirDataType(Base fhirValue)
@@ -67,8 +50,27 @@ public class NumberSetter : INumberSetter
         return SetFhirDecimal(fhirDecimal);
       case Hl7.Fhir.Model.Range range:
         return SetRange(range);
+      case DynamicPrimitive dynamicPrimitive:
+        return ProcessDynamicPrimitive(dynamicPrimitive);
       default:
         throw new FormatException($"Unknown FhirType: {fhirValue.GetType().Name} for the SearchParameter entity with the database " +
+                                  $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
+                                  $"name of: {SearchParameterName}");
+    }
+  }
+
+  private IList<IndexQuantity> ProcessDynamicPrimitive(DynamicPrimitive dynamicPrimitive)
+  {
+    switch (dynamicPrimitive.Value)
+    {
+      case decimal d:
+        return AddIndexQuantityToIndexList(d, null);
+      case int i:
+        return AddIndexQuantityToIndexList(Convert.ToDecimal(i), null);
+      case long l:
+        return AddIndexQuantityToIndexList(Convert.ToDecimal(l), null);
+      default:
+        throw new FormatException($"Unknown FHIRPath computed DataType: {dynamicPrimitive.Value?.GetType().Name} for the SearchParameter entity with the database " +
                                   $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                   $"name of: {SearchParameterName}");
     }
