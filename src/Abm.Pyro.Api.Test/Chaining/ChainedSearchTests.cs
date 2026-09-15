@@ -91,7 +91,7 @@ public class ChainedSearchTests(IntegrationTestFixture fixture) : IntegrationTes
         Assert.IsType<Observation>(bundle.Entry.Single().Resource);
         if (bundle.Entry.Single().Resource is Observation observation)
         {
-            Assert.Equal($"Patient/{patientSmith.Id}", observation.Subject.Reference);
+            Assert.Equal($"Patient/{patientSmith.Id}", observation.Subject?.Reference);
         }
     }
 
@@ -145,7 +145,7 @@ public class ChainedSearchTests(IntegrationTestFixture fixture) : IntegrationTes
         Assert.IsType<Observation>(bundle.Entry.Single().Resource);
         if (bundle.Entry.Single().Resource is Observation observation)
         {
-            Assert.Equal($"Patient/{patientAcme.Id}", observation.Subject.Reference);
+            Assert.Equal($"Patient/{patientAcme.Id}", observation.Subject?.Reference);
         }
     }
 

@@ -105,6 +105,11 @@ public class DateTimeSetter(IDateTimeIndexSupport dateTimeIndexSupport, IFhirDat
 
   private IList<IndexDateTime> SetString(FhirString fhirString)
   {
+    if (fhirString.Value is null)
+    {
+      return Array.Empty<IndexDateTime>();
+    }
+    
     if (!Hl7.Fhir.Model.Date.IsValidValue(fhirString.Value) && !FhirDateTime.IsValidValue(fhirString.Value))
     {
       return Array.Empty<IndexDateTime>();
@@ -128,7 +133,7 @@ public class DateTimeSetter(IDateTimeIndexSupport dateTimeIndexSupport, IFhirDat
 
   private IList<IndexDateTime> SetDateTime(FhirDateTime fhirDateTime)
   {
-    if (!FhirDateTime.IsValidValue(fhirDateTime.Value))
+    if (fhirDateTime.Value is null || !FhirDateTime.IsValidValue(fhirDateTime.Value))
     {
       return Array.Empty<IndexDateTime>();
     }
@@ -167,7 +172,7 @@ public class DateTimeSetter(IDateTimeIndexSupport dateTimeIndexSupport, IFhirDat
 
   private IList<IndexDateTime> SetDate(Date date)
   {
-    if (!Date.IsValidValue(date.Value))
+    if (date.Value is null || !Date.IsValidValue(date.Value))
     {
       return Array.Empty<IndexDateTime>();
     }

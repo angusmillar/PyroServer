@@ -50,12 +50,12 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Assert.NotNull(response);
         Assert.Equal(Bundle.BundleType.TransactionResponse, response.Type);
         Assert.Equal(3, response.Entry.Count);
-        Assert.StartsWith("201", response.Entry[0].Response.Status); // POST -> Created
-        Assert.StartsWith("200", response.Entry[1].Response.Status); // PUT  -> OK
-        Assert.StartsWith("204", response.Entry[2].Response.Status); // DELETE -> No Content
+        Assert.StartsWith("201", response.Entry[0].Response?.Status); // POST -> Created
+        Assert.StartsWith("200", response.Entry[1].Response?.Status); // PUT  -> OK
+        Assert.StartsWith("204", response.Entry[2].Response?.Status); // DELETE -> No Content
 
         // Assert side effects via independent reads.
-        var createdId = response.Entry[0].Resource.Id;
+        var createdId = response.Entry[0].Resource?.Id;
         Patient createdReadBack = await FhirClient.ReadAsync<Patient>($"Patient/{createdId}")
                                   ?? throw new InvalidOperationException("Created patient not found");
         Assert.Equal("Created", createdReadBack.Name.First().Family);
@@ -63,7 +63,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient updatedReadBack = await FhirClient.ReadAsync<Patient>($"Patient/{toUpdate.Id}")
                                   ?? throw new InvalidOperationException("Updated patient not found");
         Assert.Equal("Updated", updatedReadBack.Name.First().Family);
-        Assert.Equal("2", updatedReadBack.Meta.VersionId); // create (v1) then update (v2)
+        Assert.Equal("2", updatedReadBack.Meta?.VersionId); // create (v1) then update (v2)
 
         FhirOperationException deletedReadEx = await Assert.ThrowsAsync<FhirOperationException>(
             () => FhirClient.ReadAsync<Patient>($"Patient/{toDelete.Id}"));
@@ -84,9 +84,9 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Single(response.Entry);
-        Assert.StartsWith("201", response.Entry[0].Response.Status);
+        Assert.StartsWith("201", response.Entry[0].Response?.Status);
 
-        var createdId = response.Entry[0].Resource.Id;
+        var createdId = response.Entry[0].Resource?.Id;
         Assert.False(string.IsNullOrWhiteSpace(createdId));
 
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{createdId}")
@@ -114,19 +114,21 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Equal(2, response.Entry.Count);
-        Assert.StartsWith("201", response.Entry[0].Response.Status);
-        Assert.StartsWith("201", response.Entry[1].Response.Status);
+        Assert.StartsWith("201", response.Entry[0].Response?.Status);
+        Assert.StartsWith("201", response.Entry[1].Response?.Status);
 
-        var patientId = response.Entry[0].Resource.Id;
+        var patientId = response.Entry[0].Resource?.Id;
         var responseObservation = Assert.IsType<Observation>(response.Entry[1].Resource);
 
         // The urn:uuid placeholder must have been rewritten to a concrete Patient reference.
-        Assert.Contains($"Patient/{patientId}", responseObservation.Subject.Reference);
+        Assert.Contains($"Patient/{patientId}", responseObservation.Subject?.Reference);
 
         // Confirm the persisted observation references the created patient.
         Observation readBack = await FhirClient.ReadAsync<Observation>($"Observation/{responseObservation.Id}")
                                ?? throw new InvalidOperationException("Created observation not found");
-        Assert.Contains(patientId, readBack.Subject.Reference);
+        
+        ArgumentNullException.ThrowIfNull(patientId);
+        Assert.Contains(patientId, readBack.Subject?.Reference);
     }
 
     // ------------------------------------------------------------------
@@ -145,7 +147,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle? response = await FhirClient.TransactionAsync(transaction);
 
         Assert.NotNull(response);
-        Assert.StartsWith("201", response.Entry[0].Response.Status);
+        Assert.StartsWith("201", response.Entry[0].Response?.Status);
 
         Bundle? search = await FhirClient.SearchAsync<Patient>(new[] { $"identifier={MrnSystem}|{mrn}" });
         Assert.NotNull(search);
@@ -166,7 +168,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         // One match => the server ignores the POST and returns 200 OK (no new resource).
         Assert.NotNull(response);
-        Assert.StartsWith("200", response.Entry[0].Response.Status);
+        Assert.StartsWith("200", response.Entry[0].Response?.Status);
 
         Bundle? search = await FhirClient.SearchAsync<Patient>(new[] { $"identifier={MrnSystem}|{mrn}" });
         Assert.NotNull(search);
@@ -193,13 +195,13 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle? response = await FhirClient.TransactionAsync(transaction);
 
         Assert.NotNull(response);
-        Assert.StartsWith("200", response.Entry[0].Response.Status);
-        Assert.Equal(existing.Id, response.Entry[0].Resource.Id); // updated the matched resource
+        Assert.StartsWith("200", response.Entry[0].Response?.Status);
+        Assert.Equal(existing.Id, response.Entry[0].Resource?.Id); // updated the matched resource
 
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Updated patient not found");
         Assert.Equal("After", readBack.Name.First().Family);
-        Assert.Equal("2", readBack.Meta.VersionId);
+        Assert.Equal("2", readBack.Meta?.VersionId);
     }
 
     // ------------------------------------------------------------------
@@ -219,7 +221,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle? response = await FhirClient.TransactionAsync(transaction);
 
         Assert.NotNull(response);
-        Assert.StartsWith("204", response.Entry[0].Response.Status);
+        Assert.StartsWith("204", response.Entry[0].Response?.Status);
 
         FhirOperationException ex = await Assert.ThrowsAsync<FhirOperationException>(
             () => FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}"));
@@ -249,14 +251,14 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle? response = await FhirClient.TransactionAsync(transaction);
 
         Assert.NotNull(response);
-        Assert.StartsWith("201", response.Entry[0].Response.Status);
+        Assert.StartsWith("201", response.Entry[0].Response?.Status);
 
         var responseObservation = Assert.IsType<Observation>(response.Entry[0].Resource);
-        Assert.Contains($"Patient/{existing.Id}", responseObservation.Subject.Reference);
+        Assert.Contains($"Patient/{existing.Id}", responseObservation.Subject?.Reference);
 
         Observation readBack = await FhirClient.ReadAsync<Observation>($"Observation/{responseObservation.Id}")
                                ?? throw new InvalidOperationException("Created observation not found");
-        Assert.Contains($"Patient/{existing.Id}", readBack.Subject.Reference);
+        Assert.Contains($"Patient/{existing.Id}", readBack.Subject?.Reference);
     }
 
     // ------------------------------------------------------------------
@@ -275,7 +277,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Single(response.Entry);
-        Assert.StartsWith("200", response.Entry[0].Response.Status);
+        Assert.StartsWith("200", response.Entry[0].Response?.Status);
 
         var fetched = Assert.IsType<Patient>(response.Entry[0].Resource);
         Assert.Equal(existing.Id, fetched.Id);
@@ -346,16 +348,16 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Single(response.Entry);
-        Assert.StartsWith("200", response.Entry[0].Response.Status);
+        Assert.StartsWith("200", response.Entry[0].Response?.Status);
 
         var patchedPatient = Assert.IsType<Patient>(response.Entry[0].Resource);
         Assert.Equal("PostImage", patchedPatient.Name.First().Family);
-        Assert.Equal("2", patchedPatient.Meta.VersionId);
+        Assert.Equal("2", patchedPatient.Meta?.VersionId);
 
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Patched patient not found");
         Assert.Equal("PostImage", readBack.Name.First().Family);
-        Assert.Equal("2", readBack.Meta.VersionId);
+        Assert.Equal("2", readBack.Meta?.VersionId);
     }
 
     [Fact]
@@ -373,8 +375,8 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Bundle? response = await FhirClient.TransactionAsync(transaction);
 
         Assert.NotNull(response);
-        Assert.StartsWith("200", response.Entry[0].Response.Status);
-        Assert.Equal(existing.Id, response.Entry[0].Resource.Id);
+        Assert.StartsWith("200", response.Entry[0].Response?.Status);
+        Assert.Equal(existing.Id, response.Entry[0].Resource?.Id);
 
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Patched patient not found");
@@ -476,11 +478,11 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Equal(5, response.Entry.Count);
-        Assert.StartsWith("201", response.Entry[0].Response.Status); // POST
-        Assert.StartsWith("200", response.Entry[1].Response.Status); // PUT
-        Assert.StartsWith("200", response.Entry[2].Response.Status); // PATCH
-        Assert.StartsWith("204", response.Entry[3].Response.Status); // DELETE
-        Assert.StartsWith("200", response.Entry[4].Response.Status); // GET
+        Assert.StartsWith("201", response.Entry[0].Response?.Status); // POST
+        Assert.StartsWith("200", response.Entry[1].Response?.Status); // PUT
+        Assert.StartsWith("200", response.Entry[2].Response?.Status); // PATCH
+        Assert.StartsWith("204", response.Entry[3].Response?.Status); // DELETE
+        Assert.StartsWith("200", response.Entry[4].Response?.Status); // GET
 
         var patchedPatient = Assert.IsType<Patient>(response.Entry[2].Resource);
         Assert.Equal("MixedPatchUpdated", patchedPatient.Name.First().Family);
@@ -509,16 +511,16 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
 
         Assert.NotNull(response);
         Assert.Equal(2, response.Entry.Count);
-        Assert.StartsWith("201", response.Entry[0].Response.Status);
-        Assert.StartsWith("200", response.Entry[1].Response.Status);
+        Assert.StartsWith("201", response.Entry[0].Response?.Status);
+        Assert.StartsWith("200", response.Entry[1].Response?.Status);
 
-        var newPatientId = response.Entry[0].Resource.Id;
+        var newPatientId = response.Entry[0].Resource?.Id;
         var patchedObservation = Assert.IsType<Observation>(response.Entry[1].Resource);
-        Assert.Contains($"Patient/{newPatientId}", patchedObservation.Subject.Reference);
+        Assert.Contains($"Patient/{newPatientId}", patchedObservation.Subject?.Reference);
 
         Observation readBack = await FhirClient.ReadAsync<Observation>($"Observation/{existingObservation.Id}")
                                ?? throw new InvalidOperationException("Patched observation not found");
-        Assert.Contains($"Patient/{newPatientId}", readBack.Subject.Reference);
+        Assert.Contains($"Patient/{newPatientId}", readBack.Subject?.Reference);
     }
 
     [Fact]
@@ -543,7 +545,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Patient not found");
         Assert.Equal("OverlapOriginal", readBack.Name.First().Family);
-        Assert.Equal("1", readBack.Meta.VersionId);
+        Assert.Equal("1", readBack.Meta?.VersionId);
     }
 
     [Fact]
@@ -565,7 +567,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Patient not found");
         Assert.Equal("IfMatchOriginal", readBack.Name.First().Family);
-        Assert.Equal("1", readBack.Meta.VersionId);
+        Assert.Equal("1", readBack.Meta?.VersionId);
     }
 
     [Fact]
@@ -584,7 +586,7 @@ public class TransactionTests(IntegrationTestFixture fixture) : IntegrationTestB
         Patient readBack = await FhirClient.ReadAsync<Patient>($"Patient/{existing.Id}")
                            ?? throw new InvalidOperationException("Patient not found");
         Assert.Equal("EmptyPatchOriginal", readBack.Name.First().Family);
-        Assert.Equal("1", readBack.Meta.VersionId);
+        Assert.Equal("1", readBack.Meta?.VersionId);
     }
 
     // ------------------------------------------------------------------

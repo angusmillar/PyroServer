@@ -280,6 +280,7 @@ public class FhirTransactionPutAndPatchService(
         Dictionary<string, StringValues> requestHeaders,
         BundleEntryTransactionMetaData bundleEntryTransactionMetaData)
     {
+        ArgumentNullException.ThrowIfNull(putEntry.Resource);
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(putEntry.Resource.TypeName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, bundleEntryTransactionMetaData.RequestUrl.Query);
         ValidatorResult searchQueryValidatorResult = validator.Validate(new SearchQueryServiceOutcomeAndHeaders(
@@ -587,7 +588,7 @@ public class FhirTransactionPutAndPatchService(
         }
     }
 
-    private OperationOutcome GetEndpointPolicyRefusedFailure(string fullUrl, string verbName)
+    private OperationOutcome GetEndpointPolicyRefusedFailure(string? fullUrl, string verbName)
     {
         return operationOutcomeSupport.GetError(new[]
         {

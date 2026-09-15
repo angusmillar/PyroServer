@@ -36,6 +36,11 @@ public class DateTimeIndexSupport(IFhirDateTimeFactory fhirDateTimeFactory, IFhi
 
   public IndexDateTime? GetDateTimeIndex(FhirDateTime value, int searchParameterId)
   {
+    if (value.Value is null)
+    {
+      return null;
+    }
+    
     if (!fhirDateTimeFactory.TryParse(value.Value, out DateTimeWithPrecision? fhirDateTime, out string? errorMessage))
     {
       return null;  
@@ -139,38 +144,36 @@ public class DateTimeIndexSupport(IFhirDateTimeFactory fhirDateTimeFactory, IFhi
   public IndexDateTime? GetDateTimeIndex(Timing timing, int searchParameterId)
   {
     DateTime? high = null;
-    if (timing.Event != null)
+    DateTime? low = ResolveTargetEventDateTime(timing, true, searchParameterId);
+    if (low != DateTimeOffset.MaxValue.ToUniversalTime())
     {
-      DateTime? low = ResolveTargetEventDateTime(timing, true, searchParameterId);
-      if (low != DateTimeOffset.MaxValue.ToUniversalTime())
+      decimal targetDuration = ResolveTargetDurationValue(timing);
+      Timing.UnitsOfTime? targetUnitsOfTime = null;
+      if (targetDuration > decimal.Zero)
       {
-        decimal targetDuration = ResolveTargetDurationValue(timing);
-        Timing.UnitsOfTime? targetUnitsOfTime = null;
-        if (targetDuration > decimal.Zero)
+        if (timing.Repeat?.DurationUnit != null)
         {
-          if (timing.Repeat.DurationUnit.HasValue)
-            targetUnitsOfTime = timing.Repeat.DurationUnit.Value;
-        }
-
-        if (targetDuration > decimal.Zero && targetUnitsOfTime.HasValue)
-        {
-          high = AddDurationTimeToEvent(ResolveTargetEventDateTime(timing, false, searchParameterId), targetDuration, targetUnitsOfTime.Value);
+          targetUnitsOfTime = timing.Repeat.DurationUnit.Value;
         }
       }
 
-      var dateTimeIndex = new IndexDateTime(
-        indexDateTimeId: null,
-        resourceStoreId: null,
-        resourceStore: null,
-        searchParameterStoreId: searchParameterId,
-        searchParameterStore: null,
-        lowUtc: low,
-        highUtc: high
-      );
-
-      return dateTimeIndex;
+      if (targetDuration > decimal.Zero && targetUnitsOfTime.HasValue)
+      {
+        high = AddDurationTimeToEvent(ResolveTargetEventDateTime(timing, false, searchParameterId), targetDuration, targetUnitsOfTime.Value);
+      }
     }
-    return null;
+
+    var dateTimeIndex = new IndexDateTime(
+      indexDateTimeId: null,
+      resourceStoreId: null,
+      resourceStore: null,
+      searchParameterStoreId: searchParameterId,
+      searchParameterStore: null,
+      lowUtc: low,
+      highUtc: high
+    );
+
+    return dateTimeIndex;
 
   }
   

@@ -21,6 +21,7 @@ public class PreferredReturnTypeService(
         IRepositoryEventCollector repositoryEventQueue)
     {
         PreferReturnType preferReturnType = fhirRequestHttpHeaderSupport.GetPreferReturn(requestHeaders);
+        ArgumentNullException.ThrowIfNull(resource.Id);
         switch (preferReturnType)
         {
             case PreferReturnType.Minimal:

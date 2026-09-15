@@ -49,7 +49,7 @@ public class ReferenceIndexSearchTests(IntegrationTestFixture fixture) : Integra
         Assert.IsType<Observation>(bundle.Entry.Single().Resource);
         if (bundle.Entry.First().Resource is Observation observation)
         {
-            Assert.Equal($"Patient/{patientA.Id}", observation.Subject.Reference);
+            Assert.Equal($"Patient/{patientA.Id}", observation.Subject?.Reference);
         }
     }
 

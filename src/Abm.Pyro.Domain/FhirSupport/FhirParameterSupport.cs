@@ -30,6 +30,8 @@ public class FhirParameterSupport : IFhirParameterSupport
         string parameterName,
         List<Parameters.ParameterComponent> parameterComponent)
     {
-        return parameterComponent.FirstOrDefault(x => x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
+        return parameterComponent.FirstOrDefault(x => 
+            x.Name != null && 
+            x.Name.Equals(parameterName, StringComparison.OrdinalIgnoreCase));
     }
 }

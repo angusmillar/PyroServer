@@ -30,8 +30,13 @@ public class FhirBundleCommonSupport(IFhirUriFactory fhirUriFactory) : IFhirBund
         return ParseFhirUriOrThrowErrorMessage(url: entry.Request.Url, errorMessage: $"Unable to parse bundle.entry[x].request.url of: {entry.Request.Url}");
     }
     
-    public Result<FhirUri> ParseFhirUri(string uri)
+    public Result<FhirUri> ParseFhirUri(string? uri)
     {
+        if (string.IsNullOrWhiteSpace(uri))
+        {
+            return Result.Fail("Unable to parse a FHIR URI as it was found to ne null or empty");
+        }
+        
         if (!fhirUriFactory.TryParse(uri, out FhirUri? fhirUri, out string parseErrorMessage))
         {
             return Result.Fail(parseErrorMessage);

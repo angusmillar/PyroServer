@@ -78,33 +78,35 @@ public class QuantitySetter(IQuantityComparatorMap quantityComparatorMap) : IQua
     //If either value is missing then their is no range as the Range data type uses SimpleQuantity 
     //which has no Comparator property. Therefore there is no such thing as >10 or <100, their must be to values
     // for examples 10 - 100. 
-    if (!range.High.Value.HasValue && !range.Low.Value.HasValue)
+    
+    if (range.High != null && !range.High.Value.HasValue && 
+        range.Low != null && !range.Low.Value.HasValue)
     {
       return Array.Empty<IndexQuantity>();
     }
 
     QuantityComparator? comparatorLow = null;
-    if (range.Low.Comparator.HasValue)
+    if (range.Low != null && range.Low.Comparator.HasValue)
     {
       comparatorLow = quantityComparatorMap.Map(range.Low.Comparator.Value);
     }
 
     QuantityComparator? comparatorHigh = null;
-    if (range.High.Comparator.HasValue)
+    if (range.High != null && range.High.Comparator.HasValue)
     {
       comparatorHigh = quantityComparatorMap.Map(range.High.Comparator.Value);
     }
 
-    var resourceIndex = SetIndexQuantityRange(range.Low.Value,
-                                              range.Low.Code,
-                                              range.Low.System,
+    var resourceIndex = SetIndexQuantityRange(range.Low?.Value,
+                                              range.Low?.Code,
+                                              range.Low?.System,
                                               comparatorLow,
-                                              range.Low.Unit,
-                                              range.High.Value,
-                                              string.IsNullOrWhiteSpace(range.High.Code) ? null : range.High.Code,
-                                              string.IsNullOrWhiteSpace(range.High.System) ? null : range.High.System,
+                                              range.Low?.Unit,
+                                              range.High?.Value,
+                                              string.IsNullOrWhiteSpace(range.High?.Code) ? null : range.High.Code,
+                                              string.IsNullOrWhiteSpace(range.High?.System) ? null : range.High.System,
                                               comparatorHigh,
-                                              string.IsNullOrWhiteSpace(range.High.Unit) ? null : range.High.Unit);
+                                              string.IsNullOrWhiteSpace(range.High?.Unit) ? null : range.High.Unit);
 
     return new List<IndexQuantity>() { resourceIndex };
 

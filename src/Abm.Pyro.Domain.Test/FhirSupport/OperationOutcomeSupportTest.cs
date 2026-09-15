@@ -29,11 +29,11 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Error, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Processing, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Error, result.Issue.Last().Severity);
             Assert.Equal(OperationOutcome.IssueType.Processing, result.Issue.Last().Code);
-            Assert.Equal(messageList.Last(), result.Issue.Last().Details.Text);
+            Assert.Equal(messageList.Last(), result.Issue.Last().Details?.Text);
             
         }
         
@@ -68,15 +68,15 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Error, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Processing, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Error, result.Issue[1].Severity);
             Assert.Equal(OperationOutcome.IssueType.Processing, result.Issue[1].Code);
-            Assert.Equal(messageList[1], result.Issue[1].Details.Text);
+            Assert.Equal(messageList[1], result.Issue[1].Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Fatal, result.Issue.Last().Severity);
             Assert.Equal(OperationOutcome.IssueType.Conflict, result.Issue.Last().Code);
-            Assert.Equal(operationOutcome.Issue.Last().Details.Text, result.Issue.Last().Details.Text);
+            Assert.Equal(operationOutcome.Issue.Last().Details?.Text, result.Issue.Last().Details?.Text);
             
         }
         
@@ -99,11 +99,11 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Fatal, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Exception, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Fatal, result.Issue.Last().Severity);
             Assert.Equal(OperationOutcome.IssueType.Exception, result.Issue.Last().Code);
-            Assert.Equal(messageList.Last(), result.Issue.Last().Details.Text);
+            Assert.Equal(messageList.Last(), result.Issue.Last().Details?.Text);
             
         }
         
@@ -138,15 +138,15 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Fatal, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Exception, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Fatal, result.Issue[1].Severity);
             Assert.Equal(OperationOutcome.IssueType.Exception, result.Issue[1].Code);
-            Assert.Equal(messageList[1], result.Issue[1].Details.Text);
+            Assert.Equal(messageList[1], result.Issue[1].Details?.Text);
             
             Assert.Equal(operationOutcome.Issue.First().Severity, result.Issue.Last().Severity);
             Assert.Equal(operationOutcome.Issue.First().Code, result.Issue.Last().Code);
-            Assert.Equal(operationOutcome.Issue.Last().Details.Text, result.Issue.Last().Details.Text);
+            Assert.Equal(operationOutcome.Issue.Last().Details?.Text, result.Issue.Last().Details?.Text);
             
         }
         
@@ -169,11 +169,11 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Information, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Information, result.Issue.Last().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.Last().Code);
-            Assert.Equal(messageList.Last(), result.Issue.Last().Details.Text);
+            Assert.Equal(messageList.Last(), result.Issue.Last().Details?.Text);
             
         }
         
@@ -208,15 +208,15 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Information, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Information, result.Issue[1].Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue[1].Code);
-            Assert.Equal(messageList[1], result.Issue[1].Details.Text);
+            Assert.Equal(messageList[1], result.Issue[1].Details?.Text);
             
             Assert.Equal(operationOutcome.Issue.First().Severity, result.Issue.Last().Severity);
             Assert.Equal(operationOutcome.Issue.First().Code, result.Issue.Last().Code);
-            Assert.Equal(operationOutcome.Issue.Last().Details.Text, result.Issue.Last().Details.Text);
+            Assert.Equal(operationOutcome.Issue.Last().Details?.Text, result.Issue.Last().Details?.Text);
             
         }
         
@@ -239,11 +239,11 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Warning, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Warning, result.Issue.Last().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.Last().Code);
-            Assert.Equal(messageList.Last(), result.Issue.Last().Details.Text);
+            Assert.Equal(messageList.Last(), result.Issue.Last().Details?.Text);
             
         }
         
@@ -278,15 +278,15 @@ public class OperationOutcomeSupportTest
             //Assert
             Assert.Equal(OperationOutcome.IssueSeverity.Warning, result.Issue.First().Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue.First().Code);
-            Assert.Equal(messageList.First(), result.Issue.First().Details.Text);
+            Assert.Equal(messageList.First(), result.Issue.First().Details?.Text);
             
             Assert.Equal(OperationOutcome.IssueSeverity.Warning, result.Issue[1].Severity);
             Assert.Equal(OperationOutcome.IssueType.Informational, result.Issue[1].Code);
-            Assert.Equal(messageList[1], result.Issue[1].Details.Text);
+            Assert.Equal(messageList[1], result.Issue[1].Details?.Text);
             
             Assert.Equal(operationOutcome.Issue.First().Severity, result.Issue.Last().Severity);
             Assert.Equal(operationOutcome.Issue.First().Code, result.Issue.Last().Code);
-            Assert.Equal(operationOutcome.Issue.Last().Details.Text, result.Issue.Last().Details.Text);
+            Assert.Equal(operationOutcome.Issue.Last().Details?.Text, result.Issue.Last().Details?.Text);
             
         }
         

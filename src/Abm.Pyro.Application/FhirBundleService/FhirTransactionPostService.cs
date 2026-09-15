@@ -216,6 +216,7 @@ public class FhirTransactionPostService(
         BundleEntryTransactionMetaData bundleEntryTransactionMetaData)
     {
         ArgumentNullException.ThrowIfNull(postEntry.Request?.IfNoneExist);
+        ArgumentNullException.ThrowIfNull(postEntry.Resource);
         
         FhirResourceTypeId fhirResourceType = fhirResourceTypeSupport.GetRequiredFhirResourceType(postEntry.Resource.TypeName);
         SearchQueryServiceOutcome searchQueryServiceOutcome = await searchQueryService.Process(fhirResourceType, postEntry.Request?.IfNoneExist);
@@ -296,7 +297,7 @@ public class FhirTransactionPostService(
             metaData.FailureOperationOutcome = operationOutcomeSupport.GetError(new[]
             {
                 $"The entry with the fullUrl of: {postEntry.FullUrl} was unable to be committed as a POST action. " +
-                $"Unable to parse its request.url of: {postEntry.Request.Url}. " +
+                $"Unable to parse its request.url of: {postEntry.Request?.Url}. " +
                 $"No Resource name could be found."
             });
             return;

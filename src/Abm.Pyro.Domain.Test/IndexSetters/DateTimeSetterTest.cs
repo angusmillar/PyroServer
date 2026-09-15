@@ -45,6 +45,8 @@ public class DateTimeSetterTest
 
             DateTime lastUpdated = new DateTimeOffset(2023, 10, 05, 10, 00, 00, 000, serviceDefaultTimeZoneSettings.TimeZoneTimeSpan).UtcDateTime;
             Patient patientResource = TestResourceFactory.PatientResource.GetDonaldDuck();
+            
+            ArgumentNullException.ThrowIfNull(patientResource.Meta);
             patientResource.Meta.LastUpdated = lastUpdated;
             ScopedNode resourceModel = new ScopedNode(patientResource.ToPocoNode(ModelInfo.ModelInspector));
 

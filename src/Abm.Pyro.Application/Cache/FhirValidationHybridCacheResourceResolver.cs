@@ -27,13 +27,13 @@ public class FhirValidationHybridCacheResourceResolver(
         await hybridCache.RemoveByTagAsync(tags: GetCacheTags());
     }
 
-    public Task<Resource> ResolveByUriAsync(
+    public Task<Resource?> ResolveByUriAsync(
         string uri)
     {
         throw new ApplicationException("Has not been implemented as never been called while validating in development.");
     }
 
-    public async Task<Resource> ResolveByCanonicalUriAsync(string uri)
+    public async Task<Resource?> ResolveByCanonicalUriAsync(string uri)
     {
         return await hybridCache.GetOrCreateAsync<Resource>(
             key: GetKey(uri), 
@@ -76,10 +76,11 @@ public class FhirValidationHybridCacheResourceResolver(
             headers: new Dictionary<string, StringValues>(),
             cancellationToken: CancellationToken.None);
 
-        if (searchResponse.HttpStatusCode == HttpStatusCode.OK &&
-            searchResponse.Resource is Bundle bundle)
+        if (searchResponse is { HttpStatusCode: HttpStatusCode.OK, Resource: Bundle bundle } &&
+            bundle.Entry.Count > 0 &&
+            bundle.Entry[0].Resource is { } entryResource)
         {
-            return bundle.Entry[0].Resource;
+            return entryResource;
         }
 
         return searchResponse.Resource;

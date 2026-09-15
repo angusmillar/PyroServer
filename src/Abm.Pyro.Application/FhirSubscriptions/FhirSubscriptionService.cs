@@ -63,7 +63,7 @@ public class FhirSubscriptionService(
             return FailedSubscriptionOutcome();
         }
         
-        if (InValidSubscriptionCriteria(subscription.Channel.Endpoint, criteriaFhirUri))
+        if (InValidSubscriptionEndpoint(subscription.Channel.Endpoint, criteriaFhirUri))
         {
             return FailedSubscriptionOutcome();
         }
@@ -85,10 +85,21 @@ public class FhirSubscriptionService(
         return new AcceptSubscriptionOutcome(Success: true);
     }
 
-    private bool InValidSubscriptionCriteria(
-        string endpoint, 
+    private bool InValidSubscriptionEndpoint(
+        string? endpoint, 
         FhirUri criteriaFhirUri)
     {
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            _operationOutcomeList.Add(operationOutcomeSupport.GetError([
+                $"Could not activate the FHIR Subscription because the channel endpoint " +
+                $"was found to be null or empty"
+            ]));
+
+        }
+        
+        ArgumentNullException.ThrowIfNull(endpoint);
+        
         if (endpoint.IsEqualUri(criteriaFhirUri.PrimaryServiceRootServers.OriginalString))
         {
             _operationOutcomeList.Add(operationOutcomeSupport.GetError([
@@ -104,7 +115,7 @@ public class FhirSubscriptionService(
         return false;
     }
 
-    private bool InvalidPayloadType(string channelPayload)
+    private bool InvalidPayloadType(string? channelPayload)
     {
         if (string.IsNullOrWhiteSpace(channelPayload))
         {
@@ -221,18 +232,26 @@ public class FhirSubscriptionService(
         return null;
     }
 
-    private FhirUri? ParsesSubscriptionCriteria(string criteria)
+    private FhirUri? ParsesSubscriptionCriteria(string? criteria)
     {
-        if (fhirUriFactory.TryParse(criteria, out FhirUri? fhirUri, out string errorMessage))
+        if (string.IsNullOrWhiteSpace(criteria))
         {
-            return fhirUri;
+            _operationOutcomeList.Add(operationOutcomeSupport.GetError([
+                $"Could not activate the FHIR Subscription because its criteria was found to be null or empty"
+            ]));
+            return null;
         }
 
-        _operationOutcomeList.Add(operationOutcomeSupport.GetError([
-            $"Could not activate the FHIR Subscription because its criteria could not be parsed. {errorMessage}"
-        ]));
+        if (!fhirUriFactory.TryParse(criteria, out FhirUri? fhirUri, out string errorMessage))
+        {
+            _operationOutcomeList.Add(operationOutcomeSupport.GetError([
+                $"Could not activate the FHIR Subscription because its criteria could not be parsed. {errorMessage}"
+            ]));
 
-        return null;
+            return null;
+        }
+
+        return fhirUri;
     }
 
     private bool IsSubscriptionEndDated(DateTimeOffset? subscriptionEnd)

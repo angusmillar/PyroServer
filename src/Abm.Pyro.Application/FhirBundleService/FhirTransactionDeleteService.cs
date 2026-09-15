@@ -49,12 +49,15 @@ public class FhirTransactionDeleteService(
                 break;
             }
 
+            
             Bundle.EntryComponent? deleteEntry = GetDeleteEntry(entryList[i]);
             if (deleteEntry is null)
             {
                 continue; //Continue will cause the loop to immediately skip to the next entry in the loop, where as Break exits the loop
             }
 
+            ArgumentNullException.ThrowIfNull(deleteEntry.Request);
+            
             FhirUri? fullUrlFhirUri = null;
             if (deleteEntry.FullUrl is not null)
             {

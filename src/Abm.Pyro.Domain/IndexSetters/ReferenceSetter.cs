@@ -123,6 +123,10 @@ public class ReferenceSetter(
 
   private async Task<IList<IndexReference>> SetResourceReference(ResourceReference resourceReference)
   {
+    if (resourceReference.Reference is null)
+    {
+      return Array.Empty<IndexReference>();
+    }
     //Check the Uri is actual a Fhir resource reference 
     if (!HttpUtil.IsRestResourceIdentity(resourceReference.Reference))
     {

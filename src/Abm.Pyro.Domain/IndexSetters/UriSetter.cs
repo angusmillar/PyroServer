@@ -76,12 +76,13 @@ public class UriSetter : IUriSetter
     return AddIndexUriToIndexListIfValid(fhirUrl.Value);
   }
 
-  private IList<IndexUri> AddIndexUriToIndexListIfValid(string uriString)
+  private IList<IndexUri> AddIndexUriToIndexListIfValid(string? uriString)
   {
     if (string.IsNullOrWhiteSpace(uriString))
     {
       return Array.Empty<IndexUri>();
     }
+    
     if (!Uri.IsWellFormedUriString(uriString, UriKind.RelativeOrAbsolute))
     {
       return Array.Empty<IndexUri>();

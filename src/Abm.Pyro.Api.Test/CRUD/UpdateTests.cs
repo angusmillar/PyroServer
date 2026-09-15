@@ -11,7 +11,7 @@ public class UpdateTests(IntegrationTestFixture fixture) : IntegrationTestBase(f
         // Arrange
         Hl7.Fhir.Model.Patient created = await CreatePatientAsync("Original");
 
-        string originalFamilyName = created.Name.First().Family;
+        string? originalFamilyName = created.Name.First().Family;
         created.Name.First().Family = "Updated";
 
         // Act
@@ -19,7 +19,7 @@ public class UpdateTests(IntegrationTestFixture fixture) : IntegrationTestBase(f
 
         Assert.NotNull(updated);
         Assert.NotNull(updated.Meta);
-        Assert.True(updated.Meta.LastUpdated > created.Meta.LastUpdated);
+        Assert.True(updated.Meta.LastUpdated > created.Meta?.LastUpdated);
         Assert.True(updated.Name.First().Family != originalFamilyName);
         Assert.Equal("2", updated.Meta.VersionId);
     }

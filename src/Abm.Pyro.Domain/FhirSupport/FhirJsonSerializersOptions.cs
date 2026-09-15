@@ -8,8 +8,6 @@ namespace Abm.Pyro.Domain.FhirSupport;
 
 public class FhirJsonSerializersOptions : IFhirJsonSerializersOptions
 {
-  //private readonly JsonSerializerOptions Options = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
-
   public JsonSerializerOptions ForDeserialization()
   {
     return new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);;

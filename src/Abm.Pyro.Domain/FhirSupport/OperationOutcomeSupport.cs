@@ -116,14 +116,10 @@ public class OperationOutcomeSupport : IOperationOutcomeSupport
     public string[] ExtractErrorMessages(OperationOutcome operationOutcome)
     {
         List<string> messages = new List<string>();
-
-        if (operationOutcome.Issue is null)
-        {
-            return messages.ToArray();
-        }
+        
         foreach (var issue in operationOutcome.Issue)
         {
-            if (string.IsNullOrWhiteSpace(issue.Details.Text))
+            if (!string.IsNullOrWhiteSpace(issue.Details?.Text))
             {
                 messages.Add(issue.Details.Text);    
             }
@@ -205,7 +201,7 @@ public class OperationOutcomeSupport : IOperationOutcomeSupport
             StartOrderedList(stringBuilder);
             foreach (OperationOutcome.IssueComponent issue in operationOutcome.Issue)
             {
-                if (issue.Details.Text is not null)
+                if (issue.Details?.Text is not null)
                 {
                     AddListItem(stringBuilder, issue.Details.Text);
                 }
