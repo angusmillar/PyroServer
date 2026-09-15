@@ -40,7 +40,7 @@ public static class ResourceExtensions
             }
         }
 
-        ClassMapping.TryGetMappingForType(resourceModelBase.GetType(), FhirRelease.R4, out ClassMapping? mapping);
+        ClassMapping? mapping = ModelInfo.ModelInspector.FindOrImportClassMapping(resourceModelBase.GetType());
         if (mapping is null)
         {
             throw new NullReferenceException(nameof(mapping));
@@ -110,7 +110,7 @@ public static class ResourceExtensions
                 if (propertyMapping.IsCollection)
                 {
                     string test = propertyMapping.ImplementingType.Name;
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     if (propertyValueObject is System.Collections.IEnumerable propertyValueCollection)
                     {
                         foreach (object item in propertyValueCollection)
@@ -121,7 +121,7 @@ public static class ResourceExtensions
                 }
                 else
                 {
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     AddIfTypeIsResourceReference(propertyValueObject, results);
                 }
             }
@@ -132,7 +132,7 @@ public static class ResourceExtensions
         void GetResourceReferencesFromBackboneElementCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -153,7 +153,7 @@ public static class ResourceExtensions
         void GetResourceReferencesFromBackboneElement(
             PropertyMapping propertyMapping)
         {
-            object? backboneElementObject = propertyMapping.GetValue(resourceModelBase);
+            object? backboneElementObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (backboneElementObject is not null && backboneElementObject is BackboneElement backboneElement)
             {
                 results.AddRange(backboneElement.AllReferenceList()); //recursive call  
@@ -163,7 +163,7 @@ public static class ResourceExtensions
         void GetResourceReferencesFromResourceCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -184,7 +184,7 @@ public static class ResourceExtensions
         void GetResourceReferencesFromResource(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is Resource resource)
             {
                 results.AddRange(resource.AllReferenceList()); //recursive call   
@@ -217,7 +217,7 @@ public static class ResourceExtensions
             }
         }
 
-        ClassMapping.TryGetMappingForType(resourceModelBase.GetType(), FhirRelease.R4, out ClassMapping? mapping);
+        ClassMapping? mapping = ModelInfo.ModelInspector.FindOrImportClassMapping(resourceModelBase.GetType());
         if (mapping is null)
         {
             throw new NullReferenceException(nameof(mapping));
@@ -273,7 +273,7 @@ public static class ResourceExtensions
                 if (propertyMapping.IsCollection)
                 {
                     string test = propertyMapping.ImplementingType.Name;
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     if (propertyValueObject is System.Collections.IEnumerable propertyValueCollection)
                     {
                         foreach (object item in propertyValueCollection)
@@ -284,7 +284,7 @@ public static class ResourceExtensions
                 }
                 else
                 {
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     AddIfTypeIsFhirUrl(propertyValueObject, results);
                 }
             }
@@ -295,7 +295,7 @@ public static class ResourceExtensions
         void GetFhirUrlFromBackboneElementCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -316,7 +316,7 @@ public static class ResourceExtensions
         void GetFhirUrlFromBackboneElement(
             PropertyMapping propertyMapping)
         {
-            object? backboneElementObject = propertyMapping.GetValue(resourceModelBase);
+            object? backboneElementObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (backboneElementObject is not null && backboneElementObject is BackboneElement backboneElement)
             {
                 results.AddRange(backboneElement.AllUrlList()); //recursive call  
@@ -326,7 +326,7 @@ public static class ResourceExtensions
         void GetFhirUrlFromResourceCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -347,7 +347,7 @@ public static class ResourceExtensions
         void GetFhirUrlFromResource(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is Resource resource)
             {
                 results.AddRange(resource.AllUrlList()); //recursive call   
@@ -380,7 +380,7 @@ public static class ResourceExtensions
             }
         }
 
-        ClassMapping.TryGetMappingForType(resourceModelBase.GetType(), FhirRelease.R4, out ClassMapping? mapping);
+        ClassMapping? mapping = ModelInfo.ModelInspector.FindOrImportClassMapping(resourceModelBase.GetType());
         if (mapping is null)
         {
             throw new NullReferenceException(nameof(mapping));
@@ -436,7 +436,7 @@ public static class ResourceExtensions
                 if (propertyMapping.IsCollection)
                 {
                     string test = propertyMapping.ImplementingType.Name;
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     if (propertyValueObject is System.Collections.IEnumerable propertyValueCollection)
                     {
                         foreach (object item in propertyValueCollection)
@@ -447,7 +447,7 @@ public static class ResourceExtensions
                 }
                 else
                 {
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     AddIfTypeIsFhirUri(propertyValueObject, results);
                 }
             }
@@ -458,7 +458,7 @@ public static class ResourceExtensions
         void GetFhirUriFromBackboneElementCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -479,7 +479,7 @@ public static class ResourceExtensions
         void GetFhirUriFromBackboneElement(
             PropertyMapping propertyMapping)
         {
-            object? backboneElementObject = propertyMapping.GetValue(resourceModelBase);
+            object? backboneElementObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (backboneElementObject is not null && backboneElementObject is BackboneElement backboneElement)
             {
                 results.AddRange(backboneElement.AllUriList()); //recursive call  
@@ -489,7 +489,7 @@ public static class ResourceExtensions
         void GetFhirUriFromResourceCollection(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -510,7 +510,7 @@ public static class ResourceExtensions
         void GetFhirUriFromResource(
             PropertyMapping propertyMapping)
         {
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is Resource resource)
             {
                 results.AddRange(resource.AllUriList()); //recursive call   
@@ -543,7 +543,7 @@ public static class ResourceExtensions
             }
         }
 
-        ClassMapping.TryGetMappingForType(resourceModelBase.GetType(), FhirRelease.R4, out ClassMapping? mapping);
+        ClassMapping? mapping = ModelInfo.ModelInspector.FindOrImportClassMapping(resourceModelBase.GetType());
         if (mapping is null)
         {
             throw new NullReferenceException(nameof(mapping));
@@ -599,7 +599,7 @@ public static class ResourceExtensions
                 if (propertyMapping.IsCollection)
                 {
                     string test = propertyMapping.ImplementingType.Name;
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     if (propertyValueObject is System.Collections.IEnumerable propertyValueCollection)
                     {
                         foreach (object item in propertyValueCollection)
@@ -610,7 +610,7 @@ public static class ResourceExtensions
                 }
                 else
                 {
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     AddIfTypeIsUuid(propertyValueObject, results);
                 }
             }
@@ -622,7 +622,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -644,7 +644,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? backboneElementObject = propertyMapping.GetValue(resourceModelBase);
+            object? backboneElementObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (backboneElementObject is not null && backboneElementObject is BackboneElement backboneElement)
             {
                 results.AddRange(backboneElement.AllUuidList()); //recursive call  
@@ -655,7 +655,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -677,7 +677,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is Resource resource)
             {
                 results.AddRange(resource.AllUuidList()); //recursive call   
@@ -710,7 +710,7 @@ public static class ResourceExtensions
             }
         }
 
-        ClassMapping.TryGetMappingForType(resourceModelBase.GetType(), FhirRelease.R4, out ClassMapping? mapping);
+        ClassMapping? mapping = ModelInfo.ModelInspector.FindOrImportClassMapping(resourceModelBase.GetType());
         if (mapping is null)
         {
             throw new NullReferenceException(nameof(mapping));
@@ -766,7 +766,7 @@ public static class ResourceExtensions
                 if (propertyMapping.IsCollection)
                 {
                     string test = propertyMapping.ImplementingType.Name;
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     if (propertyValueObject is System.Collections.IEnumerable propertyValueCollection)
                     {
                         foreach (object item in propertyValueCollection)
@@ -777,7 +777,7 @@ public static class ResourceExtensions
                 }
                 else
                 {
-                    object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+                    object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
                     AddIfTypeIsOid(propertyValueObject, results);
                 }
             }
@@ -789,7 +789,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -811,7 +811,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? backboneElementObject = propertyMapping.GetValue(resourceModelBase);
+            object? backboneElementObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (backboneElementObject is not null && backboneElementObject is BackboneElement backboneElement)
             {
                 results.AddRange(backboneElement.AllOidList()); //recursive call  
@@ -822,7 +822,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is null)
             {
                 throw new NullReferenceException(nameof(propertyValueObject));
@@ -844,7 +844,7 @@ public static class ResourceExtensions
             PropertyMapping propertyMapping)
         {
             ArgumentNullException.ThrowIfNull(resourceModelBase);
-            object? propertyValueObject = propertyMapping.GetValue(resourceModelBase);
+            object? propertyValueObject = propertyMapping.NativeProperty.GetValue(resourceModelBase);
             if (propertyValueObject is Resource resource)
             {
                 results.AddRange(resource.AllOidList()); //recursive call   
