@@ -98,7 +98,7 @@ public class FhirUpdateHandler(
         FhirResourceTypeId fhirResourceType =
             fhirResourceTypeSupport.GetRequiredFhirResourceType(request.Resource.TypeName);
 
-        //ArgumentNullException.ThrowIfNull(request.Resource.Id);
+        ArgumentNullException.ThrowIfNull(request.Resource.Id);
         if (_previousResourceStore is null)
         {
             
