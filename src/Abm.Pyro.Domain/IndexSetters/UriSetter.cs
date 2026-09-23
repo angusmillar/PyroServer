@@ -47,6 +47,9 @@ public class UriSetter : IUriSetter
         return SetOid(oid);
       case Uuid uuid:
         return SetUuid(uuid);
+      case Canonical canonical:
+        return SetCanonical(canonical);
+
       case DynamicPrimitive dynamicPrimitive when dynamicPrimitive.Value is string str:
         return AddIndexUriToIndexListIfValid(str);
       default:
@@ -54,6 +57,12 @@ public class UriSetter : IUriSetter
                                   $"key of: {SearchParameterId.ToString()} for a resource type of: {ResourceType.GetCode()} and search parameter " +
                                   $"name of: {SearchParameterName}");
     }
+  }
+
+  private IList<IndexUri> SetCanonical(
+    Canonical canonical)
+  {
+    return AddIndexUriToIndexListIfValid(canonical.Value);
   }
 
 
