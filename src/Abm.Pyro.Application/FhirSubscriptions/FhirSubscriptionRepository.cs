@@ -41,7 +41,6 @@ public class FhirSubscriptionRepository(
             ArgumentNullException.ThrowIfNull(subscription.Id);
             ArgumentNullException.ThrowIfNull(subscription.Criteria);
             ArgumentNullException.ThrowIfNull(subscription.Channel.Endpoint);
-            ArgumentNullException.ThrowIfNull(subscription.Channel.Payload);
             
             FhirUri criteriaFhirUri = ParsesActiveSubscriptionCriteria(subscription.Id, subscription.Criteria);
 
@@ -55,7 +54,7 @@ public class FhirSubscriptionRepository(
                 CriteriaResourceType: fhirResourceType,
                 CriteriaQuery: criteriaFhirUri.Query,
                 Endpoint: new Uri(subscription.Channel.Endpoint),
-                Payload: subscription.Channel.Payload,
+                Payload: subscription.Channel.Payload ?? string.Empty,
                 Headers: subscription.Channel.Header.Where(header => header is not null).ToArray()!,
                 EndDateTime: subscription.End));
         }
