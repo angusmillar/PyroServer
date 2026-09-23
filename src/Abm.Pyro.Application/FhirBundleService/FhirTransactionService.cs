@@ -208,19 +208,20 @@ public class FhirTransactionService(
     private OperationOutcome? ValidateAllBundleRequestPropertiesSet(IEnumerable<Bundle.EntryComponent> entryList)
     {
         
-        var invalidFullUrlList = entryList
+        var invalidRequestUrlList = entryList
             .Where(x => x.Request?.Url is null).ToArray();
 
-        if (!invalidFullUrlList.Any())
+        if (!invalidRequestUrlList.Any())
         {
             return null;
         }
 
         var errorMessageList = new List<string>();
-        foreach (var invalidFullUrl in invalidFullUrlList)
+        foreach (var invalidFullUrl in invalidRequestUrlList)
         {
             errorMessageList.Add(
-                $"The entry with a fullUrl of : {invalidFullUrl} was missing a Request element. All entries within a Transaction Bundle must contain a bundle.entry[x].request.url element. ");
+                $"The entry with a fullUrl of : {invalidFullUrl} was missing a Request element. " +
+                $"All entries within a Transaction Bundle must contain a bundle.entry[x].request.url element. ");
         }
 
         return operationOutcomeSupport.GetError(errorMessageList.ToArray());
