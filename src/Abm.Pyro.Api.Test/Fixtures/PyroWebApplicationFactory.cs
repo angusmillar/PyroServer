@@ -1,15 +1,23 @@
 using Abm.Pyro.Application.HostedServiceSupport;
 using Abm.Pyro.Application.OnStartupService;
+using Abm.Pyro.Domain.Support;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Abm.Pyro.Api.Test.Fixtures;
 
 public class PyroWebApplicationFactory(string sqlConnectionString)
     : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// The server clock. Freeze it to control the instant stamped on Meta.LastUpdated
+    /// when a resource is committed; it runs on the real clock until a test freezes it.
+    /// </summary>
+    public TestDateTimeProvider Clock { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -37,6 +45,11 @@ public class PyroWebApplicationFactory(string sqlConnectionString)
 
         builder.ConfigureServices(services =>
         {
+            // Swap the real clock for one the tests can freeze, so a resource can be
+            // committed at an exact, asserted-on Meta.LastUpdated instant.
+            services.RemoveAll<IDateTimeProvider>();
+            services.AddSingleton<IDateTimeProvider>(Clock);
+
             // Remove only the database version check — it would throw because EF
             // migrations are applied programmatically in the fixture before the
             // factory starts, but the service checks via IDatabasePendingMigrations
