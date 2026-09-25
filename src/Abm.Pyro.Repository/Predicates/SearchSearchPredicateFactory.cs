@@ -1,6 +1,5 @@
 ﻿using LinqKit;
 using Abm.Pyro.Domain.Enums;
-using Abm.Pyro.Domain.Exceptions;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.SearchQueryEntity;
 
@@ -48,7 +47,16 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           resourceStorePredicateFactory.UriIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexUriList.Any(x.Compile())));
           break;
         case SearchParamType.Special:
-          throw new FhirFatalException(System.Net.HttpStatusCode.InternalServerError, new string[] { $"Attempt to search with a SearchParameter of type: {SearchParamType.Special.GetCode()} which is not supported by this server." });
+          if (searchQuery.Modifier == SearchModifierCodeId.Missing)
+          {
+            // ':missing' negates at the ResourceStore level, because IndexPosition holds rows for
+            // exactly one search parameter and so an Any(...) over an empty list can never be true.
+            predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndexMissing(searchQuery));
+            break;
+          }
+
+          resourceStorePredicateFactory.PositionIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexPositionList.Any(x.Compile())));
+          break;
         default:
           throw new ArgumentOutOfRangeException(nameof(searchQuery.SearchParameter.Type), searchQuery.SearchParameter.Type.GetCode(), nameof(SearchParamType));
       }

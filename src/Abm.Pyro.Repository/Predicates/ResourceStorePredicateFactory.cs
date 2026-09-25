@@ -13,6 +13,7 @@ public class ResourceStorePredicateFactory(
   IIndexDateTimePredicateFactory indexDateTimePredicateFactory,
   IIndexQuantityPredicateFactory indexQuantityPredicateFactory,
   IIndexUriPredicateFactory indexUriPredicateFactory,
+  IIndexPositionPredicateFactory indexPositionPredicateFactory,
   IIndexCompositePredicateFactory indexCompositePredicateFactory)
   : IResourceStorePredicateFactory
 {
@@ -90,7 +91,27 @@ public class ResourceStorePredicateFactory(
     
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryUri)}");
   }
-  
+
+  public List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase)
+  {
+    if (searchQueryBase is SearchQueryNear searchQueryNear)
+    {
+      return indexPositionPredicateFactory.PositionIndex(searchQueryNear);
+    }
+
+    throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");
+  }
+
+  public Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryBase searchQueryBase)
+  {
+    if (searchQueryBase is SearchQueryNear searchQueryNear)
+    {
+      return indexPositionPredicateFactory.PositionIndexMissing(searchQueryNear);
+    }
+
+    throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");
+  }
+
   public async Task<Expression<Func<ResourceStore, bool>>> CompositeIndex(ISearchPredicateFactory searchPredicateFactory, SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryComposite searchQueryComposite)

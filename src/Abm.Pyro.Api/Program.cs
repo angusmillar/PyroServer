@@ -336,6 +336,7 @@ try
     builder.Services.AddSingleton<IIndexDateTimePredicateFactory, IndexDateTimePredicateFactory>();
     builder.Services.AddSingleton<IIndexQuantityPredicateFactory, IndexQuantityPredicateFactory>();
     builder.Services.AddSingleton<IIndexUriPredicateFactory, IndexUriPredicateFactory>();
+    builder.Services.AddSingleton<IIndexPositionPredicateFactory, IndexPositionPredicateFactory>();
     builder.Services.AddSingleton<IIndexCompositePredicateFactory, IndexCompositePredicateFactory>();
     
     // Tenant and Tenanted db queries and repositories 
