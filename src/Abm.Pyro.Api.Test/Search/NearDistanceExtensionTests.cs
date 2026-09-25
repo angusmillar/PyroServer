@@ -39,7 +39,7 @@ public class NearDistanceExtensionTests(IntegrationTestFixture fixture) : Integr
         Assert.Equal("km", distance.Code);
         Assert.Equal("http://unitsofmeasure.org", distance.System);
         Assert.NotNull(distance.Value);
-        Assert.InRange(distance.Value.Value, 0.5m, 2.0m);
+        Assert.InRange(distance.Value.Value, 0.88m, 0.92m);
     }
 
     [Fact]
@@ -64,16 +64,19 @@ public class NearDistanceExtensionTests(IntegrationTestFixture fixture) : Integr
     {
         await CreateLocationAsync("Nearby", NearbyLatitude, NearbyLongitude);
 
-        // The second position is the far side of the world; the closest must win.
+        // The far position is deliberately listed first: an implementation that took the first
+        // candidate instead of the smallest would report thousands of km and fail this test;
+        // only genuine min-of-many logic reports the near position's 0.900 km and passes.
         Bundle? bundle = await FhirClient.SearchAsync<Location>(
-            new[] { "near=-33.8568|151.2153|5|km,0|0|5|km" });
+            new[] { "near=0|0|5|km,-33.8568|151.2153|5|km" });
 
         Assert.NotNull(bundle);
         Extension? extension = Assert.Single(bundle.Entry).Search.GetExtension(LocationDistanceUrl);
         Assert.NotNull(extension);
 
         var distance = Assert.IsType<Distance>(extension.Value);
-        Assert.InRange(distance.Value!.Value, 0.5m, 2.0m);
+        Assert.NotNull(distance.Value);
+        Assert.InRange(distance.Value.Value, 0.88m, 0.92m);
     }
 
     [Fact]
