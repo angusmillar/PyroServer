@@ -46,6 +46,11 @@ public static class ConfigurationSettingsExtension
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<LocationNearSettings>()
+            .Bind(configuration.GetSection(LocationNearSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddOptions<ResourceEndpointPoliciesSettings>()
             .Bind(configuration.GetSection(ResourceEndpointPoliciesSettings.SectionName))
             .ValidateDataAnnotations()
