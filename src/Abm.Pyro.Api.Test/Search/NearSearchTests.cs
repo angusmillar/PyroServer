@@ -45,6 +45,7 @@ public class NearSearchTests(IntegrationTestFixture fixture) : IntegrationTestBa
         Location? created = await FhirClient.CreateAsync(
             LocationBuilder.Build(name: "Mover", latitude: SydneyLatitude, longitude: SydneyLongitude));
         Assert.NotNull(created);
+        Assert.NotNull(created.Position);
 
         created.Position.LatitudeElement = new FhirDecimal(MelbourneLatitude);
         created.Position.LongitudeElement = new FhirDecimal(MelbourneLongitude);
@@ -52,6 +53,7 @@ public class NearSearchTests(IntegrationTestFixture fixture) : IntegrationTestBa
         Location? updated = await FhirClient.UpdateAsync(created);
 
         Assert.NotNull(updated);
+        Assert.NotNull(updated.Position);
         Assert.Equal(MelbourneLatitude, updated.Position.Latitude);
     }
 }

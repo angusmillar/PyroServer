@@ -78,6 +78,19 @@ public class SearchQueryNearTest
 
         Assert.True(sut.IsValid);
         Assert.Equal(5000d, sut.ValueList[0].DistanceInMetres, 6);
+        Assert.Equal(NearDistanceUnit.Kilometre, sut.ValueList[0].ReportUnit);
+    }
+
+    [Fact]
+    public async Task ParseValue_EmptyDistanceSegmentWithExplicitUnit_UsesConfiguredDefault()
+    {
+        SearchQueryNear sut = CreateSut();
+
+        await sut.ParseValue("-33.8568|151.2153||km");
+
+        Assert.True(sut.IsValid);
+        Assert.Equal(10_000d, sut.ValueList[0].DistanceInMetres, 6);
+        Assert.Equal(NearDistanceUnit.Kilometre, sut.ValueList[0].ReportUnit);
     }
 
     [Fact]
@@ -118,10 +131,14 @@ public class SearchQueryNearTest
 
     /// <summary>
     /// Review Focus 1. A decimal written with a comma collides with the OR delimiter. It must
-    /// be rejected, never silently split into two malformed terms and half-parsed.
+    /// be rejected, never silently split into two malformed terms and half-parsed. Rejected
+    /// because term 1 ("-33") collapses to a single vertical-bar segment once the OR delimiter
+    /// has split the string, not because commas are detected as decimal separators — see
+    /// <see cref="ParseValue_CommaThatCouldBeADecimalButFormsValidTerms_ParsesAsTwoPositions"/>
+    /// for the case where the same digit-comma-digit shape forms two valid terms instead.
     /// </summary>
     [Fact]
-    public async Task ParseValue_CommaDecimalSeparator_IsInvalid()
+    public async Task ParseValue_CommaDecimalProducingAMalformedTerm_IsInvalid()
     {
         SearchQueryNear sut = CreateSut();
 
@@ -129,6 +146,29 @@ public class SearchQueryNearTest
 
         Assert.False(sut.IsValid);
         Assert.NotNull(sut.InvalidMessage);
+    }
+
+    /// <summary>
+    /// A comma is the OR separator in FHIR R4 near values and FHIR decimals always use a full
+    /// stop, so "-10.5|20,5|7" genuinely denotes TWO positions. A client that typed a comma as a
+    /// decimal separator cannot be detected here: a legitimate multi-position search such as
+    /// "33.8|151.2|5,37.8|144.9|5" contains the same digit-comma-digit sequence. Rejecting one
+    /// would reject the other. This test pins the grammar-correct reading so the behaviour is
+    /// deliberate rather than accidental.
+    /// </summary>
+    [Fact]
+    public async Task ParseValue_CommaThatCouldBeADecimalButFormsValidTerms_ParsesAsTwoPositions()
+    {
+        SearchQueryNear sut = CreateSut();
+
+        await sut.ParseValue("-10.5|20,5|7");
+
+        Assert.True(sut.IsValid);
+        Assert.Equal(2, sut.ValueList.Count);
+        Assert.Equal(-10.5d, sut.ValueList[0].Latitude, 6);
+        Assert.Equal(20d, sut.ValueList[0].Longitude, 6);
+        Assert.Equal(5d, sut.ValueList[1].Latitude, 6);
+        Assert.Equal(7d, sut.ValueList[1].Longitude, 6);
     }
 
     /// <summary>Review Focus 4. Zero and negative radii are meaningless and must be rejected.</summary>
@@ -197,6 +237,18 @@ public class SearchQueryNearTest
         await sut.ParseValue("-33.8568|151.2153|2000|km");
 
         Assert.False(sut.IsValid);
+    }
+
+    [Fact]
+    public async Task ParseValue_DistanceJustUnderConfiguredMaximum_IsValid()
+    {
+        SearchQueryNear sut = CreateSut();
+
+        // 999 km, just under the 1,000,000 metre maximum
+        await sut.ParseValue("-33.8568|151.2153|999|km");
+
+        Assert.True(sut.IsValid);
+        Assert.Equal(999_000d, sut.ValueList[0].DistanceInMetres, 6);
     }
 
     [Fact]

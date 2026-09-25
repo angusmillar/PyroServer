@@ -21,11 +21,16 @@ public class PositionSetterTest
 
     private static ITypedElement PositionElement(decimal? latitude, decimal? longitude)
     {
-        var position = new Location.PositionComponent
+        var position = new Location.PositionComponent();
+        if (latitude.HasValue)
         {
-            LatitudeElement = latitude.HasValue ? new FhirDecimal(latitude.Value) : null,
-            LongitudeElement = longitude.HasValue ? new FhirDecimal(longitude.Value) : null
-        };
+            position.LatitudeElement = new FhirDecimal(latitude.Value);
+        }
+
+        if (longitude.HasValue)
+        {
+            position.LongitudeElement = new FhirDecimal(longitude.Value);
+        }
 
         var locationResource = new Location { Position = position };
         ScopedNode resourceModel = new ScopedNode(locationResource.ToPocoNode(ModelInfo.ModelInspector));
