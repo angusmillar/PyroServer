@@ -15,6 +15,12 @@ public class NearSearchTests(IntegrationTestFixture fixture) : IntegrationTestBa
     private const decimal MelbourneLatitude = -37.8183m;
     private const decimal MelbourneLongitude = 144.9671m;
 
+    // Roughly 5.01 km due north of SydneyLatitude/SydneyLongitude (a 0.045 degree latitude
+    // offset, about 5009 m). Used to give the unit-conversion tests a real, non-zero distance
+    // to discriminate on, rather than a co-located point.
+    private const decimal NorthOfSydneyLatitude = -33.8118m;
+    private const decimal NorthOfSydneyLongitude = 151.2153m;
+
     [Fact]
     public async Task Create_LocationWithPosition_Succeeds()
     {
@@ -109,19 +115,51 @@ public class NearSearchTests(IntegrationTestFixture fixture) : IntegrationTestBa
         Assert.Single(bundle.Entry);
     }
 
+    /// <summary>
+    /// The Location sits roughly 5 km from the search origin (see <see cref="NorthOfSydneyLatitude"/>),
+    /// not co-located with it. A wrong mile factor (mi or [mi_i]) would push the converted
+    /// radius on at least one of these variants below the true ~5009 m separation, which is
+    /// what makes this test able to fail. 3.728 mi is 5999.6 m at the correct 1609.344 m/mi
+    /// factor, comfortably outside the separation with about 1 km of margin.
+    /// </summary>
     [Theory]
-    [InlineData("near=-33.8568|151.2153|5|km")]
-    [InlineData("near=-33.8568|151.2153|5000|m")]
-    [InlineData("near=-33.8568|151.2153|3.10686|mi")]
-    [InlineData("near=-33.8568|151.2153|3.10686|[mi_i]")]
-    public async Task Search_NearInDifferentUnits_ReturnsTheSameLocation(string query)
+    [InlineData("near=-33.8568|151.2153|6|km")]
+    [InlineData("near=-33.8568|151.2153|6000|m")]
+    [InlineData("near=-33.8568|151.2153|3.728|mi")]
+    [InlineData("near=-33.8568|151.2153|3.728|[mi_i]")]
+    public async Task Search_NearRadiusComfortablyBeyondTheDistanceInEveryUnit_Matches(string query)
     {
-        await CreateLocationAsync("Opera House", SydneyLatitude, SydneyLongitude);
+        await CreateLocationAsync("North of Sydney", NorthOfSydneyLatitude, NorthOfSydneyLongitude);
 
         Bundle? bundle = await FhirClient.SearchAsync<Location>(new[] { query });
 
         Assert.NotNull(bundle);
         Assert.Single(bundle.Entry);
+    }
+
+    /// <summary>
+    /// The Location sits roughly 5 km from the search origin (see <see cref="NorthOfSydneyLatitude"/>),
+    /// not co-located with it. A wrong mile factor (mi or [mi_i]) would push the converted
+    /// radius on at least one of these variants above the true ~5009 m separation, which is
+    /// what makes this test able to fail. 2.485 mi is 4499.7 m at the correct 1609.344 m/mi
+    /// factor, comfortably inside the separation with about 1 km of margin. Paired with
+    /// <see cref="Search_NearRadiusComfortablyBeyondTheDistanceInEveryUnit_Matches"/>, these two
+    /// theories are self-verifying: if the true separation were not between 4 and 6 km, one of
+    /// them would fail.
+    /// </summary>
+    [Theory]
+    [InlineData("near=-33.8568|151.2153|4|km")]
+    [InlineData("near=-33.8568|151.2153|4000|m")]
+    [InlineData("near=-33.8568|151.2153|2.485|mi")]
+    [InlineData("near=-33.8568|151.2153|2.485|[mi_i]")]
+    public async Task Search_NearRadiusJustOutsideTheDistanceInEveryUnit_DoesNotMatch(string query)
+    {
+        await CreateLocationAsync("North of Sydney", NorthOfSydneyLatitude, NorthOfSydneyLongitude);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Location>(new[] { query });
+
+        Assert.NotNull(bundle);
+        Assert.Empty(bundle.Entry);
     }
 
     [Fact]
