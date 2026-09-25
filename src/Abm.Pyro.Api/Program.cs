@@ -354,7 +354,8 @@ try
             var tenantService = services.GetRequiredService<ITenantService>();
             
             optionsBuilder
-                .UseSqlServer(builder.Configuration.GetConnectionString(tenantService.GetScopedTenant().SqlConnectionStringCode))
+                .UseSqlServer(builder.Configuration.GetConnectionString(tenantService.GetScopedTenant().SqlConnectionStringCode),
+                    o => o.UseNetTopologySuite())
                 .EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
         },
         contextLifetime: ServiceLifetime.Scoped, //Scope for the PyroDbContext.

@@ -31,7 +31,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<PyroDbCont
     
     // Create DB context with connection from your AppSettings 
     var optionsBuilder = new DbContextOptionsBuilder<PyroDbContext>()
-      .UseSqlServer(configuration.GetConnectionString("PyroDb"));
+      .UseSqlServer(configuration.GetConnectionString("PyroDb"), o => o.UseNetTopologySuite());
 
     return new PyroDbContext(optionsBuilder.Options);
   }

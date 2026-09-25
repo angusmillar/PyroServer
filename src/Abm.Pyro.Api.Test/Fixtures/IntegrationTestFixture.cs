@@ -26,7 +26,7 @@ public class IntegrationTestFixture : IAsyncLifetime
 
         // 2. Apply EF Core migrations against the container
         var optionsBuilder = new DbContextOptionsBuilder<PyroDbContext>()
-            .UseSqlServer(ConnectionString);
+            .UseSqlServer(ConnectionString, o => o.UseNetTopologySuite());
         await using var context = new PyroDbContext(optionsBuilder.Options);
         await context.Database.MigrateAsync();
 
@@ -49,6 +49,7 @@ public class IntegrationTestFixture : IAsyncLifetime
                 new Respawn.Graph.Table("IndexQuantity"),
                 new Respawn.Graph.Table("IndexToken"),
                 new Respawn.Graph.Table("IndexUri"),
+                new Respawn.Graph.Table("IndexPosition"),
             ]
         });
 

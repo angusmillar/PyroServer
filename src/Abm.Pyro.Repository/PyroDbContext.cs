@@ -13,7 +13,8 @@ public class PyroDbContext : DbContext
     public DbSet<SearchParameterStore> SearchParameterStore => Set<SearchParameterStore>();
     public DbSet<ServiceBaseUrl> ServiceBaseUrl => Set<ServiceBaseUrl>();
     public DbSet<ServiceSetting> ServiceSetting => Set<ServiceSetting>();
-    
+    public DbSet<IndexPosition> IndexPosition => Set<IndexPosition>();
+
     public PyroDbContext(
         DbContextOptions<PyroDbContext> options)
         : base(options)
@@ -41,6 +42,7 @@ public class PyroDbContext : DbContext
         modelBuilder.ApplyConfiguration(new IndexQuantityEntityConfig());
         modelBuilder.ApplyConfiguration(new IndexTokenEntityConfig());
         modelBuilder.ApplyConfiguration(new IndexUriEntityConfig());
+        modelBuilder.ApplyConfiguration(new IndexPositionEntityConfig());
 
         modelBuilder.ApplyConfiguration(new ServiceBaseUrlEntityConfig());
         

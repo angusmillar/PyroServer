@@ -13,8 +13,9 @@ public class ResourceStore : DbBase
   public ResourceStore(int? resourceStoreId, string resourceId, int versionId, FhirResourceTypeId resourceType, bool isCurrent, bool isDeleted, 
                        HttpVerbId httpVerb, string json, DateTime lastUpdatedUtc,
                        List<IndexReference> indexReferenceList, List<IndexString> indexStringList, List<IndexDateTime> indexDateTimeList, 
-                       List<IndexQuantity> indexQuantityList, List<IndexToken> indexTokenList, List<IndexUri> indexUriList, 
-                       int rowVersion)
+                       List<IndexQuantity> indexQuantityList, List<IndexToken> indexTokenList, List<IndexUri> indexUriList,
+                       int rowVersion,
+                       List<IndexPosition>? indexPositionList = null)
   {
     ResourceStoreId = resourceStoreId;
     ResourceId = resourceId;
@@ -32,6 +33,7 @@ public class ResourceStore : DbBase
     IndexTokenList = indexTokenList;
     IndexUriList = indexUriList;
     RowVersion = rowVersion;
+    IndexPositionList = indexPositionList ?? new List<IndexPosition>();
   }
   public int? ResourceStoreId { get; set; }
   public string ResourceId { get; set; }
@@ -48,7 +50,8 @@ public class ResourceStore : DbBase
   public List<IndexQuantity> IndexQuantityList { get; set; }
   public List<IndexToken> IndexTokenList { get; set; }
   public List<IndexUri> IndexUriList { get; set; }
-  
+  public List<IndexPosition> IndexPositionList { get; set; }
+
   /// <summary>
   /// Optimistic concurrency Token
   /// https://docs.microsoft.com/en-us/aspnet/mvc/overview/getting-started/getting-started-with-ef-using-mvc/handling-concurrency-with-the-entity-framework-in-an-asp-net-mvc-application

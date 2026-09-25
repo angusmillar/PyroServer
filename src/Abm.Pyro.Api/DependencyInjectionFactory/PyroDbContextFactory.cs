@@ -22,7 +22,7 @@ public class PyroDbContextFactory(
         string? connectionString = configuration.GetConnectionString(tenant.SqlConnectionStringCode);
         
         DbContextOptionsBuilder dbContextOptionsBuilder = new DbContextOptionsBuilder<PyroDbContext>();
-        dbContextOptionsBuilder.UseSqlServer(connectionString)
+        dbContextOptionsBuilder.UseSqlServer(connectionString, o => o.UseNetTopologySuite())
             .EnableSensitiveDataLogging(env.IsDevelopment());
 
         return new PyroDbContext((DbContextOptions<PyroDbContext>)dbContextOptionsBuilder.Options);
