@@ -1942,8 +1942,23 @@ namespace Abm.Pyro.Repository.Predicates;
 public interface IIndexPositionPredicateFactory
 {
   List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryNear searchQueryNear);
+
+  /// <summary>
+  /// The ':missing' modifier, which must be expressed at the ResourceStore level rather than as
+  /// an index-row predicate. See the note in the implementation for why.
+  /// </summary>
+  Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryNear searchQueryNear);
 }
 ```
+
+**Why `:missing` is separate here, unlike every sibling factory.** The other factories express
+`:missing` as an index-row predicate `x => x.SearchParameterStoreId != id` evaluated inside
+`ResourceStore.IndexXList.Any(...)`. That works for them only because their tables hold rows for
+many different search parameters, so a resource carrying *some* other row of that type satisfies
+the `Any`. `IndexPosition` holds rows for exactly one search parameter, so the list is **empty**
+for every Location without a position — `Any(...)` is false, and copying the sibling pattern would
+make `near:missing=true` return nothing at all, and `near:missing=false` likewise. The negation has
+to sit outside the `Any`.
 
 - [ ] **Step 2: Implement the predicate factory**
 
@@ -1976,34 +1991,63 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
 
       int searchParameterId = searchQueryNear.SearchParameter.SearchParameterStoreId.Value;
 
+      if (searchQueryNear.Modifier.HasValue)
+      {
+        throw new ApplicationException($"Internal Server Error: {nameof(PositionIndex)} was called for a search query carrying the " +
+                                       $"'{searchQueryNear.Modifier.Value.GetCode()}' modifier. Modified near queries are built by {nameof(PositionIndexMissing)}.");
+      }
+
       var predicate = LinqKit.PredicateBuilder.New<IndexPosition>(true);
-
-      if (!searchQueryNear.Modifier.HasValue)
-      {
-        predicate = predicate.And(IsSearchParameterId(searchParameterId));
-        predicate = predicate.And(WithinDistanceOf(nearValue));
-        resultList.Add(predicate);
-        continue;
-      }
-
-      var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryNear.SearchParameter.Type);
-      if (!arrayOfSupportedModifiers.Contains(searchQueryNear.Modifier.Value))
-      {
-        throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} is not supported for search parameter types of {searchQueryNear.SearchParameter.Type.GetCode()}.");
-      }
-
-      switch (searchQueryNear.Modifier.Value)
-      {
-        case SearchModifierCodeId.Missing:
-          predicate = predicate.And(IsNotSearchParameterId(searchParameterId));
-          resultList.Add(predicate);
-          break;
-        default:
-          throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryNear.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
-      }
+      predicate = predicate.And(IsSearchParameterId(searchParameterId));
+      predicate = predicate.And(WithinDistanceOf(nearValue));
+      resultList.Add(predicate);
     }
 
     return resultList;
+  }
+
+  /// <summary>
+  /// Builds the ':missing' predicate at the ResourceStore level. It cannot be expressed as an
+  /// index-row predicate inside IndexPositionList.Any(...) the way the sibling factories do,
+  /// because IndexPosition holds rows for exactly one search parameter: the list is empty for
+  /// every Location without a position, so any Any(...) over it is false and both
+  /// ':missing=true' and ':missing=false' would match nothing.
+  /// </summary>
+  public Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryNear searchQueryNear)
+  {
+    if (!searchQueryNear.SearchParameter.SearchParameterStoreId.HasValue)
+    {
+      throw new ArgumentNullException(nameof(searchQueryNear.SearchParameter.SearchParameterStoreId));
+    }
+
+    var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryNear.SearchParameter.Type);
+    if (!searchQueryNear.Modifier.HasValue || !arrayOfSupportedModifiers.Contains(searchQueryNear.Modifier.Value))
+    {
+      throw new ApplicationException($"Internal Server Error: {nameof(PositionIndexMissing)} was called for a search query without a supported modifier.");
+    }
+
+    if (searchQueryNear.Modifier.Value != SearchModifierCodeId.Missing)
+    {
+      throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryNear.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
+    }
+
+    int searchParameterId = searchQueryNear.SearchParameter.SearchParameterStoreId.Value;
+
+    var predicate = LinqKit.PredicateBuilder.New<ResourceStore>(true);
+
+    foreach (SearchQueryNearValue nearValue in searchQueryNear.ValueList)
+    {
+      if (nearValue.IsMissing)
+      {
+        predicate = predicate.And(y => !y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+      }
+      else
+      {
+        predicate = predicate.And(y => y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+      }
+    }
+
+    return predicate;
   }
 
   /// <summary>
@@ -2024,11 +2068,6 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
   {
     return x => x.SearchParameterStoreId == searchParameterId;
   }
-
-  private Expression<Func<IndexPosition, bool>> IsNotSearchParameterId(int searchParameterId)
-  {
-    return x => x.SearchParameterStoreId != searchParameterId;
-  }
 }
 ```
 
@@ -2038,9 +2077,10 @@ In `src/Abm.Pyro.Repository/Predicates/IResourceStorePredicateFactory.cs`, add a
 
 ```csharp
   List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase);
+  Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryBase searchQueryBase);
 ```
 
-In `src/Abm.Pyro.Repository/Predicates/ResourceStorePredicateFactory.cs`, add `IIndexPositionPredicateFactory indexPositionPredicateFactory` to the primary constructor parameter list, and add the method after `UriIndex`, matching the existing shape exactly:
+In `src/Abm.Pyro.Repository/Predicates/ResourceStorePredicateFactory.cs`, add `IIndexPositionPredicateFactory indexPositionPredicateFactory` to the primary constructor parameter list, and add both methods after `UriIndex`, matching the existing shape exactly:
 
 ```csharp
   public List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase)
@@ -2048,6 +2088,16 @@ In `src/Abm.Pyro.Repository/Predicates/ResourceStorePredicateFactory.cs`, add `I
     if (searchQueryBase is SearchQueryNear searchQueryNear)
     {
       return indexPositionPredicateFactory.PositionIndex(searchQueryNear);
+    }
+
+    throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");
+  }
+
+  public Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryBase searchQueryBase)
+  {
+    if (searchQueryBase is SearchQueryNear searchQueryNear)
+    {
+      return indexPositionPredicateFactory.PositionIndexMissing(searchQueryNear);
     }
 
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");
@@ -2067,11 +2117,21 @@ with:
 
 ```csharp
         case SearchParamType.Special:
+          if (searchQuery.Modifier == SearchModifierCodeId.Missing)
+          {
+            // ':missing' negates at the ResourceStore level, because IndexPosition holds rows for
+            // exactly one search parameter and so an Any(...) over an empty list can never be true.
+            predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndexMissing(searchQuery));
+            break;
+          }
+
           resourceStorePredicateFactory.PositionIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexPositionList.Any(x.Compile())));
           break;
 ```
 
-This is deliberately identical in shape to the seven arms around it. The `.Compile()` call is a LinqKit marker expanded by `AsExpandable()` at query time, exactly as in the other arms; it never executes in memory.
+The unmodified path is deliberately identical in shape to the seven arms around it. The `.Compile()` call is a LinqKit marker expanded by `AsExpandable()` at query time, exactly as in the other arms; it never executes in memory.
+
+The `:missing` path deviates on purpose — see the note in Step 1. Add `using Abm.Pyro.Domain.Enums;` to the file if `SearchModifierCodeId` is not already in scope.
 
 - [ ] **Step 5: Register in DI**
 
@@ -2267,6 +2327,20 @@ Append these to `src/Abm.Pyro.Api.Test/Search/NearSearchTests.cs`, inside the ex
         Assert.NotNull(bundle);
         Bundle.EntryComponent entry = Assert.Single(bundle.Entry);
         Assert.Equal("Nowhere", ((Location)entry.Resource).Name);
+    }
+
+    [Fact]
+    public async Task Search_NearMissingFalse_ReturnsLocationsWithAPosition()
+    {
+        await CreateLocationAsync("Opera House", SydneyLatitude, SydneyLongitude);
+        Location? noPosition = await FhirClient.CreateAsync(LocationBuilder.Build(name: "Nowhere"));
+        Assert.NotNull(noPosition);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Location>(new[] { "near:missing=false" });
+
+        Assert.NotNull(bundle);
+        Bundle.EntryComponent entry = Assert.Single(bundle.Entry);
+        Assert.Equal("Opera House", ((Location)entry.Resource).Name);
     }
 
     [Theory]
