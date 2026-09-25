@@ -1,9 +1,11 @@
 ﻿using Abm.Pyro.Domain.Cache;
+using Abm.Pyro.Domain.Configuration;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.Projection;
 using Abm.Pyro.Domain.SearchQueryEntity;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using SearchParamType = Abm.Pyro.Domain.Enums.SearchParamType;
 using Task = System.Threading.Tasks.Task;
@@ -14,7 +16,8 @@ public class SearchQueryFactory(
   IFhirUriFactory fhirUriFactory,
   IFhirResourceTypeSupport fhirResourceTypeSupport,
   IFhirDateTimeFactory fhirDateTimeFactory,
-  ISearchParameterCache searchParameterCache)
+  ISearchParameterCache searchParameterCache,
+  IOptions<LocationNearSettings> locationNearSettingsOptions)
   : ISearchQueryFactory
 {
   public async Task<IList<SearchQueryBase>> Create(FhirResourceTypeId resourceTypeContext, SearchParameterProjection searchParameter, KeyValuePair<string, StringValues> parameter, bool isChainedReference = false)
@@ -104,9 +107,29 @@ public class SearchQueryFactory(
       SearchParamType.Composite => new SearchQueryComposite(searchParameter, ResourceContext, RawValue),
       SearchParamType.Quantity => new SearchQueryQuantity(searchParameter, ResourceContext, RawValue),
       SearchParamType.Uri => new SearchQueryUri(searchParameter, ResourceContext, RawValue),
-      SearchParamType.Special => new SearchQueryNumber(searchParameter, ResourceContext, RawValue),
+      SearchParamType.Special => InitializeSpecialSearchQueryEntity(searchParameter, ResourceContext, RawValue),
       _ => throw new System.ComponentModel.InvalidEnumArgumentException(searchParameter.Type.ToString(), (int)searchParameter.Type, typeof(Enums.SearchParamType)),
     };
+  }
+
+  /// <summary>
+  /// Location 'near' is the only search parameter of type 'special' in FHIR R4. Any other
+  /// special parameter is marked invalid rather than mapped onto a type it does not match,
+  /// so the client receives a 400 explaining the parameter is unsupported instead of a 500.
+  /// </summary>
+  private SearchQueryBase InitializeSpecialSearchQueryEntity(SearchParameterProjection searchParameter, FhirResourceTypeId resourceContext, string rawValue)
+  {
+    var searchQueryNear = new SearchQueryNear(searchParameter, resourceContext, rawValue, locationNearSettingsOptions.Value);
+
+    if (!searchParameter.Url.OriginalString.Equals(SearchParameterUrl.LocationNear, StringComparison.Ordinal))
+    {
+      searchQueryNear.IsValid = false;
+      searchQueryNear.InvalidMessage =
+        $"The search parameter '{searchParameter.Code}' is of type '{SearchParamType.Special.GetCode()}' which this server " +
+        $"only supports for the Location 'near' search parameter. ";
+    }
+
+    return searchQueryNear;
   }
 
 }
