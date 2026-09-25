@@ -1,10 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
+using Abm.Pyro.Application.FhirResolver;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.IndexSetters;
 using Abm.Pyro.Domain.Model;
 using Hl7.Fhir.ElementModel;
+using Hl7.Fhir.FhirPath;
 using Hl7.Fhir.Model;
+using Hl7.FhirPath;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Abm.Pyro.Domain.Test.IndexSetters;
@@ -22,9 +27,19 @@ public class PositionSetterTest
             LongitudeElement = longitude.HasValue ? new FhirDecimal(longitude.Value) : null
         };
 
-#pragma warning disable SDK0001 // ToTypedElement(Base, ModelInspector, string?) is marked experimental in Hl7.Fhir.Base
-        return position.ToTypedElement(ModelInfo.ModelInspector);
-#pragma warning restore SDK0001
+        var locationResource = new Location { Position = position };
+        ScopedNode resourceModel = new ScopedNode(locationResource.ToPocoNode(ModelInfo.ModelInspector));
+
+        var fhirPathResolveMock = new Mock<IFhirPathResolve>();
+
+        IEnumerable<ITypedElement> typedElementList = resourceModel.Select(
+            expression: "Location.position",
+            ctx: new FhirEvaluationContext()
+            {
+                ElementResolver = fhirPathResolveMock.Object.Resolver
+            });
+
+        return typedElementList.Single();
     }
 
     private static PositionSetter CreateSut() =>
