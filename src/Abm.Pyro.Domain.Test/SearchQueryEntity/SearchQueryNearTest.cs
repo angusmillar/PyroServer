@@ -205,6 +205,14 @@ public class SearchQueryNearTest
     [InlineData("-33.8568||5|km")]                 // empty longitude
     [InlineData("abc|151.2153|5|km")]              // non-numeric latitude
     [InlineData("-33.8568|151.2153|abc|km")]       // non-numeric distance
+    [InlineData("NaN|151.2153|5|km")]              // NaN latitude
+    [InlineData("-33.8568|NaN|5|km")]              // NaN longitude
+    [InlineData("Infinity|151.2153|5|km")]         // Infinity latitude
+    [InlineData("-33.8568|Infinity|5|km")]         // Infinity longitude
+    [InlineData("-Infinity|151.2153|5|km")]        // -Infinity latitude
+    [InlineData("-33.8568|-Infinity|5|km")]        // -Infinity longitude
+    [InlineData("1e400|151.2153|5|km")]            // 1e400 parses to Infinity, latitude
+    [InlineData("-33.8568|1e400|5|km")]            // 1e400 parses to Infinity, longitude
     public async Task ParseValue_MalformedValue_IsInvalid(string value)
     {
         SearchQueryNear sut = CreateSut();

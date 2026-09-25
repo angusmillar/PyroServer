@@ -101,6 +101,54 @@ public class NearChainedSearchTests(IntegrationTestFixture fixture) : Integratio
         Assert.Equal("Sydney campus", ((Location)entry.Resource).Name);
     }
 
+    /// <summary>
+    /// Regression test for the missing IndexPosition cleanup in ResourceStoreUpdate.Update: when
+    /// a Location is updated, its now-historic IndexPosition row must be removed along with the
+    /// other index tables, otherwise a chained near search can still match the resource via its
+    /// stale (Sydney) position even though the Location has moved to Melbourne.
+    /// </summary>
+    [Fact]
+    public async Task Search_ChainedLocationNear_AfterLocationMoved_DoesNotMatchOnStalePosition()
+    {
+        Location sydney = await CreateLocationAsync("Movable site", SydneyLatitude, SydneyLongitude);
+        await CreateEncounterAsync(sydney);
+
+        sydney.Position = new Location.PositionComponent
+        {
+            LatitudeElement = new FhirDecimal(MelbourneLatitude),
+            LongitudeElement = new FhirDecimal(MelbourneLongitude)
+        };
+        Location? updated = await FhirClient.UpdateAsync(sydney);
+        Assert.NotNull(updated);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Encounter>(
+            new[] { "location.near=-33.8568|151.2153|5|km" });
+
+        Assert.NotNull(bundle);
+        Assert.Empty(bundle.Entry);
+    }
+
+    /// <summary>
+    /// Regression test for the missing IndexPosition cleanup in ResourceStoreUpdate.Update: when
+    /// a Location is deleted, its IndexPosition row must be removed along with the other index
+    /// tables, otherwise a chained near search can still match the deleted resource via its
+    /// stale position.
+    /// </summary>
+    [Fact]
+    public async Task Search_ChainedLocationNear_AfterLocationDeleted_DoesNotMatch()
+    {
+        Location sydney = await CreateLocationAsync("Deletable site", SydneyLatitude, SydneyLongitude);
+        await CreateEncounterAsync(sydney);
+
+        await FhirClient.DeleteAsync(sydney);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Encounter>(
+            new[] { "location.near=-33.8568|151.2153|5|km" });
+
+        Assert.NotNull(bundle);
+        Assert.Empty(bundle.Entry);
+    }
+
     private async Task<Location> CreateLocationAsync(string name, decimal latitude, decimal longitude)
     {
         Location? location = await FhirClient.CreateAsync(

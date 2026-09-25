@@ -41,6 +41,10 @@ public class ResourceStoreUpdate(PyroDbContext context) : IResourceStoreUpdate
       await context.Set<IndexUri>()
         .Where(x => x.ResourceStoreId == resourceStoreUpdateProjection.ResourceStoreId)
         .ExecuteDeleteAsync();
+
+      await context.Set<IndexPosition>()
+        .Where(x => x.ResourceStoreId == resourceStoreUpdateProjection.ResourceStoreId)
+        .ExecuteDeleteAsync();
     }
   }
 }

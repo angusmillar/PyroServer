@@ -302,6 +302,14 @@ public class NearSearchTests(IntegrationTestFixture fixture) : IntegrationTestBa
     [InlineData("near=-33.8568|151.2153|5|cm")]      // unsupported unit
     [InlineData("near=-33.8568|151.2153|5|ft")]      // unsupported unit
     [InlineData("near=-33.8568|151.2153|2000|km")]   // above the configured maximum
+    [InlineData("near=NaN|151.2153|5|km")]           // NaN latitude
+    [InlineData("near=-33.8568|NaN|5|km")]           // NaN longitude
+    [InlineData("near=Infinity|151.2153|5|km")]      // Infinity latitude
+    [InlineData("near=-33.8568|Infinity|5|km")]      // Infinity longitude
+    [InlineData("near=-Infinity|151.2153|5|km")]     // -Infinity latitude
+    [InlineData("near=-33.8568|-Infinity|5|km")]     // -Infinity longitude
+    [InlineData("near=1e400|151.2153|5|km")]         // 1e400 parses to Infinity, latitude
+    [InlineData("near=-33.8568|1e400|5|km")]         // 1e400 parses to Infinity, longitude
     public async Task Search_MalformedNearValue_ReturnsBadRequest(string query)
     {
         await CreateLocationAsync("Opera House", SydneyLatitude, SydneyLongitude);

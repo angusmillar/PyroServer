@@ -15,7 +15,7 @@ public class NearDistanceExtensionTests(IntegrationTestFixture fixture) : Integr
     private const decimal SydneyLatitude = -33.8568m;
     private const decimal SydneyLongitude = 151.2153m;
 
-    // Roughly 1.1 km north-west of the Opera House
+    // Roughly 0.90 km north-west of the Opera House
     private const decimal NearbyLatitude = -33.8500m;
     private const decimal NearbyLongitude = 151.2100m;
 
@@ -57,6 +57,9 @@ public class NearDistanceExtensionTests(IntegrationTestFixture fixture) : Integr
         var distance = Assert.IsType<Distance>(extension.Value);
         Assert.Equal("mi", distance.Unit);
         Assert.Equal("[mi_i]", distance.Code);
+        Assert.NotNull(distance.Value);
+        // 0.900 km is ~0.559 mi.
+        Assert.InRange(distance.Value.Value, 0.54m, 0.58m);
     }
 
     [Fact]

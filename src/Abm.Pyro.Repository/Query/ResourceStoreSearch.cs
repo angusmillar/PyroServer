@@ -109,6 +109,10 @@ public class ResourceStoreSearch(
             return null;
         }
 
+        // When a client sends two separate near parameters (?near=A&near=B, which is AND
+        // semantics), only the first one's distances are reported here. FHIR §8.7.5.1 says the
+        // reported distance "may" be included, so reporting against only one of several
+        // near terms is a deliberate simplification, not an oversight.
         SearchQueryNear? searchQueryNear = searchQueryServiceOutcome.SearchQueryList
             .OfType<SearchQueryNear>()
             .FirstOrDefault(x => x.ChainedSearchParameter is null);

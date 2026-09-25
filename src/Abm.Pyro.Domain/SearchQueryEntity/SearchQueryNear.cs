@@ -161,6 +161,14 @@ public class SearchQueryNear(
       return false;
     }
 
+    if (!double.IsFinite(coordinate))
+    {
+      InvalidMessage = $"The '{SearchParameter.Code}' search parameter value '{value}' had a {coordinateName} of '{segment}' which could not be parsed as a number. " +
+                       $"Note that the decimal separator must be a full stop, because a comma separates multiple positions. ";
+      IsValid = false;
+      return false;
+    }
+
     if (coordinate < minimum || coordinate > maximum)
     {
       InvalidMessage = $"The '{SearchParameter.Code}' search parameter value '{value}' had a {coordinateName} of '{segment}' which is outside the valid range of " +

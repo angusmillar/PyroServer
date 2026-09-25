@@ -82,7 +82,7 @@ Local TTL: 10 min. Distributed TTL: 30 min (configurable in `appsettings.json` �
 
 ### Indexing
 
-When a FHIR resource is stored, index setters (`IReferenceSetter`, `IStringSetter`, `IDateTimeSetter`, `IQuantitySetter`, `ITokenSetter`, `INumberSetter`, `IUriSetter`) populate typed index tables (`IndexString`, `IndexReference`, `IndexDateTime`, etc.) that back FHIR search queries.
+When a FHIR resource is stored, index setters (`IReferenceSetter`, `IStringSetter`, `IDateTimeSetter`, `IQuantitySetter`, `ITokenSetter`, `INumberSetter`, `IUriSetter`, `IPositionSetter`) populate typed index tables (`IndexString`, `IndexReference`, `IndexDateTime`, `IndexPosition`, etc.) that back FHIR search queries.
 
 ### Repository / EF Core
 
@@ -197,13 +197,14 @@ the index requires evaluating FHIRPath over the stored JSON in C#, which SQL can
 
 ## Key Dependencies
 
-- `Hl7.Fhir.R4` v5.11.4 — official FHIR R4 SDK
-- `Entity Framework Core` v10.0.10 (SQL Server)
+- `Hl7.Fhir.R4` v6.5.0 — official FHIR R4 SDK
+- `Entity Framework Core` v10.0.12 (SQL Server)
 - `Firely.Fhir.Validation.R4` v2.6.3 — FHIR profile validation
 - `ZiggyCreatures.FusionCache` v2.0.0
 - `Serilog` v10.0.0 with Splunk and rolling-file sinks
 - `Steeltoe ConfigServer` v3.2.8 — Spring Cloud Config support (disabled by default)
 - `Polly` v7.x — HTTP resilience (12 retries with jitter on the FHIR HTTP client)
+- `NetTopologySuite` v2.6.0 (`Abm.Pyro.Domain`) and `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite` v10.0.12 (`Abm.Pyro.Repository`, `Abm.Pyro.Api`) — geospatial types backing the Location `near` search parameter; every `UseSqlServer` call site needs `UseNetTopologySuite()`
 
 ## Configuration
 
