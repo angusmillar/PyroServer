@@ -72,11 +72,11 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
     {
       if (nearValue.IsMissing)
       {
-        predicate = predicate.And(y => !y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+        predicate = predicate.Or(y => !y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
       }
       else
       {
-        predicate = predicate.And(y => y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+        predicate = predicate.Or(y => y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
       }
     }
 
