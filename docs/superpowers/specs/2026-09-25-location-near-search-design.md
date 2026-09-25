@@ -231,6 +231,23 @@ nautical miles are deliberately **not** supported.
 No prefixes are accepted: `FhirSearchQuerySupport` already declares `Special` as prefix-less, and a
 leading `gt`/`eq` fails the decimal parse regardless.
 
+### What a comma-decimal actually does
+
+Clients in comma-decimal locales will sometimes send `-33,87|151,21`. Such a value is rejected —
+but only because it produces a malformed term, not because commas are detected as decimal
+separators. The distinction matters and the guarantee is narrower than it first appears.
+
+`,` is the OR separator in this grammar and FHIR decimals always use `.`, so a comma-decimal that
+happens to yield well-formed terms is parsed as an OR of positions. `-10.5|20,5|7` denotes two
+positions — `(-10.5, 20)` and `(5, 7)`, each at the default radius — and reading it that way is
+correct.
+
+This cannot be improved on. A legitimate multi-position search contains the same `digit,digit`
+sequence: `33.8|151.2|5,37.8|144.9|5` is two positions with unsigned latitudes and omitted units.
+Any lexical rule that rejected the typo would reject that valid search too. Detection is
+impossible, not merely unimplemented, and both behaviours are pinned by tests so the outcome is
+deliberate.
+
 ## 5. Filtering (query path)
 
 `SearchSearchPredicateFactory.cs:50` — the `Special` arm stops throwing and becomes structurally

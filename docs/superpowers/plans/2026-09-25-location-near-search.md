@@ -30,6 +30,15 @@
 These are the input classes the spec implies but that no task's happy-path tests would otherwise exercise. Each has a test placed in the task that owns the code.
 
 1. **A decimal written with a comma collides with the OR delimiter.** `near=-33,87|151,21` must return 400, not be silently split into two malformed terms and mis-parsed. Test in Task 6.
+
+   **Corrected during execution — the original wording above over-claimed.** A comma-decimal is
+   rejected only when it produces a malformed term. When it happens to produce a well-formed
+   alternative reading it is parsed as an OR of positions, and that is correct: in FHIR R4
+   §8.7.5.1 `,` *is* the OR separator and FHIR decimals always use `.`, so `-10.5|20,5|7`
+   genuinely denotes two positions. The typo cannot be detected in principle, because a
+   legitimate multi-position search contains the same `digit,digit` sequence
+   (`33.8|151.2|5,37.8|144.9|5` — unsigned latitudes, units omitted); any rule rejecting the
+   typo would false-reject that. Task 6 pins both behaviours with explicit tests.
 2. **Antimeridian crossing.** `near=0|179.95|20|km` must match a Location at longitude `-179.95`. This is the specific case a bounding-box implementation gets wrong and `STDistance` gets right. Test in Task 9.
 3. **Moving a Location must not leave a stale position index row.** After updating a Location's coordinates, a search near the old position must not find it. Test in Task 9.
 4. **Zero or negative distance.** `near=-33.87|151.21|0|km` and `...|-5|km` must return 400, not match everything or throw. Test in Task 6.
