@@ -310,6 +310,7 @@ try
     builder.Services.AddScoped<IResourceStoreGetForUpdateByResourceId, ResourceStoreGetForUpdateByResourceId>();
     builder.Services.AddScoped<IResourceIncludesService, ResourceIncludesService>();
     builder.Services.AddScoped<IResourceStoreSearch, ResourceStoreSearch>();
+    builder.Services.AddScoped<INearDistanceQuery, NearDistanceQuery>();
 
     // SearchParameterStore ----------------------
     builder.Services.AddScoped<ISearchParameterGetByBaseResourceType, SearchParameterGetByBaseResourceType>();
