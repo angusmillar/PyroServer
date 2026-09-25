@@ -86,7 +86,7 @@ When a FHIR resource is stored, index setters (`IReferenceSetter`, `IStringSette
 
 ### Repository / EF Core
 
-`PyroDbContext` has six `DbSet`s: `ResourceStore`, `IndexString`, `IndexReference`, `SearchParameterStore`, `ServiceBaseUrl`, `ServiceSetting`. `ResourceStore` and `SearchParameterStore` compress their JSON columns via custom value converters in `Abm.Pyro.Repository/Conversion/`.
+`PyroDbContext` has seven `DbSet`s: `ResourceStore`, `IndexString`, `IndexReference`, `IndexPosition`, `SearchParameterStore`, `ServiceBaseUrl`, `ServiceSetting`. `ResourceStore` and `SearchParameterStore` compress their JSON columns via custom value converters in `Abm.Pyro.Repository/Conversion/`.
 
 ### Startup Services
 
@@ -131,6 +131,69 @@ Pyro supports the FHIR R4 FHIRPath Patch interaction (`PATCH /{tenant}/{Resource
 **`HttpVerbId.Patch = 5`** is stored in the `ResourceStore` row written by a successful patch and has a corresponding EF Core migration (`20260701141423_PatchOperationHttpVerbAdd`).
 
 **PATCH inside transaction Bundles.** A `PATCH` entry (direct or conditional) inside a FHIR transaction `Bundle` is supported, handled by `FhirTransactionPutAndPatchService` (`Abm.Pyro.Application/FhirBundleService/`) — the PUT/PATCH-processing service in step 3 of the transaction commit sequence (`FhirTransactionService.cs`), reusing `IFhirPatchHandler` exactly as it reuses `IFhirUpdateHandler` for PUT. Pre-process resolves the PATCH target's identity (direct: load by id; conditional: run the search pipeline with PATCH match semantics) before commit, the same way conditional-PUT resolution works. Conditional PATCH with zero matches fails the whole transaction (PATCH never creates, even inside a transaction). Two entries (PUT or PATCH) resolving to the same `ResourceType/id` within one transaction also fails the transaction, per the FHIR trules overlapping-identity rule. PATCHing a resource whose *identity* is created by a POST/PUT in the same bundle is not supported (the target must already exist in the database) — but a patch *value* (e.g. a `valueReference`) pointing at a same-bundle POST/PUT is resolved correctly, since the generic reference-rewriting machinery in `FhirTransactionService.UpdateResourceReferences` walks a PATCH entry's `Parameters` body the same way it walks any other resource.
+
+### Location `near` Search
+
+Pyro supports the FHIR R4 `near` search parameter on `Location`
+(`GET /{tenant}/Location?near=[latitude]|[longitude]|[distance]|[units]`), the only
+search parameter of type `special` in R4. See
+[Location §8.7.5.1](https://hl7.org/fhir/R4/location.html#positional).
+
+**Value syntax.** `[latitude]|[longitude]|[distance]|[units]`, where distance and units are
+optional. Note the order is latitude then longitude — the worked example in the spec has the
+two transposed, which is a known erratum. Multiple positions are comma-separated and OR'd.
+
+**Units.** Only `m`, `km` and miles (`[mi_i]`, `mi`, `mile`, `miles`) are supported. Omitted
+units mean km. Anything else is a 400.
+
+**Storage.** `Location.position` is indexed into the `IndexPosition` table as a SQL Server
+`geography` point (SRID 4326) behind a `GEOGRAPHY_AUTO_GRID` spatial index created by raw SQL in
+the `AddIndexPositionTable` migration. Filtering uses `STDistance(...) <= @radius`, which returns
+metres — metres is the canonical unit everywhere below the parser.
+
+**Coordinate order trap.** NetTopologySuite's `new Point(x, y)` is `new Point(longitude,
+latitude)`, the opposite of T-SQL's `geography::Point(latitude, longitude, srid)`. A unit test in
+`PositionSetterTest` asserts `Point.X == longitude`.
+
+**Comma-decimal typos.** `,` is the OR separator in this grammar and FHIR decimals always use
+`.`, so a comma-decimal value (e.g. from a comma-decimal locale sending `-33,87|151,21`) is
+rejected only when it produces a malformed term — it is not detected as a decimal separator per
+se. When the same digit-comma-digit shape happens to parse as well-formed terms, it is treated as
+an OR of positions, and that is correct: `-10.5|20,5|7` genuinely denotes two positions,
+`(-10.5, 20)` and `(5, 7)`. This can't be improved on — a legitimate multi-position search
+contains the exact same shape (e.g. `33.8|151.2|5,37.8|144.9|5`), so no lexical rule can tell a
+typo from a real second position. Both behaviours are pinned by tests and the outcome is
+deliberate.
+
+**Distance in results.** Each matched entry carries its distance as a `location-distance`
+extension on `Bundle.entry.search`, computed by a page-scoped second query. Controlled by
+`LocationNear:ReturnDistanceInSearchResults`; turning it off changes which fields come back, not
+which Locations match. Chained and `_has` uses of `near` filter correctly but emit no extension,
+because the matched resources are not Locations. Terms carrying `:missing` are skipped by this
+second query (there is no coordinate to measure from), so `near:missing=true` matches Locations
+with no position and reports no distance for them. Because `:missing` values compose with OR like
+any other term, `near:missing=true,false` matches everything.
+
+**Configuration** (`appsettings.json` → `LocationNear`): `DefaultDistanceInMetres` (the radius
+used when the client omits the distance, default 10000), `MaximumDistanceInMetres` (default
+1000000, above which a request is a 400), `ReturnDistanceInSearchResults` (default true).
+
+**Known limitation.** Indexing runs only on create, update and patch, and the server has no
+re-index facility, so Locations stored before this feature shipped have no `IndexPosition` row
+and are invisible to `near` until they are next written. A migration cannot fix this — building
+the index requires evaluating FHIRPath over the stored JSON in C#, which SQL cannot do.
+
+**Implementation files:**
+
+| File | Role |
+|---|---|
+| `Abm.Pyro.Domain/Model/IndexPosition.cs` | Index entity holding the geography point |
+| `Abm.Pyro.Domain/IndexSetters/PositionSetter.cs` | `Location.position` → `IndexPosition` |
+| `Abm.Pyro.Domain/SearchQueryEntity/SearchQueryNear.cs` | Parses the parameter value |
+| `Abm.Pyro.Domain/Support/NearDistanceUnitSupport.cs` | The only place units and conversions live |
+| `Abm.Pyro.Domain/Configuration/LocationNearSettings.cs` | Default radius, cap, reporting flag |
+| `Abm.Pyro.Repository/Predicates/IndexPositionPredicateFactory.cs` | Builds `STDistance <= radius` |
+| `Abm.Pyro.Repository/Query/NearDistanceQuery.cs` | Page-scoped distance computation (phase 2) |
 
 ## Key Dependencies
 
@@ -195,7 +258,7 @@ Full-stack tests that spin up the entire Pyro server using `WebApplicationFactor
 ### Infrastructure
 - **One SQL Server container** per test run, shared across all tests via xUnit `ICollectionFixture<IntegrationTestFixture>`.
 - **EF Core migrations** are applied programmatically against the container before the factory starts (schema must exist before startup services run).
-- **Respawn** resets only FHIR resource and index tables between tests (`ResourceStore`, `IndexString`, `IndexReference`, `IndexDateTime`, `IndexQuantity`, `IndexToken`, `IndexUri`). `SearchParameterStore`, `ServiceBaseUrl`, and `ServiceSetting` are intentionally excluded: the first two are seeded by startup services, and `ServiceSetting` is seeded by the EF migration that creates the table (a default `FhirValidation` row). Clearing `ServiceSetting` causes `ServiceConfigurationGetCurrentByType.SingleAsync` to throw on the next request.
+- **Respawn** resets only FHIR resource and index tables between tests (`ResourceStore`, `IndexString`, `IndexReference`, `IndexDateTime`, `IndexQuantity`, `IndexToken`, `IndexUri`, `IndexPosition`). `SearchParameterStore`, `ServiceBaseUrl`, and `ServiceSetting` are intentionally excluded: the first two are seeded by startup services, and `ServiceSetting` is seeded by the EF migration that creates the table (a default `FhirValidation` row). Clearing `ServiceSetting` causes `ServiceConfigurationGetCurrentByType.SingleAsync` to throw on the next request.
 - **`PyroWebApplicationFactory`** overrides the `PyroDb` connection string, sets `ServiceBaseUrl:Url` to `https://localhost`, suppresses the Steeltoe ConfigServer, runs in the `Development` environment (so `ErrorHandlingMiddleware` returns full exception detail on 500s), and removes `DatabaseVersionValidationOnStartupService` from DI.
 - **`Hl7.Fhir.Rest.FhirClient`** is used as the test HTTP client. Its base address is set to `new Uri(httpClient.BaseAddress!, "pyro/")` — the trailing slash is required for correct URI resolution to `/pyro/{ResourceType}` routes. Error responses (4xx/5xx) throw `FhirOperationException { Status }`.
 
