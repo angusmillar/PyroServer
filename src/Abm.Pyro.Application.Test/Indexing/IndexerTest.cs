@@ -30,6 +30,7 @@ public class IndexerTest
     private readonly Mock<ITokenSetter> TokenSetterMock;
     private readonly Mock<IQuantitySetter> QuantitySetterMock;
     private readonly Mock<IUriSetter> UriSetterMock;
+    private readonly Mock<IPositionSetter> PositionSetterMock;
     private readonly Mock<ILogger<Indexer>> LoggerMock;
     private readonly Mock<ISearchParameterCache> SearchParameterCacheMock;
     private readonly Mock<IFhirPathResolve> FhirPathResolveMock;
@@ -45,6 +46,7 @@ public class IndexerTest
         TokenSetterMock = new Mock<ITokenSetter>();
         QuantitySetterMock = new Mock<IQuantitySetter>();
         UriSetterMock = new Mock<IUriSetter>();
+        PositionSetterMock = new Mock<IPositionSetter>();
         LoggerMock = Mock.Of<Mock<ILogger<Indexer>>>();
         FhirPathResolveMock = new Mock<IFhirPathResolve>();
     }
@@ -109,6 +111,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);
@@ -209,6 +212,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);
@@ -307,6 +311,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 fhirPathResolve);
@@ -396,6 +401,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);
@@ -485,6 +491,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);
@@ -583,6 +590,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);
@@ -672,6 +680,7 @@ public class IndexerTest
                 TokenSetterMock.Object,
                 QuantitySetterMock.Object,
                 UriSetterMock.Object,
+                PositionSetterMock.Object,
                 LoggerMock.Object,
                 SearchParameterCacheMock.Object,
                 FhirPathResolveMock.Object);

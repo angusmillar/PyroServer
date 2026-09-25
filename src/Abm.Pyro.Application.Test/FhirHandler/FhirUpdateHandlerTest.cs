@@ -192,7 +192,8 @@ public class FhirUpdateHandlerTest
             dateTimeIndexList: new List<IndexDateTime>(),
             quantityIndexList: new List<IndexQuantity>(),
             tokenIndexList: new List<IndexToken>(),
-            uriIndexList: new List<IndexUri>());
+            uriIndexList: new List<IndexUri>(),
+            positionIndexList: new List<IndexPosition>());
         
         var indexerMock = new Mock<IIndexer>();
         indexerMock.Setup(x => 

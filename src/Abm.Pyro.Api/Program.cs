@@ -287,6 +287,7 @@ try
     builder.Services.AddScoped<ITokenSetter, TokenSetter>();
     builder.Services.AddScoped<INumberSetter, NumberSetter>();
     builder.Services.AddScoped<IUriSetter, UriSetter>();
+    builder.Services.AddScoped<IPositionSetter, PositionSetter>();
 
     // Database Queries --------------------------------------------------------------------------------------
 

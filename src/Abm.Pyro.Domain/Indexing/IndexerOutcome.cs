@@ -8,7 +8,8 @@ namespace Abm.Pyro.Domain.Indexing;
     List<IndexDateTime> dateTimeIndexList,
     List<IndexQuantity> quantityIndexList,
     List<IndexToken> tokenIndexList,
-    List<IndexUri> uriIndexList)
+    List<IndexUri> uriIndexList,
+    List<IndexPosition> positionIndexList)
   {
     public List<IndexString> StringIndexList { get; private set; } = stringIndexList;
     public List<IndexReference> ReferenceIndexList { get; private set; } = referenceIndexList;
@@ -16,5 +17,6 @@ namespace Abm.Pyro.Domain.Indexing;
     public List<IndexQuantity> QuantityIndexList { get; private set; } = quantityIndexList;
     public List<IndexToken> TokenIndexList { get; private set; } = tokenIndexList;
     public List<IndexUri> UriIndexList { get; set; } = uriIndexList;
+    public List<IndexPosition> PositionIndexList { get; set; } = positionIndexList;
   }
 

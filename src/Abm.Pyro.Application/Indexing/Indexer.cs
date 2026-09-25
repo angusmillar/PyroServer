@@ -7,6 +7,7 @@ using Hl7.FhirPath;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Exceptions;
+using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Indexing;
 using Abm.Pyro.Domain.IndexSetters;
 using Abm.Pyro.Domain.Model;
@@ -24,6 +25,7 @@ namespace Abm.Pyro.Application.Indexing
         ITokenSetter tokenSetter,
         IQuantitySetter quantitySetter,
         IUriSetter uriSetter,
+        IPositionSetter positionSetter,
         ILogger<Indexer> logger,
         ISearchParameterCache searchParameterCache,
         IFhirPathResolve fhirPathResolve)
@@ -40,7 +42,8 @@ namespace Abm.Pyro.Application.Indexing
                 new List<IndexDateTime>(),
                 new List<IndexQuantity>(),
                 new List<IndexToken>(),
-                new List<IndexUri>());
+                new List<IndexUri>(),
+                new List<IndexPosition>());
 
             IEnumerable<SearchParameterProjection> baseResourceSearchParameterList = await searchParameterCache.GetListByResourceType(FhirResourceTypeId.Resource);
             IEnumerable<SearchParameterProjection> searchParameterList = baseResourceSearchParameterList.Concat(await searchParameterCache.GetListByResourceType(resourceType));
@@ -130,6 +133,12 @@ namespace Abm.Pyro.Application.Indexing
                     GetUriIndexList(resourceType, searchParameter, typedElement);
                     break;
                 case SearchParamType.Special:
+                    if (searchParameter.Url.OriginalString.Equals(SearchParameterUrl.LocationNear, StringComparison.Ordinal))
+                    {
+                        GetPositionIndexList(resourceType, searchParameter, typedElement);
+                        break;
+                    }
+
                     logger.LogWarning("Encountered a search parameter of type: {SearchParamType} which is not supported by the server. The search parameter " +
                                       "had the code of : {SearchParameterCode} with a SearchParameterStore database primary key of {SearchParameterStoreId}. " +
                                       "The resource type being processed was of type : {ResourceType}",
@@ -159,6 +168,24 @@ namespace Abm.Pyro.Application.Indexing
 
             IList<IndexUri> uriIndexList = uriSetter.Set(typedElement, resourceType, searchParameter.SearchParameterStoreId.Value, searchParameter.Code);
             IndexerOutcome.UriIndexList.AddRange(uriIndexList);
+        }
+
+        private void GetPositionIndexList(FhirResourceTypeId resourceType,
+            SearchParameterProjection searchParameter,
+            ITypedElement typedElement)
+        {
+            if (IndexerOutcome is null)
+            {
+                throw new NullReferenceException(nameof(IndexerOutcome));
+            }
+
+            if (!searchParameter.SearchParameterStoreId.HasValue)
+            {
+                throw new NullReferenceException(nameof(searchParameter.SearchParameterStoreId));
+            }
+
+            IList<IndexPosition> positionIndexList = positionSetter.Set(typedElement, resourceType, searchParameter.SearchParameterStoreId.Value, searchParameter.Code);
+            IndexerOutcome.PositionIndexList.AddRange(positionIndexList);
         }
 
         private void GetQuantityIndexList(FhirResourceTypeId resourceType,

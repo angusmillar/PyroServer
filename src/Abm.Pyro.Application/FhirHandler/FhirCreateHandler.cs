@@ -122,8 +122,8 @@ public class FhirCreateHandler(
             indexQuantityList: indexerOutcome.QuantityIndexList,
             indexTokenList: indexerOutcome.TokenIndexList,
             indexUriList: indexerOutcome.UriIndexList,
-            rowVersion: 0
-        );
+            rowVersion: 0,
+            indexPositionList: indexerOutcome.PositionIndexList);
         
         resourceStore = await resourceStoreAdd.Add(resourceStore);
 

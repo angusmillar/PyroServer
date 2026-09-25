@@ -170,8 +170,8 @@ public class FhirUpdateHandler(
             indexQuantityList: indexerOutcome.QuantityIndexList,
             indexTokenList: indexerOutcome.TokenIndexList,
             indexUriList: indexerOutcome.UriIndexList,
-            rowVersion: 0
-        );
+            rowVersion: 0,
+            indexPositionList: indexerOutcome.PositionIndexList);
 
         _previousResourceStore.IsCurrent = false;
         await resourceStoreUpdate.Update(_previousResourceStore,

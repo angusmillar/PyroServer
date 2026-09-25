@@ -107,7 +107,8 @@ public class FhirCreateHandlerTest
             dateTimeIndexList: new List<IndexDateTime>(),
             quantityIndexList: new List<IndexQuantity>(),
             tokenIndexList: new List<IndexToken>(),
-            uriIndexList: new List<IndexUri>());
+            uriIndexList: new List<IndexUri>(),
+            positionIndexList: new List<IndexPosition>());
 
         _indexerMock = new Mock<IIndexer>();
         _indexerMock.Setup(x =>
