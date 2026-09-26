@@ -94,7 +94,7 @@ its priority accordingly.
 **b. The fix pattern already exists in the codebase.** `IndexPositionPredicateFactory.PositionIndexMissing`
 performs exactly the `ResourceStore`-level negation the prior plan proposes, with a doc comment
 explaining why an index-row predicate cannot express it. `SearchSearchPredicateFactory` routes the
-`Special` + `Missing` case to it. Sub-project B is therefore "generalise the `near` pattern to the
+`Special` + `Missing` case to it. Sub-project B1 is therefore "generalise the `near` pattern to the
 other search types", which is cheaper and lower-risk than the prior plan's framing.
 
 **c. The prior plan misses the double execution of the search predicate.**
@@ -141,11 +141,17 @@ cycle.
 
 | | Sub-project | Depends on | Independent? |
 |---|---|---|---|
-| **A** | **Measurement harness** — generator, seeding, query set, plans, baselines | — | fully |
-| **B** | Search correctness — `:missing` → `NOT EXISTS`, `:not`, remove string `EndsWith` | — | fully |
+| **B1** | Search correctness — `:missing` and `:not` → `ResourceStore`-level negation | — | fully |
+| **A** | **Measurement harness** — generator, seeding, query set, plans, baselines | B1 | see §4.1 |
+| **B2** | Remove the non-sargable string `EndsWith` branch | — | fully |
 | **C** | Re-index operation — re-run setters over stored JSON, scoped by type/parameter | — | fully (benefits from A) |
-| **D** | Index and column redesign across the eight tables | A, B, C | no |
+| **D** | Index and column redesign across the eight tables | A, B1, B2, C | no |
 | **E** | Query shape — the double `CountAsync`, `_total` support | A | fully |
+
+The original decomposition treated search correctness as one sub-project, **B**. It is split because
+its two halves differ in kind: `:missing`/`:not` is pure correctness with no measurement value,
+whereas removing the string `EndsWith` branch is a correctness fix with a direct *performance*
+consequence, and is the change that makes the proposed `IndexString` composite worth building.
 
 ## 4. Sequencing, and why the prior plan's order is wrong
 
@@ -163,8 +169,40 @@ designed to serve:
 Sequencing indexes first would measure new indexes against queries about to be replaced,
 understate their benefit, and risk choosing column orders validated against obsolete shapes.
 
-**Approved order: A → B → (C ∥ E) → D.** Correctness precedes index design; index design comes
+**Approved order: B1 → A → B2 → (C ∥ E) → D.** Correctness precedes index design; index design comes
 last, with full evidence.
+
+## 4.1 Why B1 precedes the harness
+
+An earlier draft of this sequencing put the harness first on "baseline before you change" grounds.
+That discipline governs *performance* work; it does not govern a bug fix that changes result sets,
+because there is nothing meaningful to baseline about a query that returns zero rows. B1 therefore
+runs **before** A, for four reasons:
+
+1. **It is a live defect with no error signal.** `:missing` returns zero rows or wrong rows today,
+   silently. Fixing that does not require a harness to be worth doing.
+2. **Baselining it first would poison the baseline.** §12's query set covers `:missing` on seven
+   search types. Measured today, each records "0 rows, ~0 logical reads, instant", and after the fix
+   the same entries read as a catastrophic regression. §10.1's cardinality field and §13's zero-row
+   flag prevent *misreading* that, but not baselining a broken query is cleaner than defending
+   against the misreading.
+3. **There is no dependency in that direction.** Correct `:missing` semantics are provable with a
+   handful of resources in `Abm.Pyro.Api.Test`; they need nothing the 250k corpus provides.
+4. **B1 is structural, and A builds on the structure.** `IResourceStorePredicateFactory` returns
+   `List<Expression<Func<IndexX, bool>>>` for all six index types, with `PositionIndexMissing`
+   bolted on beside `PositionIndex` as the single `ResourceStore`-level escape hatch. Fixing
+   `:missing` properly means either six more `XxxIndexMissing` methods or reshaping that interface —
+   and A's `QueryRunner` drives exactly that layer. The shape should settle before a query set and
+   committed baselines are built on top of it.
+
+B2 stays after A, so the sargability gain from removing `EndsWith` gets a real before-and-after. If
+that ordering ever proves inconvenient, a "before" figure is recoverable by re-measuring an earlier
+revision — a three-minute reseed — so it is a preference, not a constraint.
+
+**Known gap, to be scoped during B1's design:** `ChainedPredicateFactory` and `HasPredicateFactory`
+contain no `:missing` handling at all, so the chained and `_has` forms (for example
+`Patient?general-practitioner.name:missing=true`) are presently unspecified rather than merely
+wrong. Whether B1 covers them or they become a separate item is a B1 scope decision.
 
 ## 5. Scale and storage
 
@@ -347,10 +385,14 @@ only it reflects the SQL EF actually produces.
 ### 10.1 Result cardinality is part of the baseline
 
 Every baseline entry records **the row count the query returned**, alongside its metrics.
-Sub-project B deliberately changes result sets: `:missing` goes from zero rows (or wrong rows) to
-correct rows, and the default string search narrows. Without recorded cardinality, a changed result
-set reads as a performance delta and the programme would draw exactly the wrong conclusion.
-Cardinality is a first-class field, not a footnote.
+Sub-project B2 deliberately changes result sets — the default string search narrows — and D may
+change them if a drop or collation change is ever mis-specified. Without recorded cardinality, a
+changed result set reads as a performance delta and the programme would draw exactly the wrong
+conclusion. Cardinality is a first-class field, not a footnote.
+
+This field also carries the load that ordering alone cannot. B1 lands before the first baseline is
+taken (§4.1), so `:missing` is already correct when measured — but cardinality is what lets any
+*later* result-set change be seen as a result-set change rather than misread as a performance one.
 
 ## 11. First deliverable
 
@@ -363,7 +405,8 @@ One entry per access pattern, each in hot and cold variants:
 
 - **String**: prefix (default), `:exact`, `:contains`
 - **Token**: code-only, system+code, system-only, `:not`
-- **`:missing`**: on string, token, reference, date, quantity, uri, and `near`
+- **`:missing`**: on string, token, reference, date, quantity, uri, and `near` — measured only after
+  B1 has landed, so these entries record real cardinality rather than zero (§4.1)
 - **Reference**: direct, and the multi-id `IN` fast path
 - **Chained** (`subject.name=`) and **`_has`**
 - **Date**: `eq`, `ge`/`le` range, `gt`/`lt`
@@ -398,7 +441,8 @@ harness.
 ## 15. Out of scope
 
 Any index change; any predicate, handler or pipeline change; Synthea; `_include` optimisation;
-multi-tenant performance; and measurement against production or Azure. These belong to B, C, D or E.
+multi-tenant performance; and measurement against production or Azure. These belong to B1, B2, C, D
+or E — and B1 will already have landed before A begins (§4.1).
 
 ## 16. Success criteria
 
