@@ -38,7 +38,7 @@ dotnet ef migrations add <Name>  --project Abm.Pyro.Repository --startup-project
 
 | Project | Purpose |
 |---|---|
-| `Abm.Pyro.Api` | ASP.NET Core 9 entry point — controllers, middleware, content formatters, DI wiring |
+| `Abm.Pyro.Api` | ASP.NET Core 10 entry point — controllers, middleware, content formatters, DI wiring |
 | `Abm.Pyro.Application` | CQRS handlers, pipeline behaviors, caching, indexing, validation, subscriptions |
 | `Abm.Pyro.Domain` | Request/response records, domain entities, enums, exceptions, interfaces |
 | `Abm.Pyro.Repository` | EF Core DbContext, entity config, migrations, query implementations |
@@ -71,7 +71,7 @@ All FHIR operations are modelled as immutable `record` types in `Abm.Pyro.Domain
 
 ### Caching
 
-FusionCache (v2.0.0) with an optional Redis backplane. Cache services in `Abm.Pyro.Application/Cache/`:
+FusionCache (v2.8.0) with an optional Redis backplane. Cache services in `Abm.Pyro.Application/Cache/`:
 - `SearchParameterHybridCache`
 - `ActiveSubscriptionHybridCache`
 - `MetaDataHybridCache`
@@ -86,7 +86,7 @@ When a FHIR resource is stored, index setters (`IReferenceSetter`, `IStringSette
 
 ### Repository / EF Core
 
-`PyroDbContext` has seven `DbSet`s: `ResourceStore`, `IndexString`, `IndexReference`, `IndexPosition`, `SearchParameterStore`, `ServiceBaseUrl`, `ServiceSetting`. `ResourceStore` and `SearchParameterStore` compress their JSON columns via custom value converters in `Abm.Pyro.Repository/Conversion/`.
+`PyroDbContext` exposes seven named `DbSet`s: `ResourceStore`, `IndexString`, `IndexReference`, `IndexPosition`, `SearchParameterStore`, `ServiceBaseUrl`, `ServiceSetting`. Four more index tables — `IndexDateTime`, `IndexQuantity`, `IndexToken`, `IndexUri` — are registered via `IEntityTypeConfiguration` in `OnModelCreating` but have no dedicated property; reach them with `context.Set<T>()`. `ResourceStore` and `SearchParameterStore` compress their JSON columns via custom value converters in `Abm.Pyro.Repository/Conversion/`.
 
 ### Startup Services
 
@@ -199,10 +199,9 @@ the index requires evaluating FHIRPath over the stored JSON in C#, which SQL can
 
 - `Hl7.Fhir.R4` v6.5.0 — official FHIR R4 SDK
 - `Entity Framework Core` v10.0.12 (SQL Server)
-- `Firely.Fhir.Validation.R4` v2.6.3 — FHIR profile validation
-- `ZiggyCreatures.FusionCache` v2.0.0
-- `Serilog` v10.0.0 with Splunk and rolling-file sinks
-- `Steeltoe ConfigServer` v3.2.8 — Spring Cloud Config support (disabled by default)
+- `Firely.Fhir.Validation.R4` v3.3.1 — FHIR profile validation
+- `ZiggyCreatures.FusionCache` v2.8.0
+- `Serilog.AspNetCore` v10.0.0 — Console sink is hard-coded in `Program.cs` and active in every environment; a rolling File sink is added only via `appsettings.Development.json`. No Splunk sink (removed as unused)
 - `Polly` v7.x — HTTP resilience (12 retries with jitter on the FHIR HTTP client)
 - `NetTopologySuite` v2.6.0 (`Abm.Pyro.Domain`) and `Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite` v10.0.12 (`Abm.Pyro.Repository`, `Abm.Pyro.Api`) — geospatial types backing the Location `near` search parameter; every `UseSqlServer` call site needs `UseNetTopologySuite()`
 
@@ -211,7 +210,7 @@ the index requires evaluating FHIRPath over the stored JSON in C#, which SQL can
 - Connection strings and secrets go in `appsettings.Development.json` (gitignored for secrets).
 - `appsettings.json` contains the full settings schema with `[Secret]` placeholders.
 - All settings sections use the Options pattern with FluentValidation (`ValidateOnStart`).
-- Redis and ConfigServer are **disabled by default**; enable in appsettings.
+- The Redis backplane (`RedisCache` section, class `RedisCacheSettings`) is **disabled by default** (`UseRedisCache: false`); enable in appsettings.
 
 ## CI/CD & Deployment
 
@@ -260,7 +259,7 @@ Full-stack tests that spin up the entire Pyro server using `WebApplicationFactor
 - **One SQL Server container** per test run, shared across all tests via xUnit `ICollectionFixture<IntegrationTestFixture>`.
 - **EF Core migrations** are applied programmatically against the container before the factory starts (schema must exist before startup services run).
 - **Respawn** resets only FHIR resource and index tables between tests (`ResourceStore`, `IndexString`, `IndexReference`, `IndexDateTime`, `IndexQuantity`, `IndexToken`, `IndexUri`, `IndexPosition`). `SearchParameterStore`, `ServiceBaseUrl`, and `ServiceSetting` are intentionally excluded: the first two are seeded by startup services, and `ServiceSetting` is seeded by the EF migration that creates the table (a default `FhirValidation` row). Clearing `ServiceSetting` causes `ServiceConfigurationGetCurrentByType.SingleAsync` to throw on the next request.
-- **`PyroWebApplicationFactory`** overrides the `PyroDb` connection string, sets `ServiceBaseUrl:Url` to `https://localhost`, suppresses the Steeltoe ConfigServer, runs in the `Development` environment (so `ErrorHandlingMiddleware` returns full exception detail on 500s), and removes `DatabaseVersionValidationOnStartupService` from DI.
+- **`PyroWebApplicationFactory`** overrides the `PyroDb` connection string, sets `ServiceBaseUrl:Url` to `https://localhost`, runs in the `Development` environment (so `ErrorHandlingMiddleware` returns full exception detail on 500s), and removes `DatabaseVersionValidationOnStartupService` from DI.
 - **`Hl7.Fhir.Rest.FhirClient`** is used as the test HTTP client. Its base address is set to `new Uri(httpClient.BaseAddress!, "pyro/")` — the trailing slash is required for correct URI resolution to `/pyro/{ResourceType}` routes. Error responses (4xx/5xx) throw `FhirOperationException { Status }`.
 
 ### Test patterns
