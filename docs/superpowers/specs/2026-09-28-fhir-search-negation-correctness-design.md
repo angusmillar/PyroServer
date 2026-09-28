@@ -260,8 +260,19 @@ the claim that §5.1 removes no capability.
 **Integration — `ne`**: `birthdate=ne<date>` must exclude the absent-value resource and must not
 match resources that merely have other indexed parameters.
 
-**Integration — chained and `_has`**: `Patient?general-practitioner.name:missing=true` and the `_has`
-equivalent.
+**Integration — chained**: `Patient?organization.name:missing=true`, plus the three cases where an
+unconstrained chain-target set would over-match — a target that has been updated, one that has been
+deleted, and a resource of another type sharing the target's id. These three matter specifically
+because negation inverts the property that made those constraints redundant for positive chained
+searches (§6).
+
+**Integration — `_has`**: **not achievable, and recorded as a known gap.** Pyro's `_has` grammar
+parser splits segments on `:`, so `_has:Observation:subject:value-quantity:missing=true` carries one
+segment more than it accepts and is rejected with a 400 before the predicate layer is reached. The
+delegation claim in §6 is therefore *untested* for `_has` rather than disproven — the query never
+gets far enough to delegate. Adding modifier support to the `_has` parser is parser work, not
+negation work, and is out of scope (§8). The current 400 is pinned by a test carrying a note to
+convert it if parsing support ever lands.
 
 **Regression — `near`**: the existing Location `near` tests must pass unchanged, including
 `near:missing=true`, `near:missing=false` and `near:missing=true,false`.
@@ -274,6 +285,8 @@ equivalent.
   `HasPredicateFactory.cs:77`. Pre-existing, unrelated to negation.
 - Token modifiers listed as unimplemented in `FhirSearchQuerySupport` (`:text`, `:in`, `:not-in`,
   `:above`, `:below`).
+- **Modifier support in the `_has` grammar parser**, which is what blocks `_has` + `:missing` (§7).
+  It is query-string parsing, not negation.
 - `ne` semantics for absent values are **settled** (§3.3), not open.
 
 ## 9. Success criteria
@@ -289,7 +302,10 @@ equivalent.
 4. `birthdate=ne<date>` excludes resources with no birthdate and does not match on unrelated
    parameters.
 5. `near` behaviour is bit-for-bit unchanged, including `near:missing=true,false`.
-6. Chained and `_has` `:missing` forms return correct result sets.
+6. **Chained** `:missing` returns correct result sets, including when the chain target has been
+   updated, has been deleted, or shares its id with a resource of another type. The **`_has`** form
+   is a known gap: it is rejected with a 400 by the `_has` grammar parser before reaching the
+   predicate layer (§7), so this criterion is met for chained and explicitly deferred for `_has`.
 7. `IsNotSearchParameterId` no longer exists anywhere in the codebase.
 8. All existing tests pass; the full suite is green.
 

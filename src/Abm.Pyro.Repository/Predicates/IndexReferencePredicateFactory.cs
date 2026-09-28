@@ -30,9 +30,15 @@ namespace Abm.Pyro.Repository.Predicates
       //It creates a SQL 'IN' cause instead of many 'OR' statements and should be more efficient.        
       //Heavily used in chain searching where we traverse many References. 
       //The 'Type' modifier is already resolved when the search parameter is parsed, so the SearchValue.FhirRequestUri.ResourceName is the correct Resource name at this stage
-      if (searchQueryReference.ValueList.Count > 1 && searchQueryReference.ValueList.TrueForAll(x =>
+      // The fast path applies only to plain value searches. A ':missing' value carries a null
+      // FhirUri, and testing !x.IsMissing first is not enough to protect the dereferences below:
+      // TrueForAll short-circuits per element, so 'missing=true,false' is safe while
+      // 'missing=false,true' reaches the second conjunct with FhirUri still null.
+      if (!searchQueryReference.Modifier.HasValue &&
+          searchQueryReference.ValueList.Count > 1 && searchQueryReference.ValueList.TrueForAll(x =>
                                                                                                   !x.IsMissing &&
-                                                                                                  x.FhirUri!.IsRelativeToServer &&
+                                                                                                  x.FhirUri is not null &&
+                                                                                                  x.FhirUri.IsRelativeToServer &&
                                                                                                   x.FhirUri.ResourceName == searchQueryReference.ValueList[0].FhirUri!.ResourceName &&
                                                                                                   string.IsNullOrWhiteSpace(x.FhirUri.VersionId)))
       {

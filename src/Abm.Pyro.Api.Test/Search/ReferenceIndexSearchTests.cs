@@ -91,6 +91,44 @@ public class ReferenceIndexSearchTests(IntegrationTestFixture fixture) : Integra
         Assert.Equal([withOrganization.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
+    [Fact]
+    public async Task Search_OrganizationMissingFalseThenTrue_ReturnsEveryPatient()
+    {
+        // 'missing=false,true' is "present OR absent" -- a tautology, like near:missing=true,false.
+        // The value ORDER matters: the multi-id fast-path guard tests !IsMissing first, so
+        // 'true,false' short-circuits harmlessly while 'false,true' reaches a FhirUri that is null
+        // for a ':missing' value. That dereference was a 500.
+        Organization? organization = await FhirClient.CreateAsync(OrganizationBuilder.Build());
+        Assert.NotNull(organization);
+
+        Patient? withOrganization = await FhirClient.CreateAsync(
+            PatientBuilder.Build(managingOrganizationId: organization.Id));
+        Patient? withoutOrganization = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Assert.NotNull(withOrganization);
+        Assert.NotNull(withoutOrganization);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Patient>(
+            new[] { "organization:missing=false,true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal(
+            new[] { withOrganization.Id, withoutOrganization.Id }.Order(),
+            bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_OrganizationMissingWithNonBooleanValue_ReturnsBadRequest()
+    {
+        // Review Focus 2, for the Reference type. SearchQueryReference was the only one of the
+        // seven that set IsValid = false and then fell through to dereference the bool? it had
+        // just proved null, turning a malformed value into a 500.
+        Hl7.Fhir.Rest.FhirOperationException exception =
+            await Assert.ThrowsAsync<Hl7.Fhir.Rest.FhirOperationException>(
+                () => FhirClient.SearchAsync<Patient>(new[] { "organization:missing=maybe" }));
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, exception.Status);
+    }
+
     private async Task<Patient> CreatePatientAsync()
     {
         Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());

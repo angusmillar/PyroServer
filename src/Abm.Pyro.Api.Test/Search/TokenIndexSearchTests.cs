@@ -186,6 +186,31 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
     }
 
     [Fact]
+    public async Task Search_CodeNotWithEmptySystemPrefix_MatchesCodingsThatCarryASystem()
+    {
+        // Spec section 5.1's third ':not' case. The old hand-inverted predicate was
+        // 'System == null && Code != c', which required a null-system row to EXIST, so an
+        // Observation whose codings all carry a system was wrongly omitted.
+        var noSystem = ObservationBuilder.Build();
+        noSystem.Code = new CodeableConcept
+        {
+            Coding = [new Coding { Code = BodyWeightCode }] // no System
+        };
+
+        Observation? withoutSystem = await FhirClient.CreateAsync(noSystem);
+        Observation? withSystem = await FhirClient.CreateAsync(
+            ObservationBuilder.Build(loincCode: BodyWeightCode));
+        Assert.NotNull(withoutSystem);
+        Assert.NotNull(withSystem);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
+            new[] { $"code:not=|{BodyWeightCode}" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withSystem.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
+    [Fact]
     public async Task Search_TwoNegatedParameters_CombineWithAnd()
     {
         // Review Focus 3: negations must AND across parameters, not just within one.
