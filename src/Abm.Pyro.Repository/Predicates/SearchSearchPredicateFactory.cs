@@ -47,15 +47,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           predicateInner = predicateInner.And(resourceStorePredicateFactory.UriIndex(searchQuery));
           break;
         case SearchParamType.Special:
-          if (searchQuery.Modifier == SearchModifierCodeId.Missing)
-          {
-            // ':missing' negates at the ResourceStore level, because IndexPosition holds rows for
-            // exactly one search parameter and so an Any(...) over an empty list can never be true.
-            predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndexMissing(searchQuery));
-            break;
-          }
-
-          resourceStorePredicateFactory.PositionIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexPositionList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndex(searchQuery));
           break;
         default:
           throw new ArgumentOutOfRangeException(nameof(searchQuery.SearchParameter.Type), searchQuery.SearchParameter.Type.GetCode(), nameof(SearchParamType));

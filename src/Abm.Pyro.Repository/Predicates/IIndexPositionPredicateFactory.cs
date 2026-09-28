@@ -6,11 +6,9 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexPositionPredicateFactory
 {
-  List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryNear searchQueryNear);
-
   /// <summary>
-  /// The ':missing' modifier, which must be expressed at the ResourceStore level rather than as
-  /// an index-row predicate. See the note in the implementation for why.
+  /// Handles both the plain 'near' search and the ':missing' modifier. The latter used to need a
+  /// separate method because the old index-row return type could not express negation.
   /// </summary>
-  Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryNear searchQueryNear);
+  Expression<Func<ResourceStore, bool>> PositionIndex(SearchQueryNear searchQueryNear);
 }

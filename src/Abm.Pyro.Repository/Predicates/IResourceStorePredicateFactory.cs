@@ -14,7 +14,6 @@ public interface IResourceStorePredicateFactory
   Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> QuantityIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryBase searchQueryBase);
-  List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase);
-  Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryBase searchQueryBase);
+  Expression<Func<ResourceStore, bool>> PositionIndex(SearchQueryBase searchQueryBase);
   Task<Expression<Func<ResourceStore, bool>>> CompositeIndex(ISearchPredicateFactory searchPredicateFactory, SearchQueryBase searchQueryBase);
 }
