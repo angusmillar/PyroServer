@@ -31,7 +31,7 @@ All line references verified against the current `development` branch.
 | `:missing` self-contradictory | `IndexStringPredicateFactory.cs:52`, `IndexUriPredicateFactory.cs:51`, `IndexReferencePredicateFactory.cs:84`, `IndexQuantityPredicateFactory.cs:93`, `IndexDateTimePredicateFactory.cs:101` | `EXISTS(spid = @x AND spid <> @x)` | **Zero rows, always** |
 | `:missing` mis-scoped | `IndexTokenPredicateFactory.cs:38`, `IndexNumberPredicateFactory.cs:91` | `EXISTS(spid <> @x)` | Matches any resource with an index row for *some other* parameter |
 | `:missing` value ignored | all of the above | — | `IsMissing` is parsed onto `SearchQueryValueBase` but read **only** by `IndexPositionPredicateFactory`, so `:missing=true` and `:missing=false` are indistinguishable |
-| `:not` incomplete | `IndexTokenPredicateFactory.cs:41-48` | `EXISTS(spid = @x AND code <> @c)` | Omits resources with no value for the parameter, contrary to FHIR R4 |
+| `:not` inverts inside the `EXISTS` | `IndexTokenPredicateFactory.cs:41-48` | `EXISTS(spid = @x AND code <> @c)` | Three distinct errors: omits resources with no value for the parameter (contrary to FHIR R4); **wrongly matches** multi-valued elements where a sibling coding differs; and omits `:not=\|c` where every coding carries a system. See §5.1. |
 | `ne` spurious term | `IndexDateTimePredicateFactory.cs:53-55` | adds `OR EXISTS(spid <> @x)` | **Over-matches** — `Patient?birthdate=ne1970-01-01` matches nearly every resource |
 
 Two cases are **already correct and must not change**:
@@ -175,11 +175,39 @@ Additionally:
 
 | Factory | Extra change |
 |---|---|
-| `IndexTokenPredicateFactory` | `:not` emits `(spid == @x AND <positive value match>, Negated: true)` with `Combine = And`. **`NotEqualTo` is deleted** — negation now lives in the wrapper, so the per-search-type asymmetry (notably `MatchCodeWithNullSystem`) disappears rather than needing to be reproduced under negation. |
+| `IndexTokenPredicateFactory` | `:not` emits `(spid == @x AND EqualTo(value), Negated: true)` with `Combine = And`. **`NotEqualTo` is deleted; `EqualTo` is untouched** — see §5.1. |
 | `IndexDateTimePredicateFactory` | Delete lines 53–55, the spurious `ne` term. Its `NotEqualTo` **stays** — it serves the `ne` prefix (§3.3). |
 | `IndexQuantityPredicateFactory`, `IndexNumberPredicateFactory` | `NotEqualTo` **stays** for `ne`. No `ne` change. |
 | `IndexPositionPredicateFactory` | `PositionIndex` absorbs `PositionIndexMissing`; behaviour must be identical, including `near:missing=true,false`. |
 | `IndexStringPredicateFactory`, `IndexTokenPredicateFactory` | Delete the unused private `AnyIndex` / `AnyIndexEquals` helpers. |
+
+### 5.1 Token `:not` — `EqualTo` stays, `NotEqualTo` goes
+
+The four positive token search forms are correct today and **are not changed by B1**. Per FHIR R4,
+and as parsed by `SearchQueryToken.cs:45-90`:
+
+| Query | Search type | Positive predicate (unchanged) |
+|---|---|---|
+| `?code=c` | `MatchCodeOnly` | `Code == c` — matches irrespective of the system property |
+| `?code=\|c` | `MatchCodeWithNullSystem` | `System == null && Code == c` — matches only where the Coding/Identifier has no system |
+| `?code=s\|c` | `MatchCodeAndSystem` | `System == s && Code == c` |
+| `?code=s\|` | `MatchSystemOnly` | `System == s` |
+
+Only the **negated** variants are removed. `:not` becomes
+`NOT EXISTS(spid = @x AND EqualTo(value))`, reusing the positive predicates above.
+
+This is a correctness gain, not a lost capability. The hand-written `NotEqualTo` inverts the
+comparison *inside* the existence test, which conflates "no coding matches" with "some coding
+differs" — and on multi-valued elements those are not the same thing:
+
+| Case | Current `NotEqualTo` | Correct |
+|---|---|---|
+| Resource has no value for the parameter | omitted | **must match** (FHIR R4 states `:not` includes these) |
+| Observation has codings `loinc\|1234` and `snomed\|9999`; query `code:not=loinc\|1234` | `EXISTS(spid AND (System <> loinc \| Code <> 1234))` — the snomed row satisfies it, so the resource **wrongly matches** | must **not** match; it does have `loinc\|1234` |
+| `code:not=\|c` where every coding carries a system | requires a null-system row to exist, so the resource is omitted | **must match** — it has no system-less code `c` |
+
+`NOT EXISTS(… EqualTo(…))` fixes all three at once, because negation sits outside the existence
+test where it cannot be satisfied by a sibling row.
 
 `IndexNumberPredicateFactory.cs:92` carries a commented-out
 `AnyIndexEquals(IndexQuantityPredicate, !NumberValue.IsMissing)` — the original author's correct
@@ -218,6 +246,17 @@ precisely what has already happened here.
 has a different value, parameter absent) and assert exact membership for `:missing=true` and
 `:missing=false`; for Token additionally `:not`, which must include the absent-parameter resource.
 
+**Integration — token `:not`, the three cases of §5.1**, each a distinct regression test:
+- A resource with no value for the parameter **must** match `code:not=c`.
+- An Observation carrying both `loinc|1234` and `snomed|9999` must **not** match
+  `code:not=loinc|1234`. This is the false-positive case and the one most likely to regress, because
+  it requires a multi-coding fixture rather than the single-value fixtures used elsewhere.
+- A resource whose codings all carry a system **must** match `code:not=|c`.
+
+**Integration — token positive forms unchanged**: `?code=c` matches irrespective of system, and
+`?code=|c` matches only codings with no system. These pass today and must continue to; they guard
+the claim that §5.1 removes no capability.
+
 **Integration — `ne`**: `birthdate=ne<date>` must exclude the absent-value resource and must not
 match resources that merely have other indexed parameters.
 
@@ -243,6 +282,10 @@ equivalent.
    search types; `:missing=false` returns exactly those with at least one.
 2. `gender:not=male` returns resources whose gender is not male **and** resources with no gender.
 3. `gender:not=male,female` excludes both, rather than matching everything.
+3a. An Observation carrying both `loinc|1234` and `snomed|9999` is **not** returned by
+   `code:not=loinc|1234` (§5.1's false-positive case).
+3b. The four positive token forms are unchanged: `?code=c` still matches irrespective of system, and
+   `?code=|c` still matches only system-less codings.
 4. `birthdate=ne<date>` excludes resources with no birthdate and does not match on unrelated
    parameters.
 5. `near` behaviour is bit-for-bit unchanged, including `near:missing=true,false`.
