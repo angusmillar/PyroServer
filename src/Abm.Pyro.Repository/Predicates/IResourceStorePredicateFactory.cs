@@ -9,7 +9,7 @@ public interface IResourceStorePredicateFactory
   Expression<Func<ResourceStore, bool>> CurrentMainResource(FhirResourceTypeId resourceType);
   Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase);
-  List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryBase searchQueryBase);
+  Expression<Func<ResourceStore, bool>> TokenIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> NumberIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> QuantityIndex(SearchQueryBase searchQueryBase);

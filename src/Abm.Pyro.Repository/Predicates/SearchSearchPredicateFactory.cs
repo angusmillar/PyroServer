@@ -32,7 +32,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           predicateInner = predicateInner.And(resourceStorePredicateFactory.StringIndex(searchQuery));
           break;
         case SearchParamType.Token:
-          resourceStorePredicateFactory.TokenIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexTokenList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.TokenIndex(searchQuery));
           break;
         case SearchParamType.Reference:
           predicateInner = predicateInner.And(await resourceStorePredicateFactory.ReferenceIndex(searchQuery));
