@@ -10,7 +10,7 @@ public interface IResourceStorePredicateFactory
   Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryBase searchQueryBase);
-  List<Expression<Func<IndexQuantity, bool>>> NumberIndex(SearchQueryBase searchQueryBase);
+  Expression<Func<ResourceStore, bool>> NumberIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> QuantityIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryBase searchQueryBase);
