@@ -41,7 +41,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           predicateInner = await resourceStorePredicateFactory.CompositeIndex(this, searchQuery);
           break;
         case SearchParamType.Quantity:
-          resourceStorePredicateFactory.QuantityIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexQuantityList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.QuantityIndex(searchQuery));
           break;
         case SearchParamType.Uri:
           predicateInner = predicateInner.And(resourceStorePredicateFactory.UriIndex(searchQuery));

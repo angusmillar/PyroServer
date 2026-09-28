@@ -44,6 +44,38 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
         Assert.Single(bundle.Entry);
     }
 
+    [Fact]
+    public async Task Search_ValueQuantityMissingTrue_ReturnsOnlyObservationWithoutValue()
+    {
+        Observation? withValue = await FhirClient.CreateAsync(
+            ObservationBuilder.Build(valueQuantityAmount: 72.5m));
+        Observation? withoutValue = await FhirClient.CreateAsync(ObservationBuilder.Build());
+        Assert.NotNull(withValue);
+        Assert.NotNull(withoutValue);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
+            new[] { "value-quantity:missing=true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withoutValue.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_ValueQuantityMissingFalse_ReturnsOnlyObservationWithValue()
+    {
+        Observation? withValue = await FhirClient.CreateAsync(
+            ObservationBuilder.Build(valueQuantityAmount: 72.5m));
+        Observation? withoutValue = await FhirClient.CreateAsync(ObservationBuilder.Build());
+        Assert.NotNull(withValue);
+        Assert.NotNull(withoutValue);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Observation>(
+            new[] { "value-quantity:missing=false" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withValue.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
+
     private async Task CreateObservationAsync(decimal? valueQuantityAmount = null, string? valueQuantityUnit = null)
     {
         Observation? observation = await FhirClient.CreateAsync(
