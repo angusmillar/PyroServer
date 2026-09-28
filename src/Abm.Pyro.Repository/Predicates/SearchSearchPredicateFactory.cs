@@ -44,7 +44,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           resourceStorePredicateFactory.QuantityIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexQuantityList.Any(x.Compile())));
           break;
         case SearchParamType.Uri:
-          resourceStorePredicateFactory.UriIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexUriList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.UriIndex(searchQuery));
           break;
         case SearchParamType.Special:
           if (searchQuery.Modifier == SearchModifierCodeId.Missing)
