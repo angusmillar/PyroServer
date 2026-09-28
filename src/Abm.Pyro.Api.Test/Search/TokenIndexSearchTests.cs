@@ -88,7 +88,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "gender:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutGender.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutGender.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "gender:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withGender.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withGender.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "gender:not=unknown" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([noGender.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([noGender.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
             new[] { $"code:not={CodeSystemUriSupport.Loinc}|{BodyWeightCode}" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([otherCode.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([otherCode.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
             new[] { $"code:not={BodyWeightCode},{HeartRateCode}" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([other.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([other.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
             new[] { $"code:not={CodeSystemUriSupport.Loinc}|" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([snomedObservation.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([snomedObservation.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -203,7 +203,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
             new[] { "name:missing=true", "gender:not=unknown" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([noNameNoGender.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([noNameNoGender.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
             new[] { $"code=|{BodyWeightCode}" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutSystem.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutSystem.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public class TokenIndexSearchTests(IntegrationTestFixture fixture) : Integration
 
         Bundle? present = await FhirClient.SearchAsync<Observation>(new[] { "code:missing=false" });
         Assert.NotNull(present);
-        Assert.Equal([noSystem.Id], present.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([noSystem.Id], present.Entry.Select(e => e.Resource!.Id).Order());
 
         Bundle? absent = await FhirClient.SearchAsync<Observation>(new[] { "code:missing=true" });
         Assert.NotNull(absent);

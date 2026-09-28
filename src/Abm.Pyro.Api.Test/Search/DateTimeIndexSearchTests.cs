@@ -57,7 +57,7 @@ public class DateTimeIndexSearchTests(IntegrationTestFixture fixture) : Integrat
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "birthdate:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutDate.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutDate.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -74,6 +74,6 @@ public class DateTimeIndexSearchTests(IntegrationTestFixture fixture) : Integrat
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "birthdate=ne2001-02-03" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([matching.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([matching.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 }

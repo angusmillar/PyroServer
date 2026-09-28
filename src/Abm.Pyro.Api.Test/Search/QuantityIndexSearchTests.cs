@@ -57,7 +57,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
             new[] { "value-quantity:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutValue.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutValue.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class QuantityIndexSearchTests(IntegrationTestFixture fixture) : Integrat
             new[] { "value-quantity:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withValue.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withValue.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     private async Task CreateObservationAsync(decimal? valueQuantityAmount = null, string? valueQuantityUnit = null)

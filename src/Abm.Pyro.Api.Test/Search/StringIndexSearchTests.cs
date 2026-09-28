@@ -141,7 +141,7 @@ public class StringIndexSearchTests(IntegrationTestFixture fixture) : Integratio
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "name:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutName.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutName.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class StringIndexSearchTests(IntegrationTestFixture fixture) : Integratio
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "name:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withName.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withName.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class StringIndexSearchTests(IntegrationTestFixture fixture) : Integratio
         Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "name:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([live.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([live.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]

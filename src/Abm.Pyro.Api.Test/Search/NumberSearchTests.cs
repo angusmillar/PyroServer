@@ -172,7 +172,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
             new[] { "probability:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutProbability.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutProbability.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -192,7 +192,7 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
             new[] { "probability:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withProbability.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withProbability.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     private async Task CreateAsync(decimal probability)

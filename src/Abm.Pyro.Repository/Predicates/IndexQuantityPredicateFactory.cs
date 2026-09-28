@@ -244,16 +244,6 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
     throw new ArgumentNullException($"Internal Server Error: The {nameof(quantityValue)} property of {nameof(quantityValue.Value)} was found to be null.");
   }
 
-  private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexQuantity, bool>> predicate)
-  {
-    return x => x.IndexQuantityList.Any(predicate.Compile());
-  }
-
-  private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexQuantity, bool>> predicate, bool equals)
-  {
-    return x => x.IndexQuantityList.Any(predicate.Compile()) == equals;
-  }
-
   private Expression<Func<IndexQuantity, bool>> IsSearchParameterId(int searchParameterId)
   {
     return x => x.SearchParameterStoreId == searchParameterId;

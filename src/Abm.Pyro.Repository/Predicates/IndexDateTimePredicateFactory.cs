@@ -37,7 +37,6 @@ namespace Abm.Pyro.Repository.Predicates;
           {
             indexDateTimePredicate = indexDateTimePredicate.And(EqualTo(dateTimeValue.Value.Value, fhirDateTimeSupport.SearchQueryCalculateHighDateTimeForRange(dateTimeValue.Value.Value, dateTimeValue.Precision.Value)));
             resultList.Add(indexDateTimePredicate);
-            //ResourceStorePredicate = ResourceStorePredicate.Or(AnyIndex(IndexDateTimePredicate));
           }
           else
           {

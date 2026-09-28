@@ -32,7 +32,7 @@ public class ChainedMissingSearchTests(IntegrationTestFixture fixture) : Integra
             new[] { "organization.name:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([patientOfUnnamed.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([patientOfUnnamed.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public class ChainedMissingSearchTests(IntegrationTestFixture fixture) : Integra
             new[] { "organization.name:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([patientOfNamed.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([patientOfNamed.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     /// <summary>

@@ -60,7 +60,7 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
         Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(new[] { "url:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutUrl.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutUrl.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
         Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(new[] { "url:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withUrl.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withUrl.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     private async Task CreateValueSetAsync(string? url = null, string? name = null)

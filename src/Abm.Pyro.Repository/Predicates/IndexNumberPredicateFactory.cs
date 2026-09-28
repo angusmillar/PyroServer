@@ -92,8 +92,8 @@ namespace Abm.Pyro.Repository.Predicates;
                 if (numberValue.Prefix.HasValue == false)
                 {
                   // ':missing=true' asserts absence, ':missing=false' asserts presence — two
-                  // distinct assertions selected by the boolean, folded with Or. This is what
-                  // the abandoned AnyIndexEquals(..., !numberValue.IsMissing) comment reached for.
+                  // distinct assertions selected by the boolean, folded with Or. This is the
+                  // design the commented-out line removed from here was reaching for.
                   missingTerms.Add(new IndexPredicateTerm<IndexQuantity>(
                     IsSearchParameterId(searchQueryNumber.SearchParameter.SearchParameterStoreId.Value),
                     Negated: numberValue.IsMissing));
@@ -213,14 +213,6 @@ namespace Abm.Pyro.Repository.Predicates;
     }
 
 
-    private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexQuantity, bool>> predicate)
-    {
-      return x => x.IndexQuantityList.Any(predicate.Compile());
-    }
-    private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexQuantity, bool>> predicate, bool equals)
-    {
-      return x => x.IndexQuantityList.Any(predicate.Compile()) == equals;
-    }
     private Expression<Func<IndexQuantity, bool>> IsSearchParameterId(int searchParameterId)
     {
       return x => x.SearchParameterStoreId == searchParameterId;

@@ -63,7 +63,6 @@ namespace Abm.Pyro.Repository.Predicates
 
               indexReferencePredicate = indexReferencePredicate.And(EqualTo_ByKey(primaryServiceBaseUrl.ServiceBaseUrlId.Value, referenceValue.FhirUri.ResourceName, referenceValue.FhirUri.ResourceId, referenceValue.FhirUri.VersionId));
               resultList.Add(indexReferencePredicate);
-              //ResourceStorePredicate = ResourceStorePredicate.Or(AnyIndex(IndexReferencePredicate));
             }
             else
             {
@@ -146,14 +145,6 @@ namespace Abm.Pyro.Repository.Predicates
     }
 
 
-    private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexReference, bool>> predicate)
-    {
-      return x => x.IndexReferenceList.Any(predicate.Compile());
-    }
-    private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexReference, bool>> predicate, bool equals)
-    {
-      return x => x.IndexReferenceList.Any(predicate.Compile()) == equals;
-    }
     private Expression<Func<IndexReference, bool>> IsSearchParameterId(int searchParameterId)
     {
       return x => x.SearchParameterStoreId == searchParameterId;

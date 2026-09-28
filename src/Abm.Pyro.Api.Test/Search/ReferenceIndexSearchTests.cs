@@ -69,7 +69,7 @@ public class ReferenceIndexSearchTests(IntegrationTestFixture fixture) : Integra
             new[] { "organization:missing=true" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withoutOrganization.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withoutOrganization.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class ReferenceIndexSearchTests(IntegrationTestFixture fixture) : Integra
             new[] { "organization:missing=false" });
 
         Assert.NotNull(bundle);
-        Assert.Equal([withOrganization.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+        Assert.Equal([withOrganization.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
     }
 
     private async Task<Patient> CreatePatientAsync()
