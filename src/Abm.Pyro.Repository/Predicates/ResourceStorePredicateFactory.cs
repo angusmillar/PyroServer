@@ -32,7 +32,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(searchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryReference)}");
   }
   
-  public List<Expression<Func<IndexString, bool>>> StringIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryString searchQueryString)
     {

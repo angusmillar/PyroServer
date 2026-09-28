@@ -29,7 +29,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           resourceStorePredicateFactory.DateTimeIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexDateTimeList.Any(x.Compile())));
           break;
         case SearchParamType.String:
-          resourceStorePredicateFactory.StringIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexStringList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.StringIndex(searchQuery));
           break;
         case SearchParamType.Token:
           resourceStorePredicateFactory.TokenIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexTokenList.Any(x.Compile())));
