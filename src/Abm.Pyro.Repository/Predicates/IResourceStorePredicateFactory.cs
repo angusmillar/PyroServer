@@ -11,7 +11,7 @@ public interface IResourceStorePredicateFactory
   Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexQuantity, bool>>> NumberIndex(SearchQueryBase searchQueryBase);
-  List<Expression<Func<IndexDateTime, bool>>> DateTimeIndex(SearchQueryBase searchQueryBase);
+  Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexQuantity, bool>>> QuantityIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase);

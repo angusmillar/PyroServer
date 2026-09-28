@@ -9,9 +9,12 @@ namespace Abm.Pyro.Repository.Predicates;
 
   public class IndexDateTimePredicateFactory(IFhirDateTimeSupport fhirDateTimeSupport) : IIndexDateTimePredicateFactory
   {
-    public List<Expression<Func<IndexDateTime, bool>>> DateTimeIndex(SearchQueryDateTime searchQueryDateTime)
+    public Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryDateTime searchQueryDateTime)
     {
+      // Positive value predicates (every prefix, including 'ne', which stays inside the EXISTS).
       var resultList = new List<Expression<Func<IndexDateTime, bool>>>();
+      // ':missing' terms, which carry their own Negated flag.
+      var missingTerms = new List<IndexPredicateTerm<IndexDateTime>>();
 
       foreach (SearchQueryDateTimeValue dateTimeValue in searchQueryDateTime.ValueList)
       {
@@ -48,11 +51,12 @@ namespace Abm.Pyro.Repository.Predicates;
                   resultList.Add(indexDateTimePredicate);
                   break;
                 case SearchComparatorId.Ne:
+                  // 'ne' is a comparison and stays inside the EXISTS: a resource with no value
+                  // cannot satisfy it, and absence is what ':missing' expresses. The OR'd
+                  // 'spid <> @x' term that used to be added here matched any resource carrying
+                  // an index row for some OTHER search parameter.
                   indexDateTimePredicate = indexDateTimePredicate.And(NotEqualTo(dateTimeValue.Value.Value, fhirDateTimeSupport.SearchQueryCalculateHighDateTimeForRange(dateTimeValue.Value.Value, dateTimeValue.Precision.Value)));
                   resultList.Add(indexDateTimePredicate);
-                  var searchQueryDateTimeIdPredicate = LinqKit.PredicateBuilder.New<IndexDateTime>(true);
-                  searchQueryDateTimeIdPredicate = searchQueryDateTimeIdPredicate.And(IsNotSearchParameterId(searchQueryDateTime.SearchParameter.SearchParameterStoreId.Value));
-                  resultList.Add(searchQueryDateTimeIdPredicate);
                   break;
                 case SearchComparatorId.Gt:
                   indexDateTimePredicate = indexDateTimePredicate.And(GreaterThan(dateTimeValue.Value.Value, fhirDateTimeSupport.SearchQueryCalculateHighDateTimeForRange(dateTimeValue.Value.Value, dateTimeValue.Precision.Value)));
@@ -98,8 +102,11 @@ namespace Abm.Pyro.Repository.Predicates;
               case SearchModifierCodeId.Missing:
                 if (dateTimeValue.Prefix.HasValue == false)
                 {
-                  indexDateTimePredicate = indexDateTimePredicate.And(IsNotSearchParameterId(searchQueryDateTime.SearchParameter.SearchParameterStoreId.Value));
-                  resultList.Add(indexDateTimePredicate);
+                  // ':missing=true' asserts absence, ':missing=false' asserts presence — two
+                  // distinct assertions selected by the boolean, folded with Or.
+                  missingTerms.Add(new IndexPredicateTerm<IndexDateTime>(
+                    IsSearchParameterId(searchQueryDateTime.SearchParameter.SearchParameterStoreId.Value),
+                    Negated: dateTimeValue.IsMissing));
                 }
                 else
                 {
@@ -116,23 +123,24 @@ namespace Abm.Pyro.Repository.Predicates;
           }
         }
       }
-      return resultList;
+
+      List<IndexPredicateTerm<IndexDateTime>> terms =
+      [
+        ..resultList.Select(x => new IndexPredicateTerm<IndexDateTime>(x, Negated: false)),
+        ..missingTerms
+      ];
+
+      return IndexPredicateComposer.Compose(
+        terms,
+        PredicateCombine.Or,
+        (predicate, negated) => negated
+          ? x => !x.IndexDateTimeList.Any(predicate.Compile())
+          : x => x.IndexDateTimeList.Any(predicate.Compile()));
     }
-    private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexDateTime, bool>> predicate)
-    {
-      return x => x.IndexDateTimeList.Any(predicate.Compile());
-    }
-    private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexDateTime, bool>> predicate, bool equals)
-    {
-      return x => x.IndexDateTimeList.Any(predicate.Compile()) == equals;
-    }
+
     private Expression<Func<IndexDateTime, bool>> IsSearchParameterId(int searchParameterId)
     {
       return x => x.SearchParameterStoreId == searchParameterId;
-    }
-    private Expression<Func<IndexDateTime, bool>> IsNotSearchParameterId(int searchParameterId)
-    {
-      return x => x.SearchParameterStoreId != searchParameterId;
     }
 
     private Expression<Func<IndexDateTime, bool>> EqualTo(DateTime lowValue, DateTime highValue)

@@ -45,4 +45,35 @@ public class DateTimeIndexSearchTests(IntegrationTestFixture fixture) : Integrat
         Assert.NotNull(bundle);
         Assert.Empty(bundle.Entry);
     }
+
+    [Fact]
+    public async Task Search_BirthDateMissingTrue_ReturnsOnlyPatientWithoutBirthDate()
+    {
+        Patient? withDate = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Patient? withoutDate = await FhirClient.CreateAsync(PatientBuilder.Build(includeBirthDate: false));
+        Assert.NotNull(withDate);
+        Assert.NotNull(withoutDate);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "birthdate:missing=true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withoutDate.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_BirthDateNotEqual_ExcludesPatientWithoutBirthDate()
+    {
+        // 'ne' is a comparison: a resource with no birthdate cannot satisfy it. Absence is
+        // what ':missing' is for. The bug being fixed here OR'd in 'spid <> @x', which matched
+        // any resource carrying an index row for some other parameter.
+        Patient? matching = await FhirClient.CreateAsync(PatientBuilder.Build());          // 1990-01-15
+        Patient? withoutDate = await FhirClient.CreateAsync(PatientBuilder.Build(includeBirthDate: false));
+        Assert.NotNull(matching);
+        Assert.NotNull(withoutDate);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Patient>(new[] { "birthdate=ne2001-02-03" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([matching.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
 }

@@ -26,7 +26,7 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
           resourceStorePredicateFactory.NumberIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexQuantityList.Any(x.Compile())));
           break;
         case SearchParamType.Date:
-          resourceStorePredicateFactory.DateTimeIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexDateTimeList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.DateTimeIndex(searchQuery));
           break;
         case SearchParamType.String:
           predicateInner = predicateInner.And(resourceStorePredicateFactory.StringIndex(searchQuery));
