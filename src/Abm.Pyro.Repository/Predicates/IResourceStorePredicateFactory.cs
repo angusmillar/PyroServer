@@ -7,7 +7,7 @@ namespace Abm.Pyro.Repository.Predicates;
 public interface IResourceStorePredicateFactory
 {
   Expression<Func<ResourceStore, bool>> CurrentMainResource(FhirResourceTypeId resourceType);
-  Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryBase searchQueryBase);
+  Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase);
   List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryBase searchQueryBase);
   Expression<Func<ResourceStore, bool>> NumberIndex(SearchQueryBase searchQueryBase);

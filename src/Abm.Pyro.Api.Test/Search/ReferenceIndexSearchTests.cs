@@ -53,6 +53,44 @@ public class ReferenceIndexSearchTests(IntegrationTestFixture fixture) : Integra
         }
     }
 
+    [Fact]
+    public async Task Search_OrganizationMissingTrue_ReturnsOnlyPatientWithoutOrganization()
+    {
+        Organization? organization = await FhirClient.CreateAsync(OrganizationBuilder.Build());
+        Assert.NotNull(organization);
+
+        Patient? withOrganization = await FhirClient.CreateAsync(
+            PatientBuilder.Build(managingOrganizationId: organization.Id));
+        Patient? withoutOrganization = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Assert.NotNull(withOrganization);
+        Assert.NotNull(withoutOrganization);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Patient>(
+            new[] { "organization:missing=true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withoutOrganization.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_OrganizationMissingFalse_ReturnsOnlyPatientWithOrganization()
+    {
+        Organization? organization = await FhirClient.CreateAsync(OrganizationBuilder.Build());
+        Assert.NotNull(organization);
+
+        Patient? withOrganization = await FhirClient.CreateAsync(
+            PatientBuilder.Build(managingOrganizationId: organization.Id));
+        Patient? withoutOrganization = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Assert.NotNull(withOrganization);
+        Assert.NotNull(withoutOrganization);
+
+        Bundle? bundle = await FhirClient.SearchAsync<Patient>(
+            new[] { "organization:missing=false" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withOrganization.Id], bundle.Entry.Select(e => e.Resource.Id).Order());
+    }
+
     private async Task<Patient> CreatePatientAsync()
     {
         Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());

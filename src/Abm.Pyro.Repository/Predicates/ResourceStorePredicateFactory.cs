@@ -22,7 +22,7 @@ public class ResourceStorePredicateFactory(
     return x => x.ResourceType == resourceType && x.IsCurrent && !x.IsDeleted;
   }
 
-  public async Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryBase searchQueryBase)
+  public async Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryReference searchQueryReference)
     {

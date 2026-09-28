@@ -10,7 +10,7 @@ namespace Abm.Pyro.Repository.Predicates
 {
   public class IndexReferencePredicateFactory(IServiceBaseUrlCache serviceBaseUrlCache, IFhirResourceTypeSupport fhirResourceTypeSupport) : IIndexReferencePredicateFactory
   {
-    public async Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryReference searchQueryReference)
+    public async Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryReference searchQueryReference)
     {
       ServiceBaseUrl primaryServiceBaseUrl = await serviceBaseUrlCache.GetRequiredPrimaryAsync();
       if (!primaryServiceBaseUrl.ServiceBaseUrlId.HasValue)
@@ -22,7 +22,10 @@ namespace Abm.Pyro.Repository.Predicates
         throw new NullReferenceException(nameof(searchQueryReference.SearchParameter.SearchParameterStoreId));
       }
       
+      // Positive value predicates.
       var resultList = new List<Expression<Func<IndexReference, bool>>>();
+      // ':missing' terms, which carry their own Negated flag.
+      var missingTerms = new List<IndexPredicateTerm<IndexReference>>();
       //Improved Query when searching for ResourceIds for the same ResourceType and search parameter yet different ResourceIds.
       //It creates a SQL 'IN' cause instead of many 'OR' statements and should be more efficient.        
       //Heavily used in chain searching where we traverse many References. 
@@ -43,7 +46,7 @@ namespace Abm.Pyro.Repository.Predicates
                                                                                                        referenceFhirIdArray,
                                                                                                        searchQueryReference.ValueList[0].FhirUri!.VersionId));
         resultList.Add(quickIndexReferencePredicate);
-        return resultList;
+        return ComposeTerms(resultList, missingTerms);
       }
 
       foreach (SearchQueryReferenceValue referenceValue in searchQueryReference.ValueList)
@@ -81,8 +84,11 @@ namespace Abm.Pyro.Repository.Predicates
             switch (searchQueryReference.Modifier.Value)
             {
               case SearchModifierCodeId.Missing:
-                indexReferencePredicate = indexReferencePredicate.And(IsNotSearchParameterId(searchQueryReference.SearchParameter.SearchParameterStoreId.Value));
-                resultList.Add(indexReferencePredicate);
+                // ':missing=true' asserts absence, ':missing=false' asserts presence — two
+                // distinct assertions selected by the boolean, folded with Or.
+                missingTerms.Add(new IndexPredicateTerm<IndexReference>(
+                  IsSearchParameterId(searchQueryReference.SearchParameter.SearchParameterStoreId.Value),
+                  Negated: referenceValue.IsMissing));
                 break;
               default:
                 throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryReference.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryReference.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
@@ -95,7 +101,26 @@ namespace Abm.Pyro.Repository.Predicates
         }
 
       }
-      return resultList;
+
+      return ComposeTerms(resultList, missingTerms);
+    }
+
+    private static Expression<Func<ResourceStore, bool>> ComposeTerms(
+      List<Expression<Func<IndexReference, bool>>> positiveList,
+      List<IndexPredicateTerm<IndexReference>> missingTerms)
+    {
+      List<IndexPredicateTerm<IndexReference>> terms =
+      [
+        ..positiveList.Select(x => new IndexPredicateTerm<IndexReference>(x, Negated: false)),
+        ..missingTerms
+      ];
+
+      return IndexPredicateComposer.Compose(
+        terms,
+        PredicateCombine.Or,
+        (predicate, negated) => negated
+          ? x => !x.IndexReferenceList.Any(predicate.Compile())
+          : x => x.IndexReferenceList.Any(predicate.Compile()));
     }
 
     private Expression<Func<IndexReference, bool>> EqualTo_ByKey_Many_ResourceIds(int primaryServiceBaseUrlId, string resourceName, string[] resourceIdArray, string versionId)
@@ -132,10 +157,6 @@ namespace Abm.Pyro.Repository.Predicates
     private Expression<Func<IndexReference, bool>> IsSearchParameterId(int searchParameterId)
     {
       return x => x.SearchParameterStoreId == searchParameterId;
-    }
-    private Expression<Func<IndexReference, bool>> IsNotSearchParameterId(int searchParameterId)
-    {
-      return x => x.SearchParameterStoreId != searchParameterId;
     }
     
   }

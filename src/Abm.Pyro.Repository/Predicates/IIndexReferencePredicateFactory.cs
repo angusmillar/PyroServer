@@ -5,5 +5,5 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexReferencePredicateFactory
 {
-  Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryReference searchQueryReference);
+  Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryReference searchQueryReference);
 }
