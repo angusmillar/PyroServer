@@ -7,22 +7,37 @@ public static class PatientBuilder
         string? familyName = null,
         string? givenName = null,
         string? deceasedDateTime = null,
-        string? managingOrganizationId = null)
+        string? managingOrganizationId = null,
+        bool includeName = true,
+        bool includeBirthDate = true,
+        bool includeGender = true)
     {
         var patient = new Hl7.Fhir.Model.Patient
         {
-            Id = id,
-            Name =
+            Id = id
+        };
+
+        if (includeName)
+        {
+            patient.Name =
             [
                 new Hl7.Fhir.Model.HumanName
                 {
                     Family = familyName ?? "TestFamily",
                     Given = [givenName ?? "TestGiven"]
                 }
-            ],
-            BirthDate = "1990-01-15",
-            Gender = Hl7.Fhir.Model.AdministrativeGender.Unknown
-        };
+            ];
+        }
+
+        if (includeBirthDate)
+        {
+            patient.BirthDate = "1990-01-15";
+        }
+
+        if (includeGender)
+        {
+            patient.Gender = Hl7.Fhir.Model.AdministrativeGender.Unknown;
+        }
 
         if (deceasedDateTime is not null)
         {

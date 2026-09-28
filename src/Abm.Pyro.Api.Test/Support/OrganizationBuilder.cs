@@ -4,12 +4,13 @@ public static class OrganizationBuilder
 {
     public static Hl7.Fhir.Model.Organization Build(
         string? id = null,
-        string? name = null)
+        string? name = null,
+        bool includeName = true)
     {
         return new Hl7.Fhir.Model.Organization
         {
             Id = id,
-            Name = name ?? "TestOrganization"
+            Name = includeName ? name ?? "TestOrganization" : null
         };
     }
 }

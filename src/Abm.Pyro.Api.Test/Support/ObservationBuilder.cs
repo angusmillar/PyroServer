@@ -6,24 +6,38 @@ public static class ObservationBuilder
         string? subjectPatientId = null,
         string? loincCode = null,
         decimal? valueQuantityAmount = null,
-        string? valueQuantityUnit = null)
+        string? valueQuantityUnit = null,
+        string? snomedCode = null,
+        bool includeCode = true)
     {
         var observation = new Hl7.Fhir.Model.Observation
         {
-            Status = Hl7.Fhir.Model.ObservationStatus.Final,
-            Code = new Hl7.Fhir.Model.CodeableConcept
-            {
-                Coding =
-                [
-                    new Hl7.Fhir.Model.Coding
-                    {
-                        System = CodeSystemUriSupport.Loinc,
-                        Code = loincCode ?? "29463-7",
-                        Display = "Body weight"
-                    }
-                ]
-            }
+            Status = Hl7.Fhir.Model.ObservationStatus.Final
         };
+
+        if (includeCode)
+        {
+            var coding = new List<Hl7.Fhir.Model.Coding>
+            {
+                new()
+                {
+                    System = CodeSystemUriSupport.Loinc,
+                    Code = loincCode ?? "29463-7",
+                    Display = "Body weight"
+                }
+            };
+
+            if (snomedCode is not null)
+            {
+                coding.Add(new Hl7.Fhir.Model.Coding
+                {
+                    System = CodeSystemUriSupport.Snomed,
+                    Code = snomedCode
+                });
+            }
+
+            observation.Code = new Hl7.Fhir.Model.CodeableConcept { Coding = coding };
+        }
 
         if (subjectPatientId is not null)
         {
