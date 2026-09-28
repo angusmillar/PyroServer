@@ -10,6 +10,9 @@ public static class OrganizationBuilder
         return new Hl7.Fhir.Model.Organization
         {
             Id = id,
+            // Always set: an Organization with no name and nothing else serialises to an empty
+            // object, which the FHIR parser rejects ("Empty FHIR elements are invalid").
+            Active = true,
             Name = includeName ? name ?? "TestOrganization" : null
         };
     }
