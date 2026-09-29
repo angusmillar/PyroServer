@@ -507,26 +507,11 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
   }
 
   
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalHighIsNull()
-  {
-    return x => x.QuantityHigh == null;
-  }
-  
   private Expression<Func<IndexQuantity, bool>> IndexDecimalIsARange()
   {
     return x => x.Quantity != null & x.QuantityHigh != null;
   }
-  
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNotARange()
-  {
-    return x => x.Quantity != null & x.QuantityHigh != null;
-  }
-  
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNull()
-  {
-    return x => x.Quantity == null;
-  }
-  
+
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsHigherThanOrEqualTo(decimal value)
   {
     return x => x.Quantity >= value;

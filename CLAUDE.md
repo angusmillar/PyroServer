@@ -21,6 +21,7 @@ dotnet test src/Abm.Pyro.CI.slnf
 # Run a single test project
 dotnet test src/Abm.Pyro.Domain.Test/Abm.Pyro.Domain.Test.csproj
 dotnet test src/Abm.Pyro.Application.Test/Abm.Pyro.Application.Test.csproj
+dotnet test src/Abm.Pyro.Repository.Test/Abm.Pyro.Repository.Test.csproj
 dotnet test src/Abm.Pyro.Api.Test/Abm.Pyro.Api.Test.csproj
 
 # Run the API
@@ -45,6 +46,7 @@ dotnet ef migrations add <Name>  --project Abm.Pyro.Repository --startup-project
 | `Abm.Pyro.CodeGeneration` | .NET Framework 4.8.1 T4 templates → `FhirResourceType.cs` + search parameter seed data |
 | `Abm.Pyro.Domain.Test` | xUnit unit tests for domain logic |
 | `Abm.Pyro.Application.Test` | xUnit unit tests for application handlers |
+| `Abm.Pyro.Repository.Test` | xUnit unit tests for repository internals (predicate factories, the index predicate composer). Sees `internal` types via `InternalsVisibleTo` in `Abm.Pyro.Repository.csproj` |
 | `Abm.Pyro.Api.Test` | Full-stack integration tests using WebApplicationFactory + Testcontainers |
 
 ## Architecture
