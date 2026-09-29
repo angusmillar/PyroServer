@@ -155,6 +155,46 @@ public class NumberSearchTests(IntegrationTestFixture fixture) : IntegrationTest
         Assert.Single(bundle.Entry);
     }
 
+    [Fact]
+    public async Task Search_ProbabilityMissingTrue_ReturnsOnlyRiskAssessmentWithoutProbability()
+    {
+        Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Assert.NotNull(patient);
+
+        RiskAssessment? withProbability = await FhirClient.CreateAsync(
+            RiskAssessmentBuilder.Build(probability: 0.4m, subjectPatientId: patient.Id));
+        RiskAssessment? withoutProbability = await FhirClient.CreateAsync(
+            RiskAssessmentBuilder.Build(subjectPatientId: patient.Id));
+        Assert.NotNull(withProbability);
+        Assert.NotNull(withoutProbability);
+
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
+            new[] { "probability:missing=true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withoutProbability.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_ProbabilityMissingFalse_ReturnsOnlyRiskAssessmentWithProbability()
+    {
+        Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());
+        Assert.NotNull(patient);
+
+        RiskAssessment? withProbability = await FhirClient.CreateAsync(
+            RiskAssessmentBuilder.Build(probability: 0.4m, subjectPatientId: patient.Id));
+        RiskAssessment? withoutProbability = await FhirClient.CreateAsync(
+            RiskAssessmentBuilder.Build(subjectPatientId: patient.Id));
+        Assert.NotNull(withProbability);
+        Assert.NotNull(withoutProbability);
+
+        Bundle? bundle = await FhirClient.SearchAsync<RiskAssessment>(
+            new[] { "probability:missing=false" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withProbability.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
     private async Task CreateAsync(decimal probability)
     {
         Patient? patient = await FhirClient.CreateAsync(PatientBuilder.Build());

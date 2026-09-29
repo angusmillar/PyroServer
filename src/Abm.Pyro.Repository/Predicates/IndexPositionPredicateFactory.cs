@@ -11,76 +11,71 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
 {
   private const int Wgs84Srid = 4326;
 
-  public List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryNear searchQueryNear)
-  {
-    var resultList = new List<Expression<Func<IndexPosition, bool>>>();
-
-    foreach (SearchQueryNearValue nearValue in searchQueryNear.ValueList)
-    {
-      if (!searchQueryNear.SearchParameter.SearchParameterStoreId.HasValue)
-      {
-        throw new ArgumentNullException(nameof(searchQueryNear.SearchParameter.SearchParameterStoreId));
-      }
-
-      int searchParameterId = searchQueryNear.SearchParameter.SearchParameterStoreId.Value;
-
-      if (searchQueryNear.Modifier.HasValue)
-      {
-        throw new ApplicationException($"Internal Server Error: {nameof(PositionIndex)} was called for a search query carrying the " +
-                                       $"'{searchQueryNear.Modifier.Value.GetCode()}' modifier. Modified near queries are built by {nameof(PositionIndexMissing)}.");
-      }
-
-      var predicate = LinqKit.PredicateBuilder.New<IndexPosition>(true);
-      predicate = predicate.And(IsSearchParameterId(searchParameterId));
-      predicate = predicate.And(WithinDistanceOf(nearValue));
-      resultList.Add(predicate);
-    }
-
-    return resultList;
-  }
-
   /// <summary>
-  /// Builds the ':missing' predicate at the ResourceStore level. It cannot be expressed as an
-  /// index-row predicate inside IndexPositionList.Any(...) the way the sibling factories do,
-  /// because IndexPosition holds rows for exactly one search parameter: the list is empty for
-  /// every Location without a position, so any Any(...) over it is false and both
-  /// ':missing=true' and ':missing=false' would match nothing.
+  /// Builds the ResourceStore-level predicate for a 'near' search, whether plain or ':missing'.
+  /// Negation is expressed by the term's Negated flag rather than inside the index-row predicate,
+  /// because an index-row predicate can only assert that a matching row exists.
   /// </summary>
-  public Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryNear searchQueryNear)
+  public Expression<Func<ResourceStore, bool>> PositionIndex(SearchQueryNear searchQueryNear)
   {
     if (!searchQueryNear.SearchParameter.SearchParameterStoreId.HasValue)
     {
       throw new ArgumentNullException(nameof(searchQueryNear.SearchParameter.SearchParameterStoreId));
     }
 
-    var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryNear.SearchParameter.Type);
-    if (!searchQueryNear.Modifier.HasValue || !arrayOfSupportedModifiers.Contains(searchQueryNear.Modifier.Value))
-    {
-      throw new ApplicationException($"Internal Server Error: {nameof(PositionIndexMissing)} was called for a search query without a supported modifier.");
-    }
-
-    if (searchQueryNear.Modifier.Value != SearchModifierCodeId.Missing)
-    {
-      throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryNear.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
-    }
-
     int searchParameterId = searchQueryNear.SearchParameter.SearchParameterStoreId.Value;
+    var terms = new List<IndexPredicateTerm<IndexPosition>>();
 
-    var predicate = LinqKit.PredicateBuilder.New<ResourceStore>(true);
-
-    foreach (SearchQueryNearValue nearValue in searchQueryNear.ValueList)
+    if (searchQueryNear.Modifier.HasValue)
     {
-      if (nearValue.IsMissing)
+      var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryNear.SearchParameter.Type);
+      if (!arrayOfSupportedModifiers.Contains(searchQueryNear.Modifier.Value))
       {
-        predicate = predicate.Or(y => !y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+        throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} is not supported for search parameter types of {searchQueryNear.SearchParameter.Type.GetCode()}.");
       }
-      else
+
+      if (searchQueryNear.Modifier.Value != SearchModifierCodeId.Missing)
       {
-        predicate = predicate.Or(y => y.IndexPositionList.Any(i => i.SearchParameterStoreId == searchParameterId));
+        throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryNear.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryNear.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
+      }
+
+      foreach (SearchQueryNearValue nearValue in searchQueryNear.ValueList)
+      {
+        // ':missing=true' asserts absence, ':missing=false' asserts presence. Folded with Or, so
+        // ':missing=true,false' remains the tautology FHIR's comma-as-OR rule makes it.
+        terms.Add(new IndexPredicateTerm<IndexPosition>(
+          IsSearchParameterId(searchParameterId),
+          Negated: nearValue.IsMissing));
+      }
+    }
+    else
+    {
+      foreach (SearchQueryNearValue nearValue in searchQueryNear.ValueList)
+      {
+        terms.Add(new IndexPredicateTerm<IndexPosition>(
+          AndAlso(IsSearchParameterId(searchParameterId), WithinDistanceOf(nearValue)),
+          Negated: false));
       }
     }
 
-    return predicate;
+    return IndexPredicateComposer.Compose(
+      terms,
+      PredicateCombine.Or,
+      (predicate, negated) => negated
+        ? x => !x.IndexPositionList.Any(predicate.Compile())
+        : x => x.IndexPositionList.Any(predicate.Compile()));
+  }
+
+  /// <summary>
+  /// Conjoins two index-row predicates. Named AndAlso rather than And because a private static
+  /// 'And' shadows LinqKit's And extension method inside this class. The extension is invoked
+  /// statically so no 'using LinqKit' is needed and no name resolution is ambiguous.
+  /// </summary>
+  private static Expression<Func<IndexPosition, bool>> AndAlso(
+    Expression<Func<IndexPosition, bool>> left,
+    Expression<Func<IndexPosition, bool>> right)
+  {
+    return LinqKit.PredicateBuilder.And(left, right);
   }
 
   /// <summary>
@@ -88,7 +83,7 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
   /// serve from a spatial index. STDistance returns metres, and the search radius is already in
   /// metres by the time it reaches here.
   /// </summary>
-  private Expression<Func<IndexPosition, bool>> WithinDistanceOf(SearchQueryNearValue nearValue)
+  private static Expression<Func<IndexPosition, bool>> WithinDistanceOf(SearchQueryNearValue nearValue)
   {
     // NetTopologySuite orders a Point as (X, Y), which is (longitude, latitude).
     var targetPoint = new Point(nearValue.Longitude, nearValue.Latitude) { SRID = Wgs84Srid };
@@ -97,7 +92,7 @@ public class IndexPositionPredicateFactory : IIndexPositionPredicateFactory
     return x => x.Position.Distance(targetPoint) <= distanceInMetres;
   }
 
-  private Expression<Func<IndexPosition, bool>> IsSearchParameterId(int searchParameterId)
+  private static Expression<Func<IndexPosition, bool>> IsSearchParameterId(int searchParameterId)
   {
     return x => x.SearchParameterStoreId == searchParameterId;
   }

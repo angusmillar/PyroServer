@@ -5,5 +5,5 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexDateTimePredicateFactory
 {
-  List<Expression<Func<IndexDateTime, bool>>> DateTimeIndex(SearchQueryDateTime searchQueryDateTime);
+  Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryDateTime searchQueryDateTime);
 }

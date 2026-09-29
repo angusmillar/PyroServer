@@ -23,39 +23,31 @@ public class SearchSearchPredicateFactory(IResourceStorePredicateFactory resourc
       switch (searchQuery.SearchParameter.Type)
       {
         case SearchParamType.Number:
-          resourceStorePredicateFactory.NumberIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexQuantityList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.NumberIndex(searchQuery));
           break;
         case SearchParamType.Date:
-          resourceStorePredicateFactory.DateTimeIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexDateTimeList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.DateTimeIndex(searchQuery));
           break;
         case SearchParamType.String:
-          resourceStorePredicateFactory.StringIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexStringList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.StringIndex(searchQuery));
           break;
         case SearchParamType.Token:
-          resourceStorePredicateFactory.TokenIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexTokenList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.TokenIndex(searchQuery));
           break;
         case SearchParamType.Reference:
-          (await resourceStorePredicateFactory.ReferenceIndex(searchQuery)).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexReferenceList.Any(x.Compile())));
+          predicateInner = predicateInner.And(await resourceStorePredicateFactory.ReferenceIndex(searchQuery));
           break;
         case SearchParamType.Composite:
           predicateInner = await resourceStorePredicateFactory.CompositeIndex(this, searchQuery);
           break;
         case SearchParamType.Quantity:
-          resourceStorePredicateFactory.QuantityIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexQuantityList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.QuantityIndex(searchQuery));
           break;
         case SearchParamType.Uri:
-          resourceStorePredicateFactory.UriIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexUriList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.UriIndex(searchQuery));
           break;
         case SearchParamType.Special:
-          if (searchQuery.Modifier == SearchModifierCodeId.Missing)
-          {
-            // ':missing' negates at the ResourceStore level, because IndexPosition holds rows for
-            // exactly one search parameter and so an Any(...) over an empty list can never be true.
-            predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndexMissing(searchQuery));
-            break;
-          }
-
-          resourceStorePredicateFactory.PositionIndex(searchQuery).ForEach(x => predicateInner = predicateInner.Or(y => y.IndexPositionList.Any(x.Compile())));
+          predicateInner = predicateInner.And(resourceStorePredicateFactory.PositionIndex(searchQuery));
           break;
         default:
           throw new ArgumentOutOfRangeException(nameof(searchQuery.SearchParameter.Type), searchQuery.SearchParameter.Type.GetCode(), nameof(SearchParamType));

@@ -156,9 +156,13 @@ public class SearchQueryReference(
                 $"Found the {SearchModifierCodeId.Missing.GetCode()} Modifier yet is value was expected to be " +
                 $"true or false yet found '{value}'. ";
             IsValid = false;
+            // Return rather than fall through: the Add below dereferences isMissing, which is
+            // null on exactly this path. Falling through turned a malformed value into a 500
+            // instead of the 400 every sibling search type returns.
+            return;
         }
 
-        ValueList.Add(new SearchQueryReferenceValue(isMissing!.Value, null));
+        ValueList.Add(new SearchQueryReferenceValue(isMissing.Value, null));
     }
 
     

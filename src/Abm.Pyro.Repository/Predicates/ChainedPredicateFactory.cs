@@ -3,6 +3,7 @@ using LinqKit;
 using Microsoft.Extensions.Options;
 using Abm.Pyro.Domain.Cache;
 using Abm.Pyro.Domain.Configuration;
+using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.Model;
 using Abm.Pyro.Domain.SearchQueryEntity;
 namespace Abm.Pyro.Repository.Predicates;
@@ -50,8 +51,10 @@ public class ChainedPredicateFactory(
 
     if (indexingSettingsOptions.Value.RemoveHistoricResourceIndexesOnUpdateOrDelete)
     {
-      // Historic index rows are removed on update/delete, so any index row that matched the
-      // chained criteria already belongs to a current resource version.
+      // Historic index rows are removed on update/delete, so any index row that matched a POSITIVE
+      // chained criterion already belongs to a current resource version. That does not hold for a
+      // negated terminal parameter such as ':missing' — see GetChainTargetQuery, which constrains
+      // the target set to current, undeleted rows of the target type for exactly that reason.
       return i =>
         i.SearchParameterStoreId == searchQueryReference.SearchParameter.SearchParameterStoreId &&
         i.ServiceBaseUrlId == primaryServiceBaseUrlId &&
@@ -81,8 +84,23 @@ public class ChainedPredicateFactory(
       return context.Set<ResourceStore>().AsExpandable().Where(x => x.IndexReferenceList.Any(nextLinkPredicate.Compile()));
     }
 
-    // Final chain link: the target set is the resources matching the terminal search parameter.
-    ExpressionStarter<ResourceStore> finalNodePredicate = await searchPredicateFactory.GetResourceStoreIndexPredicate([searchQueryReference.ChainedSearchParameter!]);
+    // Final chain link: the target set is the resources matching the terminal search parameter,
+    // restricted to current, undeleted resources of the chain's target type.
+    //
+    // All three constraints are load-bearing once the terminal parameter can be a NEGATED one such
+    // as ':missing'. A positive terminal predicate is an EXISTS over index rows, and a historic or
+    // deleted ResourceStore row has none (RemoveHistoricResourceIndexesOnUpdateOrDelete strips
+    // them), so such rows could never satisfy it and the constraints were redundant. A NOT EXISTS
+    // inverts precisely that: absence of index rows is what a historic row IS, so without
+    // IsCurrent/IsDeleted every superseded and deleted version of the target would match. The
+    // ResourceType constraint closes the matching third case, because GetChainedReferencePredicate
+    // correlates on ResourceId alone and client-assigned ids make cross-type collisions reachable.
+    SearchQueryBase terminalSearchParameter = searchQueryReference.ChainedSearchParameter!;
+    FhirResourceTypeId targetResourceType = terminalSearchParameter.ResourceTypeContext;
+
+    ExpressionStarter<ResourceStore> finalNodePredicate = await searchPredicateFactory.GetResourceStoreIndexPredicate([terminalSearchParameter]);
+    finalNodePredicate = finalNodePredicate.And(x => x.IsCurrent && !x.IsDeleted && x.ResourceType == targetResourceType);
+
     return context.Set<ResourceStore>().AsExpandable().Where(finalNodePredicate);
   }
 }

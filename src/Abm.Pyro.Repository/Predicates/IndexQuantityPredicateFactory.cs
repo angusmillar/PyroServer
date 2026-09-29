@@ -10,9 +10,12 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
 {
-  public List<Expression<Func<IndexQuantity, bool>>> QuantityIndex(SearchQueryQuantity searchQueryQuantity)
+  public Expression<Func<ResourceStore, bool>> QuantityIndex(SearchQueryQuantity searchQueryQuantity)
   {
+    // Positive value predicates (every prefix, including 'ne', which stays inside the EXISTS).
     var resultList = new List<Expression<Func<IndexQuantity, bool>>>();
+    // ':missing' terms, which carry their own Negated flag.
+    var missingTerms = new List<IndexPredicateTerm<IndexQuantity>>();
 
     foreach (SearchQueryQuantityValue quantityValue in searchQueryQuantity.ValueList)
     {
@@ -90,8 +93,11 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
             case SearchModifierCodeId.Missing:
               if (quantityValue.Prefix.HasValue == false)
               {
-                indexQuantityPredicate = indexQuantityPredicate.And(IsNotSearchParameterId(searchQueryQuantity.SearchParameter.SearchParameterStoreId.Value));
-                resultList.Add(indexQuantityPredicate);
+                // ':missing=true' asserts absence, ':missing=false' asserts presence — two
+                // distinct assertions selected by the boolean, folded with Or.
+                missingTerms.Add(new IndexPredicateTerm<IndexQuantity>(
+                  IsSearchParameterId(searchQueryQuantity.SearchParameter.SearchParameterStoreId.Value),
+                  Negated: quantityValue.IsMissing));
               }
               else
               {
@@ -108,7 +114,19 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
         }
       }
     }
-    return resultList;
+
+    List<IndexPredicateTerm<IndexQuantity>> terms =
+    [
+      ..resultList.Select(x => new IndexPredicateTerm<IndexQuantity>(x, Negated: false)),
+      ..missingTerms
+    ];
+
+    return IndexPredicateComposer.Compose(
+      terms,
+      PredicateCombine.Or,
+      (predicate, negated) => negated
+        ? x => !x.IndexQuantityList.Any(predicate.Compile())
+        : x => x.IndexQuantityList.Any(predicate.Compile()));
   }
 
   private Expression<Func<IndexQuantity, bool>> EqualTo(SearchQueryQuantityValue quantityValue)
@@ -226,24 +244,9 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
     throw new ArgumentNullException($"Internal Server Error: The {nameof(quantityValue)} property of {nameof(quantityValue.Value)} was found to be null.");
   }
 
-  private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexQuantity, bool>> predicate)
-  {
-    return x => x.IndexQuantityList.Any(predicate.Compile());
-  }
-
-  private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexQuantity, bool>> predicate, bool equals)
-  {
-    return x => x.IndexQuantityList.Any(predicate.Compile()) == equals;
-  }
-
   private Expression<Func<IndexQuantity, bool>> IsSearchParameterId(int searchParameterId)
   {
     return x => x.SearchParameterStoreId == searchParameterId;
-  }
-
-  private Expression<Func<IndexQuantity, bool>> IsNotSearchParameterId(int searchParameterId)
-  {
-    return x => x.SearchParameterStoreId != searchParameterId;
   }
 
   private Expression<Func<IndexQuantity, bool>> QuantityRangeEqualTo(decimal midValue)
@@ -504,26 +507,11 @@ public class IndexQuantityPredicateFactory : IIndexQuantityPredicateFactory
   }
 
   
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalHighIsNull()
-  {
-    return x => x.QuantityHigh == null;
-  }
-  
   private Expression<Func<IndexQuantity, bool>> IndexDecimalIsARange()
   {
     return x => x.Quantity != null & x.QuantityHigh != null;
   }
-  
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNotARange()
-  {
-    return x => x.Quantity != null & x.QuantityHigh != null;
-  }
-  
-  private Expression<Func<IndexQuantity, bool>> IndexDecimalIsNull()
-  {
-    return x => x.Quantity == null;
-  }
-  
+
   private Expression<Func<IndexQuantity, bool>> IndexDecimal_IsHigherThanOrEqualTo(decimal value)
   {
     return x => x.Quantity >= value;

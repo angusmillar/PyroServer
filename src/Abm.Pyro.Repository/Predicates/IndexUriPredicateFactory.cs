@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using Abm.Pyro.Domain.Enums;
 using Abm.Pyro.Domain.FhirSupport;
 using Abm.Pyro.Domain.Model;
@@ -8,21 +8,18 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public class IndexUriPredicateFactory : IIndexUriPredicateFactory
 {
-  public List<Expression<Func<IndexUri, bool>>> UriIndex(SearchQueryUri searchQueryUri)
+  public Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryUri searchQueryUri)
   {
-    var resultList = new List<Expression<Func<IndexUri, bool>>>();
-    //var ResourceStorePredicate = LinqKit.PredicateBuilder.New<ResourceStore>(true);
+    if (!searchQueryUri.SearchParameter.SearchParameterStoreId.HasValue)
+    {
+      throw new ArgumentNullException(nameof(searchQueryUri.SearchParameter.SearchParameterStoreId));
+    }
+
+    int searchParameterId = searchQueryUri.SearchParameter.SearchParameterStoreId.Value;
+    var terms = new List<IndexPredicateTerm<IndexUri>>();
 
     foreach (SearchQueryUriValue uriValue in searchQueryUri.ValueList)
     {
-      if (!searchQueryUri.SearchParameter.SearchParameterStoreId.HasValue)
-      {
-        throw new ArgumentNullException(nameof(searchQueryUri.SearchParameter.SearchParameterStoreId));
-      }
-
-      var indexUriPredicate = LinqKit.PredicateBuilder.New<IndexUri>(true);
-      indexUriPredicate = indexUriPredicate.And(IsSearchParameterId(searchQueryUri.SearchParameter.SearchParameterStoreId.Value));
-
       if (!searchQueryUri.Modifier.HasValue)
       {
         if (uriValue.Value is null)
@@ -30,82 +27,94 @@ public class IndexUriPredicateFactory : IIndexUriPredicateFactory
           throw new ArgumentNullException(nameof(uriValue.Value));
         }
 
-        indexUriPredicate = indexUriPredicate.And(EqualTo(uriValue.Value.OriginalString));
-        resultList.Add(indexUriPredicate);
+        terms.Add(new IndexPredicateTerm<IndexUri>(
+          AndAlso(IsSearchParameterId(searchParameterId), EqualTo(uriValue.Value.OriginalString)),
+          Negated: false));
+        continue;
       }
-      else
-      {
-        var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryUri.SearchParameter.Type);
-        if (!arrayOfSupportedModifiers.Contains(searchQueryUri.Modifier.Value))
-        {
-          throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryUri.Modifier.Value.GetCode()} is not supported for search parameter types of {searchQueryUri.SearchParameter.Type.GetCode()}.");
-        }
 
-        if (searchQueryUri.Modifier.Value != SearchModifierCodeId.Missing && uriValue.Value is null)
-        {
-          throw new ArgumentNullException(nameof(uriValue.Value));
-        }
-        switch (searchQueryUri.Modifier.Value)
-        {
-          case SearchModifierCodeId.Missing:
-            indexUriPredicate = indexUriPredicate.And(IsNotSearchParameterId(searchQueryUri.SearchParameter.SearchParameterStoreId.Value));
-            resultList.Add(indexUriPredicate);
-            break;
-          case SearchModifierCodeId.Exact:
-            indexUriPredicate = indexUriPredicate.And(EqualTo(uriValue.Value!.OriginalString));
-            resultList.Add(indexUriPredicate);
-            break;
-          case SearchModifierCodeId.Contains:
-            indexUriPredicate = indexUriPredicate.And(Contains(uriValue.Value!.OriginalString));
-            resultList.Add(indexUriPredicate);
-            break;
-          case SearchModifierCodeId.Below:
-            indexUriPredicate = indexUriPredicate.And(StartsWith(uriValue.Value!.OriginalString));
-            resultList.Add(indexUriPredicate);
-            break;
-          case SearchModifierCodeId.Above:
-            indexUriPredicate = indexUriPredicate.And(EndsWith(uriValue.Value!.OriginalString));
-            resultList.Add(indexUriPredicate);
-            break;
-          default:
-            throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryUri.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryUri.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
-        }
+      var arrayOfSupportedModifiers = FhirSearchQuerySupport.GetModifiersForSearchType(searchQueryUri.SearchParameter.Type);
+      if (!arrayOfSupportedModifiers.Contains(searchQueryUri.Modifier.Value))
+      {
+        throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryUri.Modifier.Value.GetCode()} is not supported for search parameter types of {searchQueryUri.SearchParameter.Type.GetCode()}.");
+      }
+
+      if (searchQueryUri.Modifier.Value != SearchModifierCodeId.Missing && uriValue.Value is null)
+      {
+        throw new ArgumentNullException(nameof(uriValue.Value));
+      }
+
+      switch (searchQueryUri.Modifier.Value)
+      {
+        case SearchModifierCodeId.Missing:
+          // ':missing=true' asserts absence, ':missing=false' asserts presence — two distinct
+          // assertions selected by the boolean, folded with Or like any other value list.
+          terms.Add(new IndexPredicateTerm<IndexUri>(
+            IsSearchParameterId(searchParameterId),
+            Negated: uriValue.IsMissing));
+          break;
+        case SearchModifierCodeId.Exact:
+          terms.Add(new IndexPredicateTerm<IndexUri>(
+            AndAlso(IsSearchParameterId(searchParameterId), EqualTo(uriValue.Value!.OriginalString)),
+            Negated: false));
+          break;
+        case SearchModifierCodeId.Contains:
+          terms.Add(new IndexPredicateTerm<IndexUri>(
+            AndAlso(IsSearchParameterId(searchParameterId), Contains(uriValue.Value!.OriginalString)),
+            Negated: false));
+          break;
+        case SearchModifierCodeId.Below:
+          terms.Add(new IndexPredicateTerm<IndexUri>(
+            AndAlso(IsSearchParameterId(searchParameterId), StartsWith(uriValue.Value!.OriginalString)),
+            Negated: false));
+          break;
+        case SearchModifierCodeId.Above:
+          terms.Add(new IndexPredicateTerm<IndexUri>(
+            AndAlso(IsSearchParameterId(searchParameterId), EndsWith(uriValue.Value!.OriginalString)),
+            Negated: false));
+          break;
+        default:
+          throw new ApplicationException($"Internal Server Error: The search query modifier: {searchQueryUri.Modifier.Value.GetCode()} has been added to the supported list for {searchQueryUri.SearchParameter.Type.GetCode()} search parameter queries and yet no database predicate has been provided.");
       }
     }
-    return resultList;
+
+    return IndexPredicateComposer.Compose(
+      terms,
+      PredicateCombine.Or,
+      (predicate, negated) => negated
+        ? x => !x.IndexUriList.Any(predicate.Compile())
+        : x => x.IndexUriList.Any(predicate.Compile()));
   }
 
-  private Expression<Func<ResourceStore, bool>> AnyIndex(Expression<Func<IndexUri, bool>> predicate)
+  private static Expression<Func<IndexUri, bool>> AndAlso(
+    Expression<Func<IndexUri, bool>> left,
+    Expression<Func<IndexUri, bool>> right)
   {
-    return x => x.IndexUriList.Any(predicate.Compile());
+    return LinqKit.PredicateBuilder.And(left, right);
   }
-  private Expression<Func<ResourceStore, bool>> AnyIndexEquals(Expression<Func<IndexUri, bool>> predicate, bool equals)
-  {
-    return x => x.IndexUriList.Any(predicate.Compile()) == equals;
-  }
-  private Expression<Func<IndexUri, bool>> IsSearchParameterId(int searchParameterId)
+
+  private static Expression<Func<IndexUri, bool>> IsSearchParameterId(int searchParameterId)
   {
     return x => x.SearchParameterStoreId == searchParameterId;
   }
-  private Expression<Func<IndexUri, bool>> IsNotSearchParameterId(int searchParameterId)
-  {
-    return x => x.SearchParameterStoreId != searchParameterId;
-  }
-  private Expression<Func<IndexUri, bool>> StartsWith(string value)
+
+  private static Expression<Func<IndexUri, bool>> StartsWith(string value)
   {
     return x => x.Uri.StartsWith(value);
   }
-  private Expression<Func<IndexUri, bool>> EndsWith(string value)
+
+  private static Expression<Func<IndexUri, bool>> EndsWith(string value)
   {
     return x => x.Uri.EndsWith(value);
   }
-  private Expression<Func<IndexUri, bool>> EqualTo(string value)
+
+  private static Expression<Func<IndexUri, bool>> EqualTo(string value)
   {
     return x => x.Uri.Equals(value);
   }
-  private Expression<Func<IndexUri, bool>> Contains(string value)
+
+  private static Expression<Func<IndexUri, bool>> Contains(string value)
   {
     return x => x.Uri.Contains(value);
   }
-
 }

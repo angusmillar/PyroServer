@@ -5,5 +5,5 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexUriPredicateFactory
 {
-  List<Expression<Func<IndexUri, bool>>> UriIndex(SearchQueryUri searchQueryUri);
+  Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryUri searchQueryUri);
 }

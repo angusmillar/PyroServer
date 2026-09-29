@@ -49,6 +49,34 @@ public class UriIndexSearchTests(IntegrationTestFixture fixture) : IntegrationTe
         Assert.Equal("ColourValueSet", returned.Name);
     }
 
+    [Fact]
+    public async Task Search_UrlMissingTrue_ReturnsOnlyValueSetWithoutUrl()
+    {
+        ValueSet? withUrl = await FhirClient.CreateAsync(ValueSetBuilder.Build(url: TestUrl));
+        ValueSet? withoutUrl = await FhirClient.CreateAsync(ValueSetBuilder.Build(includeUrl: false));
+        Assert.NotNull(withUrl);
+        Assert.NotNull(withoutUrl);
+
+        Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(new[] { "url:missing=true" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withoutUrl.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
+    [Fact]
+    public async Task Search_UrlMissingFalse_ReturnsOnlyValueSetWithUrl()
+    {
+        ValueSet? withUrl = await FhirClient.CreateAsync(ValueSetBuilder.Build(url: TestUrl));
+        ValueSet? withoutUrl = await FhirClient.CreateAsync(ValueSetBuilder.Build(includeUrl: false));
+        Assert.NotNull(withUrl);
+        Assert.NotNull(withoutUrl);
+
+        Bundle? bundle = await FhirClient.SearchAsync<ValueSet>(new[] { "url:missing=false" });
+
+        Assert.NotNull(bundle);
+        Assert.Equal([withUrl.Id], bundle.Entry.Select(e => e.Resource!.Id).Order());
+    }
+
     private async Task CreateValueSetAsync(string? url = null, string? name = null)
     {
         ValueSet? valueSet = await FhirClient.CreateAsync(

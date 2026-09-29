@@ -5,5 +5,5 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexTokenPredicateFactory
 {
-  List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryToken searchQueryToken);
+  Expression<Func<ResourceStore, bool>> TokenIndex(SearchQueryToken searchQueryToken);
 }

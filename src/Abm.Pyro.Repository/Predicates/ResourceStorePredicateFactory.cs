@@ -22,7 +22,7 @@ public class ResourceStorePredicateFactory(
     return x => x.ResourceType == resourceType && x.IsCurrent && !x.IsDeleted;
   }
 
-  public async Task<List<Expression<Func<IndexReference, bool>>>> ReferenceIndex(SearchQueryBase searchQueryBase)
+  public async Task<Expression<Func<ResourceStore, bool>>> ReferenceIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryReference searchQueryReference)
     {
@@ -32,7 +32,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(searchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryReference)}");
   }
   
-  public List<Expression<Func<IndexString, bool>>> StringIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> StringIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryString searchQueryString)
     {
@@ -42,7 +42,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryString)}");
   }
 
-  public List<Expression<Func<IndexToken, bool>>> TokenIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> TokenIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryToken searchQueryToken)
     {
@@ -52,7 +52,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryToken)}");
   }
 
-  public List<Expression<Func<IndexQuantity, bool>>> NumberIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> NumberIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryNumber searchQueryNumber)
     {
@@ -62,7 +62,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNumber)}");
   }
 
-  public List<Expression<Func<IndexDateTime, bool>>> DateTimeIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> DateTimeIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryDateTime searchQueryDateTime)
     {
@@ -72,7 +72,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryDateTime)}");
   }
 
-  public List<Expression<Func<IndexQuantity, bool>>> QuantityIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> QuantityIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryQuantity searchQueryQuantity)
     {
@@ -82,7 +82,7 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryQuantity)}");
   }
   
-  public List<Expression<Func<IndexUri, bool>>> UriIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> UriIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryUri searchQueryUri)
     {
@@ -92,21 +92,11 @@ public class ResourceStorePredicateFactory(
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryUri)}");
   }
 
-  public List<Expression<Func<IndexPosition, bool>>> PositionIndex(SearchQueryBase searchQueryBase)
+  public Expression<Func<ResourceStore, bool>> PositionIndex(SearchQueryBase searchQueryBase)
   {
     if (searchQueryBase is SearchQueryNear searchQueryNear)
     {
       return indexPositionPredicateFactory.PositionIndex(searchQueryNear);
-    }
-
-    throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");
-  }
-
-  public Expression<Func<ResourceStore, bool>> PositionIndexMissing(SearchQueryBase searchQueryBase)
-  {
-    if (searchQueryBase is SearchQueryNear searchQueryNear)
-    {
-      return indexPositionPredicateFactory.PositionIndexMissing(searchQueryNear);
     }
 
     throw new InvalidCastException($"Unable to cast a {nameof(SearchQueryBase)} of type {searchQueryBase.GetType().Name} to a {nameof(SearchQueryNear)}");

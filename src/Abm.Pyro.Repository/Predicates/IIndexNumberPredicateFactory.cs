@@ -5,5 +5,5 @@ namespace Abm.Pyro.Repository.Predicates;
 
 public interface IIndexNumberPredicateFactory
 {
-  List<Expression<Func<IndexQuantity, bool>>> NumberIndex(SearchQueryNumber searchQueryNumber);
+  Expression<Func<ResourceStore, bool>> NumberIndex(SearchQueryNumber searchQueryNumber);
 }
