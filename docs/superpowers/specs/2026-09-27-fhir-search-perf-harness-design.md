@@ -1,6 +1,10 @@
 # FHIR Search Performance — Programme Design and Sub-Project A (Measurement Harness)
 
-> Date: 2026-09-27 · Status: **Approved design, ready for implementation planning** ·
+> Date: 2026-09-27 · Status: **SUPERSEDED on 2026-10-01** by
+> [`2026-10-01-fhir-search-perf-harness-design.md`](2026-10-01-fhir-search-perf-harness-design.md) ·
+> Retained for the record: its §5.4 rejection of Synthea was reversed, and Part II was rebuilt
+> around a Synthea corpus loaded through the real transaction pipeline. Part I's review (§2) and
+> sequencing argument (§4) were carried forward intact. ·
 > Supersedes the reasoning in `assets/plans/fhir-index-plan.md` (that document remains the origin
 > of much of Part I's index design thinking, which is carried forward rather than discarded).
 

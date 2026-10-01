@@ -1,5 +1,17 @@
 # FHIR Search Performance Measurement Harness (Sub-Project A) Implementation Plan
 
+> # ⛔ OBSOLETE — DO NOT IMPLEMENT
+>
+> **Obsoleted 2026-10-01.** This plan implements
+> [`docs/superpowers/specs/2026-09-27-fhir-search-perf-harness-design.md`](../specs/2026-09-27-fhir-search-perf-harness-design.md),
+> which has been superseded by
+> [`docs/superpowers/specs/2026-10-01-fhir-search-perf-harness-design.md`](../specs/2026-10-01-fhir-search-perf-harness-design.md).
+>
+> The corpus decision was reversed: Synthea FHIR R4 bundles from a configurable directory outside the
+> repository, loaded through the real transaction pipeline, replace the deterministic generator. The
+> `CorpusGenerator`, `DistributionProfile` and `SqlBulkCopy` `BulkIndexWriter` that this plan is built
+> around no longer exist in the design. A replacement plan will be written from the 2026-10-01 spec.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build `src/Abm.Pyro.Performance`, a one-command reproducible measurement of every FHIR search access pattern against a deterministically generated 250k-resource corpus, capturing logical reads, plan operators and result cardinality into committed baselines.
